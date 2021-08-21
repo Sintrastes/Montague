@@ -92,8 +92,8 @@ instance MontagueSemantics MyAtom MyType (AnnotatedTerm MyAtom MyType) where
         Atom NewYork    -> pure Place
         Atom LosAngeles -> pure Place
         Atom Car        -> pure Thing
-        Atom Owns       -> pure (Person `RightArrow` Sentence `LeftArrow` Thing)
-        Atom LivesIn    ->
+        Atom Owns       -> pure $ Person `RightArrow` Sentence `LeftArrow` Thing
+        Atom LivesIn    -> pure $ Person `RightArrow` Sentence `LeftArrow` Place
         _ -> mempty
     parseTerm = \case
         "bob"         -> pure Bob
