@@ -52,7 +52,7 @@ of "atomic terms" reresenting the type of structured output produced by Montague
 For example, some basic definitions of `a` and `t` might include:
 
 ```haskell
-data MyTypes =
+data MyType =
     Noun
   | NounPhrase
   | Sentence
@@ -60,7 +60,7 @@ data MyTypes =
   | Place
   | Thing
 
-data MyAtoms =
+data MyAtom =
     Bob
   | Alice
   | NewYork
@@ -76,10 +76,35 @@ Given such types, the typeclass `MontagueSemantics a t x` is used
  `Term a t`, which is only used internally by Montague.
 
 ```haskell
-class PartialOrd t => MontagueSemantics a t x where
-    typeOf :: a -> t
-    parseTerm :: String -> Tree () [] (Term a t)
-    interp :: AnnotatedTerm a t -> x
+class (Eq x, PartialOrd t) => MontagueSemantics a t x | a -> t, a -> x where
+    typeOf    :: Term a t -> MontagueType t
+    parseTerm :: String -> MontagueTerm a t
+    interp    :: AnnotatedTerm a t -> x
+```
+
+For instance, an example implementation of this is:
+
+```haskell
+instance MontagueSemantics MyAtom MyType (AnnotatedTerm MyAtom MyType) where
+    typeOf = \case
+        Atom Bob        -> pure Person
+        Atom Alice      -> pure Person
+        Atom NewYork    -> pure Place
+        Atom LosAngeles -> pure Place
+        Atom Car        -> pure Thing
+        Atom Owns       -> pure (Person `RightArrow` Sentence `LeftArrow` Thing)
+        Atom LivesIn    ->
+        _ -> mempty
+    parseTerm = \case
+        "bob"         -> pure Bob
+        "alice"       -> pure Alice
+        "new york"    -> pure NewYork
+        "los angeles" -> pure LosAngeles
+        "car"         -> pure Car
+        "owns"        -> pure Owns
+        "lives in"    -> pure LivesIn
+        _             -> mempty
+    interp = id
 ```
 
 Todo
