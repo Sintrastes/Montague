@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue">
 </p>
 
-Montague (named in honor of mathematician and philosopher [Richard Montague](https://en.wikipedia.org/wiki/Richard_Montague)) is a library for non-deterministically parsing natural language expressions into a structured form, so that they can be analyzed, or so that inferences may be made from them.
+Montague (named in honor of mathematician and philosopher [Richard Montague](https://en.wikipedia.org/wiki/Richard_Montague)) is a library and domain specific language for non-deterministically parsing natural language expressions into a structured form, so that they can be analyzed, or so that inferences may be made from them.
 
 It is loosely based on the general ideas of [Montague Semantics](https://plato.stanford.edu/entries/montague-semantics/#ComMonSem), and uses a simple [lambek calculus](https://en.wikipedia.org/wiki/Categorial_grammar) with subtyping, and a lexicon translating from strings of text (possibly nondeterministically) to a term of a particular type of the configured lambek grammar.
 
@@ -45,9 +45,6 @@ Basic Usage
 In order to support the largest amount of use cases, Montague does not perscribe any specific format for it's output, but some example output types might include prolog, datalog, or some other logic programming language clauses. The two core types in Montague are `LambekType t` and `Term a t`, where `t` is a user-defined tye of "base types" 
 to be used in production (such as `noun`, `person`), and `a` is a user-defined type 
 of "atomic terms" reresenting the type of structured output produced by Montague.
-
-
-
 
 For example, some basic definitions of `a` and `t` might include:
 
@@ -105,6 +102,23 @@ instance MontagueSemantics MyAtom MyType (AnnotatedTerm MyAtom MyType) where
         "lives in"    -> pure LivesIn
         _             -> mempty
     interp = id
+```
+
+Domain specific language
+------------------------
+
+Montague provides a domain-specific language (similar to happy or alex) for defining schemas for parsing natural language syntax into structured formated for a specific domain. Schemas can be defined in `.mont` files:
+
+```
+-- example.mont
+
+like, love  --> Like.
+i           --> I.
+killed      --> Killed.
+the         --> The.
+man, person --> Man. 
+with        --> With.
+spoon       --> Spoon.
 ```
 
 Todo
