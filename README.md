@@ -1,4 +1,4 @@
-# montague
+# Montague
 
 <p align="center">
   <img src="https://people.umass.edu/scable/LING797M-FA19/Montague.jpg" width=230/>
@@ -20,4 +20,4 @@ Montague (named in honor of mathematician and philosopher [Richard Montague](htt
 
 It is loosely based on the general ideas of [Montague Semantics](https://plato.stanford.edu/entries/montague-semantics/#ComMonSem), and uses a simple [lambek grammar](https://en.wikipedia.org/wiki/Categorial_grammar) and a lexicon translating from strings of text (possibly nondeterministically) to a term of a particular type of the configured lambek grammer. 
 
-In order to support the largest amount of use cases, montague does not perscribe any specific format for it's output, but some example output types might include prolog, datalog, or some other logic programming language clauses.
+In order to support the largest amount of use cases, Montague does not perscribe any specific format for it's output, but some example output types might include prolog, datalog, or some other logic programming language clauses.
