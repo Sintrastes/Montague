@@ -51,7 +51,36 @@ of "atomic terms" reresenting the type of structured output produced by Montague
 
 For example, some basic definitions of `a` and `t` might include:
 
-...
+```haskell
+data MyTypes =
+    Noun
+  | NounPhrase
+  | Sentence
+  | Person
+  | Place
+  | Thing
+
+data MyAtoms =
+    Bob
+  | Alice
+  | NewYork
+  | LosAngeles
+  | Car
+  | Owns
+  | LivesIn
+```
+
+Given such types, the typeclass `MontagueSemantics a t x` is used
+ to determine an interpretation of `Term a t` into
+ x, where x is the user's target structured output, as opposed to 
+ `Term a t`, which is only used internally by Montague.
+
+```haskell
+class PartialOrd t => MontagueSemantics a t x where
+    typeOf :: a -> t
+    parseTerm :: String -> Tree () [] (Term a t)
+    interp :: AnnotatedTerm a t -> x
+```
 
 Todo
 ----
