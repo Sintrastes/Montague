@@ -20,22 +20,34 @@ Montague (named in honor of mathematician and philosopher [Richard Montague](htt
 
 It is loosely based on the general ideas of [Montague Semantics](https://plato.stanford.edu/entries/montague-semantics/#ComMonSem), and uses a simple [lambek calculus](https://en.wikipedia.org/wiki/Categorial_grammar) with subtyping, and a lexicon translating from strings of text (possibly nondeterministically) to a term of a particular type of the configured lambek grammar.
 
+Inspiration
+-----------
+
+
 This (as far as I know of) novel approach was first formulated in 2018 when I 
  was in grad school studying type theory and categorial grammar. 
  The idea was, rather than having a small number of basic types (such as 
  `noun`, `verb`, `noun phrase`, and `sentence`) combined with the two "lambek arrows"
  `/` and `\` to denote grammatical categories (which allows for nonsense productions
  such as `colorless green ideas sleep furiously`), we could extend this system with subtyping, and
- more apecific semantic categories such as `person <: noun`. Prphibiting such 
+ more apecific semantic categories such as `person <: noun`.
+ 
+ Prohibiting such 
  "nonsense productions" with this idea then both simplifies the process of parsing a 
  sequence of words into a structured representation by pruning the possible 
  search space, as well as facilitates transforming such structured output 
  into a meaningful logical format (for instance, queries in a typed logic programming 
  language). Montague is an attempt to put these ideas in practice.
 
+Basic Usage
+----------- 
+
 In order to support the largest amount of use cases, Montague does not perscribe any specific format for it's output, but some example output types might include prolog, datalog, or some other logic programming language clauses. The two core types in Montague are `LambekType t` and `Term a t`, where `t` is a user-defined tye of "base types" 
 to be used in production (such as `noun`, `person`), and `a` is a user-defined type 
 of "atomic terms" reresenting the type of structured output produced by Montague.
+
+
+
 
 For example, some basic definitions of `a` and `t` might include:
 
