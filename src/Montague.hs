@@ -13,6 +13,7 @@ import Montague.Types
 import Montague.Semantics
 import Data.PartialOrd hiding (nub, (==))
 import Data.Proxy
+import Data.Char
 
 -------- Helper functions ---------
 split :: Char -> String -> [String]
@@ -26,7 +27,7 @@ toTree xs = Node () (fmap Leaf xs)
 -- | Create an annotated term from a lexicon and a string
 annotate :: MontagueSemantics a t x => Proxy a -> String -> NonDet [AnnotatedTerm a t]
 annotate _ xs = do
-    lexes <- mapM parseTerm $ split ' ' xs
+    lexes <- mapM parseTerm $ fmap toLower <$> split ' ' xs
     types <- mapM typeOf lexes
     return $ zipWith Annotated lexes types
 
@@ -64,7 +65,11 @@ reduce xs =
 -- | Get all parses of a string with regard to a lexicon.
 getAllParses :: forall a t x. MontagueSemantics a t x => Proxy a -> String -> [x]
 getAllParses aT xs = nub parses
-  where parses = join $ bfs $ fmap bfs $ fmap reduce $ annotate aT xs 
+  where 
+    parses = join $ bfs $ 
+        fmap bfs $ 
+        fmap reduce $ 
+        annotate aT xs 
 
 -- | Get a single parse of a string with regard to a lexicon.
 getParse :: MontagueSemantics a t x => Proxy a -> String -> Maybe x
