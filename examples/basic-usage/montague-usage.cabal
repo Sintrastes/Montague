@@ -14,9 +14,12 @@ executable montague-basic-usage
       , MultiParamTypeClasses
       , FunctionalDependencies
       , ScopedTypeVariables
+      , FlexibleInstances
+      , TypeApplications
     build-depends:
         base 
       , montague == 0.1.0.0
       , monad-tree
+      , partial-order
     main-is: Main.hs
     default-language: Haskell2010

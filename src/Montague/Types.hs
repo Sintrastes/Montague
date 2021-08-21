@@ -30,11 +30,11 @@ instance Show a => Show (LambekType a) where
 -- parsing a natural language statement, given a type a
 -- of atoms, and a type t of types.
 data Term a t =
-    Atom a (LambekType t)
+    Atom a
   | App (Term a t) [Term a t] deriving(Eq)
 
 instance Show a => Show (Term a t) where
-  show (Atom xs _) = show xs
+  show (Atom xs) = show xs
   show (App x xs) = show x ++ "(" ++ (foldr1 (\x -> \y -> x ++ "," ++ y) (map show xs)) ++ ")"
 
 type MontagueTerm a t = NonDet (Term a t)
@@ -48,7 +48,7 @@ flatten (LeftArrow x y) = [y] ++ flatten x
 -- | Helper function to check if a predicate has been applied.
 isPartialPred :: Term a t -> Bool
 isPartialPred (App _ _)  = True
-isPartialPred (Atom _ _) = False
+isPartialPred (Atom _) = False
 
 -- | Partial function that turns a curried term f(x)(y) into one of the form f(x,y)
 applyPartialTerm (App x xs) y = App x (xs ++ [y])
