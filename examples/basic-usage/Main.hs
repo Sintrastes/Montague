@@ -1,16 +1,44 @@
 
 import Control.Monad.Tree
 import Montague
+import Montague.Types
 
 -- An example basic type to use with a schema.
 data BasicType =
    Sentence
  | Question BasicType
  | Noun
+ | Person
  | ProperNoun
  | Determiner
  | DeterminedNoun
  | UndeterminedNoun deriving(Eq, Show)
+
+data BasicAtom =
+     Nate
+   | Rick
+   | Rachel
+   | Will
+   | Michael
+   | Book
+   | Table
+   | Chair
+   | Happy
+   | Green
+   | Sad
+   | Mad
+   | Mom
+   | Mother
+   | Dad
+   | Father
+   | Dog
+   | Cat
+   | With
+   | Spoon
+   | Is
+
+typeOf :: Term BasicAtom BasicType -> MontagueType BasicType
+typeOf = undefined
 
 adjective :: Tree () LambekType
 adjective = noun `leftArrow` noun
@@ -96,3 +124,6 @@ myLexicon = \case
    "a"       -> noun `leftArrow` noun
    "spoon"   -> noun
    _ -> Node () []
+
+main = do
+   putStrLn "Test"
