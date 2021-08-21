@@ -10,10 +10,18 @@ extra-source-files:
 library
     default-extensions:
         LambdaCase
+      , MultiParamTypeClasses
+      , FunctionalDependencies
+      , ScopedTypeVariables
     exposed-modules:
         Montague
+      , Montague.Semantics
+      , Montague.Types
+      , Montague.Lexicon
+      , Montague.Display
     build-depends:
         base ^>=4.15.0.0
       , monad-tree
+      , partial-order
     hs-source-dirs:   src
     default-language: Haskell2010
