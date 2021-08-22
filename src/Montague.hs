@@ -1,5 +1,7 @@
 
 module Montague (
+  module Montague.Types,
+  module Montague.Semantics,
   getAllParses,
   getParse
 ) where
@@ -11,7 +13,7 @@ import Data.Maybe
 import Data.List
 import Montague.Types
 import Montague.Semantics
-import Data.PartialOrd hiding (nub, (==))
+import Data.PartialOrd hiding (nub, (==), elem)
 import Data.Proxy
 import Data.Char
 
@@ -28,13 +30,12 @@ toTree xs = Node () (fmap Leaf xs)
 annotate :: MontagueSemantics a t x => Proxy a -> String -> NonDet [AnnotatedTerm a t]
 annotate _ xs = do
     lexes <- mapM parseTerm $
-      -- Convert everything into lowercase for consistancy
-      fmap toLower <$> 
-      -- Split into words
-      split ' ' $
-      -- Ignore non-period punctuation.
-      filter (\x -> not $ x `elem` ",;") $ 
-      xs
+        -- Convert everything into lowercase for consistancy
+        fmap (fmap toLower) $ 
+        -- Split into words
+        split ' ' $
+        -- Ignore non-period punctuation.
+        filter (\x -> not $ x `elem` ",;") xs
     types <- mapM typeOf lexes
     return $ zipWith Annotated lexes types
 

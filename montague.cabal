@@ -19,6 +19,7 @@ library
       , Montague.Types
       , Montague.Lexicon
       , Montague.Display
+      , Montague.Autocomplete
     build-depends:
         base ^>=4.15.0.0
       , monad-tree
