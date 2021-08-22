@@ -27,7 +27,14 @@ toTree xs = Node () (fmap Leaf xs)
 -- | Create an annotated term from a lexicon and a string
 annotate :: MontagueSemantics a t x => Proxy a -> String -> NonDet [AnnotatedTerm a t]
 annotate _ xs = do
-    lexes <- mapM parseTerm $ fmap toLower <$> split ' ' xs
+    lexes <- mapM parseTerm $
+      -- Convert everything into lowercase for consistancy
+      fmap toLower <$> 
+      -- Split into words
+      split ' ' $
+      -- Ignore non-period punctuation.
+      filter (\x -> not $ x `elem` ",;") $ 
+      xs
     types <- mapM typeOf lexes
     return $ zipWith Annotated lexes types
 
