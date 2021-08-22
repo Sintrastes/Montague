@@ -130,6 +130,8 @@ beginners/novices are welcome.
 
   * The type system of Montague is pretty simple, and does not support 
    some very important features of montague semantics such as quantifiers.
+  * Indexicals probably deserve specail treatement.
+  * Needs support for associativity.
   * The examples are all in English. Add some more examples in other languages. Particularly 
     interesting to me is the encoding of case-heavy languages like Polish. This may require some more advanced type system features in order to implement.
 
