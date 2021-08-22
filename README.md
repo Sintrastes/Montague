@@ -89,8 +89,10 @@ instance MontagueSemantics MyAtom MyType (AnnotatedTerm MyAtom MyType) where
         Atom NewYork    -> pure $ BasicType Place
         Atom LosAngeles -> pure $ BasicType Place
         Atom Car        -> pure $ BasicType Thing
-        Atom Owns       -> pure $ (BasicType Person) `RightArrow` (BasicType Sentence) `LeftArrow` (BasicType Thing)
-        Atom LivesIn    -> pure $ (BasicType Person) `RightArrow` (BasicType Sentence) `LeftArrow` (BasicType Place)
+        Atom Owns       -> pure $ (BasicType Person) `RightArrow` (BasicType Sentence) 
+                                      `LeftArrow` (BasicType Thing)
+        Atom LivesIn    -> pure $ (BasicType Person) `RightArrow` (BasicType Sentence) 
+                                      `LeftArrow` (BasicType Place)
         _ -> empty
     parseTerm = \case
         "bob"         -> pure $ Atom Bob
