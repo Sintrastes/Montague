@@ -84,33 +84,57 @@ For instance, an example implementation of this is:
 ```haskell
 instance MontagueSemantics MyAtom MyType (AnnotatedTerm MyAtom MyType) where
     typeOf = \case
-        Atom Bob        -> pure Person
-        Atom Alice      -> pure Person
-        Atom NewYork    -> pure Place
-        Atom LosAngeles -> pure Place
-        Atom Car        -> pure Thing
-        Atom Owns       -> pure $ Person `RightArrow` Sentence `LeftArrow` Thing
-        Atom LivesIn    -> pure $ Person `RightArrow` Sentence `LeftArrow` Place
-        _ -> mempty
+        Atom Bob        -> pure $ BasicType Person
+        Atom Alice      -> pure $ BasicType Person
+        Atom NewYork    -> pure $ BasicType Place
+        Atom LosAngeles -> pure $ BasicType Place
+        Atom Car        -> pure $ BasicType Thing
+        Atom Owns       -> pure $ (BasicType Person) `RightArrow` (BasicType Sentence) `LeftArrow` (BasicType Thing)
+        Atom LivesIn    -> pure $ (BasicType Person) `RightArrow` (BasicType Sentence) `LeftArrow` (BasicType Place)
+        _ -> empty
     parseTerm = \case
-        "bob"         -> pure Bob
-        "alice"       -> pure Alice
-        "new york"    -> pure NewYork
-        "los angeles" -> pure LosAngeles
-        "car"         -> pure Car
-        "owns"        -> pure Owns
-        "lives in"    -> pure LivesIn
-        _             -> mempty
+        "bob"         -> pure $ Atom Bob
+        "alice"       -> pure $ Atom Alice
+        "new york"    -> pure $ Atom NewYork
+        "los angeles" -> pure $ Atom LosAngeles
+        "car"         -> pure $ Atom Car
+        "owns"        -> pure $ Atom Owns
+        "lives in"    -> pure $ Atom LivesIn
+        _             -> empty
     interp = id
 ```
 
 Domain specific language
 ------------------------
 
-Montague provides a domain-specific language (similar to happy or alex) for defining schemas for parsing natural language syntax into structured formated for a specific domain. Schemas can be defined in `.mont` files:
+As the above definitions needed in order to implement `MontagueSemantics` is fairly tedious to implement by hand, Montague provides a domain-specific language (similar to happy or alex) for defining schemas for parsing natural language syntax into structured formated for a specific domain. Schemas can be defined in `.mont` files, and are formatted by providing a header section with definitions of types and atoms, followed by a list of sequents denoting which strings map to whics atoms:
 
 ```
--- example.mont
+% example.mont
+% types
+
+MyType =
+    Noun
+  | Sentence
+  | Question
+  | Person
+  | Place
+  | DefiniteNoun
+  | Determiner
+
+Person :< Noun.
+Place :< Noun.
+DefiniteNoun :< Noun.
+Question :< Noun.
+
+% atoms
+
+Nate: Person.
+Berlin: Place.
+Apple: DefiniteNoun.
+Mother: Noun.
+
+% productions
 
 like, love  --> Like.
 i           --> I.
@@ -119,6 +143,20 @@ the         --> The.
 man, person --> Man. 
 with        --> With.
 spoon       --> Spoon.
+```
+
+Given such a file, the template haskell splice
+
+```haskell
+$(montagueSchemaFromFile "example.mont")
+```
+
+Alternatively, the above syntax may be used inline with the splice:
+
+```haskell
+$(loadMontagueSchema [mont|
+    ...
+|])
 ```
 
 Todo
@@ -131,6 +169,7 @@ beginners/novices are welcome.
   * The type system of Montague is pretty simple, and does not support 
    some very important features of montague semantics such as quantifiers.
   * Indexicals probably deserve specail treatement.
+  * Add support for better error reporting.
   * Needs support for associativity.
   * The examples are all in English. Add some more examples in other languages. Particularly 
     interesting to me is the encoding of case-heavy languages like Polish. This may require some more advanced type system features in order to implement.
