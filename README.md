@@ -18,11 +18,10 @@
 
 Montague (named in honor of mathematician and philosopher [Richard Montague](https://en.wikipedia.org/wiki/Richard_Montague)) is a library and domain specific language for non-deterministically parsing natural language expressions into a structured form, so that they can be analyzed, or so that inferences may be made from them.
 
-It is loosely based on the general ideas of [Montague Semantics](https://plato.stanford.edu/entries/montague-semantics/#ComMonSem), and uses a simple [lambek calculus](https://en.wikipedia.org/wiki/Categorial_grammar) with subtyping, and a lexicon translating from strings of text (possibly nondeterministically) to a term of a particular type of the configured lambek grammar.
+It is loosely based on the general ideas of [Montague Semantics](https://plato.stanford.edu/entries/montague-semantics/#ComMonSem), and uses a simple [lambek calculus](https://en.wikipedia.org/wiki/Categorial_grammar) equipped with subtyping, together with a user-provided lexicon translating from strings of text (possibly nondeterministically) to a term of a particular type of the configured lambek grammar.
 
 Inspiration
 -----------
-
 
 This (as far as I know of) novel approach was first formulated in 2018 when I 
  was in grad school studying type theory and categorial grammar. 
