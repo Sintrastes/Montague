@@ -16,7 +16,7 @@
   <img src="https://img.shields.io/badge/License-MIT-blue">
 </p>
 
-Montague (named in honor of mathematician and philosopher [Richard Montague](https://en.wikipedia.org/wiki/Richard_Montague)) is a library for non-deterministically parsing natural language expressions into a structured form, so that they can be analyzed, or so that inferences may be made from them.
+Montague (named in honor of mathematician and philosopher [Richard Montague](https://en.wikipedia.org/wiki/Richard_Montague)) is a library and domain specific language for non-deterministically parsing natural language expressions into a structured form, so that they can be analyzed, or so that inferences may be made from them.
 
 It is loosely based on the general ideas of [Montague Semantics](https://plato.stanford.edu/entries/montague-semantics/#ComMonSem), and uses a simple [lambek calculus](https://en.wikipedia.org/wiki/Categorial_grammar) with subtyping, and a lexicon translating from strings of text (possibly nondeterministically) to a term of a particular type of the configured lambek grammar.
 
@@ -46,13 +46,10 @@ In order to support the largest amount of use cases, Montague does not perscribe
 to be used in production (such as `noun`, `person`), and `a` is a user-defined type 
 of "atomic terms" reresenting the type of structured output produced by Montague.
 
-
-
-
 For example, some basic definitions of `a` and `t` might include:
 
 ```haskell
-data MyTypes =
+data MyType =
     Noun
   | NounPhrase
   | Sentence
@@ -60,7 +57,7 @@ data MyTypes =
   | Place
   | Thing
 
-data MyAtoms =
+data MyAtom =
     Bob
   | Alice
   | NewYork
@@ -76,10 +73,52 @@ Given such types, the typeclass `MontagueSemantics a t x` is used
  `Term a t`, which is only used internally by Montague.
 
 ```haskell
-class PartialOrd t => MontagueSemantics a t x where
-    typeOf :: a -> t
-    parseTerm :: String -> Tree () [] (Term a t)
-    interp :: AnnotatedTerm a t -> x
+class (Eq x, PartialOrd t) => MontagueSemantics a t x | a -> t, a -> x where
+    typeOf    :: Term a t -> MontagueType t
+    parseTerm :: String -> MontagueTerm a t
+    interp    :: AnnotatedTerm a t -> x
+```
+
+For instance, an example implementation of this is:
+
+```haskell
+instance MontagueSemantics MyAtom MyType (AnnotatedTerm MyAtom MyType) where
+    typeOf = \case
+        Atom Bob        -> pure Person
+        Atom Alice      -> pure Person
+        Atom NewYork    -> pure Place
+        Atom LosAngeles -> pure Place
+        Atom Car        -> pure Thing
+        Atom Owns       -> pure $ Person `RightArrow` Sentence `LeftArrow` Thing
+        Atom LivesIn    -> pure $ Person `RightArrow` Sentence `LeftArrow` Place
+        _ -> mempty
+    parseTerm = \case
+        "bob"         -> pure Bob
+        "alice"       -> pure Alice
+        "new york"    -> pure NewYork
+        "los angeles" -> pure LosAngeles
+        "car"         -> pure Car
+        "owns"        -> pure Owns
+        "lives in"    -> pure LivesIn
+        _             -> mempty
+    interp = id
+```
+
+Domain specific language
+------------------------
+
+Montague provides a domain-specific language (similar to happy or alex) for defining schemas for parsing natural language syntax into structured formated for a specific domain. Schemas can be defined in `.mont` files:
+
+```
+-- example.mont
+
+like, love  --> Like.
+i           --> I.
+killed      --> Killed.
+the         --> The.
+man, person --> Man. 
+with        --> With.
+spoon       --> Spoon.
 ```
 
 Todo
