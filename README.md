@@ -37,6 +37,8 @@ This (as far as I know of) novel approach was first formulated in 2018 when I
  search space, as well as facilitates transforming such structured output 
  into a meaningful logical format (for instance, queries in a typed logic programming 
  language). Montague is an attempt to put these ideas in practice.
+ 
+To try it out for yorself, see [montague-reflex](https://github.com/Sintrastes/montague-reflex) for a web and mobile interface for Montague.
 
 Basic Usage
 ----------- 
