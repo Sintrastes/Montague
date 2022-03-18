@@ -119,9 +119,9 @@ parseSomeLexicon (SomeTypeLexicon typeProxy lex) entityDecls productions =
         SomeSymbolList syms ->
             let 
               typeOf = parseTypeOf 
-                  entityDecls
+                  undefined undefined entityDecls
               parseTerm = parseParseTerm 
-                  entityDecls productions
+                  undefined productions
               semantics = MontagueSemantics 
                   typeOf parseTerm id
             in 
@@ -132,11 +132,18 @@ parseSomeLexicon (SomeTypeLexicon typeProxy lex) entityDecls productions =
 getEnumType :: SymbolList ss -> Proxy (ShowableEnum ss)
 getEnumType _ = Proxy
 
-parseTypeOf :: EntityDeclarations -> (Term a t -> MontagueType t)
-parseTypeOf = undefined
+parseTypeOf :: 
+     (String -> Maybe a) 
+  -> (String -> Maybe t) 
+  -> EntityDeclarations 
+  -> (Term a t -> MontagueType t)
+parseTypeOf termParser typeParser decls = undefined
 
-parseParseTerm :: EntityDeclarations -> ProductionDeclarations -> (String -> MontagueTerm a t)
-parseParseTerm = undefined
+parseParseTerm :: 
+     (String -> Maybe a)
+  -> ProductionDeclarations 
+  -> (String -> MontagueTerm a t)
+parseParseTerm termParser decls = undefined
 
 data ShowableType (s :: Symbol) = ShowableType (Proxy s)
 
@@ -157,6 +164,10 @@ data ShowableEnum (ss :: [Symbol]) where
     SEInl  :: (KnownSymbol s, AllKnownSymbols ss) => Proxy s -> Proxy ss -> ShowableEnum (s ': ss)
     SEInr  :: (KnownSymbol s, AllKnownSymbols ss) => Proxy s -> ShowableEnum ss -> ShowableEnum (s ': ss)
 
+-- | Helper function for types parsable from a string.
+class Parsable a where
+  parse :: String -> Maybe a
+
 instance AllKnownSymbols ss => Show (ShowableEnum ss) where
     show (SEInl p _)    = symbolVal p
     show (SEInr _ rest) = show rest
@@ -171,9 +182,16 @@ instance AllKnownSymbols ss => Eq (ShowableEnum ss) where
     (SEInr p1 rest1) == (SEInr p2 rest2) = rest1 == rest2
     _                == _                = False 
 
+
 class AllKnownSymbols (ss :: [Symbol]) where
+  symbolVals :: Proxy ss -> [String]
+
 instance AllKnownSymbols '[] where
-instance (KnownSymbol s, AllKnownSymbols ss) => AllKnownSymbols (s ': ss) where
+  symbolVals _ = []
+
+instance forall s ss. (KnownSymbol s, AllKnownSymbols ss) => AllKnownSymbols (s ': ss) where
+  symbolVals Proxy = symbolVal (Proxy @s) : symbolVals (Proxy @ss)
+
 
 data SomeShowableEnum = forall (ss :: [Symbol]). 
     SomeShowableEnum (ShowableEnum ss)
