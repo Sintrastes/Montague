@@ -1,6 +1,6 @@
 cabal-version:      2.4
 name:               montague
-version:            0.1.0.0
+version:            0.0.1.0
 author:             Nathan Bedell
 synopsis:           Non-deterministic parser for natural languages.
 maintainer:         nbedell@tulane.edu
@@ -13,6 +13,16 @@ library
       , MultiParamTypeClasses
       , FunctionalDependencies
       , ScopedTypeVariables
+      , ExistentialQuantification
+      , DataKinds
+      , TypeFamilies
+      , TypeOperators
+      , TypeApplications
+      , ScopedTypeVariables
+      , FlexibleContexts
+      , FlexibleInstances
+      , RankNTypes
+      , GADTs
     exposed-modules:
         Montague
       , Montague.Semantics
@@ -22,7 +32,10 @@ library
       , Montague.Autocomplete
     build-depends:
         base ^>=4.15.0.0
+      , mtl
+      , text
       , monad-tree
       , partial-order
+      , parsec
     hs-source-dirs:   src
     default-language: Haskell2010
