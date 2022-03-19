@@ -1,5 +1,6 @@
 cabal-version:       >= 1.2
 name:               montague
+build-type:         Simple
 version:            0.0.1.0
 author:             Nathan Bedell
 synopsis:           Non-deterministic parser for natural languages.
@@ -7,6 +8,7 @@ maintainer:         nbedell@tulane.edu
 extra-source-files:
     CHANGELOG.md
     README.md
+
 library
     default-extensions:
         LambdaCase

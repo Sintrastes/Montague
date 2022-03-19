@@ -9,6 +9,7 @@ import GHC.Real (odd)
 import Data.Proxy
 import GHC.TypeLits
 import Data.PartialOrd hiding ((==))
+import Control.Monad
 import Data.Void
 import Data.Function
 import Data.Maybe
@@ -135,7 +136,7 @@ parseTypeOf decls = let
     pairs = decls & 
       map (\(x, y) -> (fromJust $ parse @a, fromJust $ parse @t))
   in \entity ->
-      snd <$> first (\(x, y) -> entity == x) pairs
+      snd <$> find (\(x, y) -> entity == x) pairs
 
 parseParseTerm :: forall a t.
      (Parsable a, Parsable t)
@@ -144,7 +145,9 @@ parseParseTerm :: forall a t.
 parseParseTerm decls = let
     pairs = join $ (\(xs, y) -> (\x -> (x, fromJust $ parse @a y)) <$> xs) <$> decls
   in \input ->
-    Atom <$> snd <$> first (\(x, y) -> input == x) pairs
+    maybe mempty pure $ 
+        Atom <$> snd <$>
+           find (\(x, y) -> input == x) pairs
 
 data ShowableType (s :: Symbol) = ShowableType (Proxy s)
 
