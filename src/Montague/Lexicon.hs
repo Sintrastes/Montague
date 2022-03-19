@@ -134,8 +134,8 @@ parseTypeOf :: forall a t.
   -> (a -> MontagueType t)
 parseTypeOf decls = let
     pairs = decls & 
-      map (\(x, y) -> (fromJust $ parse @a, fromJust $ parse @t))
-  in \entity ->
+      map (\(x, y) -> (fromJust $ parse @a x, fromJust $ parse @t y))
+  in \entity -> maybe mempty pure $
       snd <$> find (\(x, y) -> entity == x) pairs
 
 parseParseTerm :: forall a t.
