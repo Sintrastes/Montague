@@ -12,6 +12,7 @@ import Data.PartialOrd hiding ((==))
 import Data.Void
 import Data.Function
 import Data.Maybe
+import Data.List
 
 ------------- Public API --------------
 
@@ -34,12 +35,12 @@ data ParseError =
   | WordNotFound String
 
 
-data SomeTypeLexicon = forall t. (Show t, Eq t, PartialOrd t) => SomeTypeLexicon {
+data SomeTypeLexicon = forall t. (Show t, Eq t, PartialOrd t, Parsable t) => SomeTypeLexicon {
   typeProxy :: Proxy t,
   parseType :: String -> Maybe t
 }
 
-data SomeLexicon = forall a t. (Eq a, Eq t, PartialOrd t, Show a, Show t) => SomeLexicon {
+data SomeLexicon = forall a t. (Eq a, Eq t, Parsable t, Parsable a, PartialOrd t, Show a, Show t) => SomeLexicon {
   _someLexicon_typeProxy :: Proxy t,
   entityProxy :: Proxy a,
   semantics :: MontagueSemantics a t (AnnotatedTerm a t)
