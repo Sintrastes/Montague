@@ -223,7 +223,7 @@ data SomeShowableEnum = forall (ss :: [Symbol]).
 ------------- Parsers --------------
 
 parseSchema :: String -> Maybe SomeLexicon
-parseSchema input = case Text.Parsec.parse "" input of
+parseSchema input = case Text.Parsec.parse montagueLexicon "" input of
   Right x -> Just x
   Left  x -> Nothing
 
