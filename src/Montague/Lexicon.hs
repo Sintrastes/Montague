@@ -45,18 +45,14 @@ data SomeLexicon = forall a t. (Eq a, Eq t, PartialOrd t, Show a, Show t) => Som
   semantics :: MontagueSemantics a t (AnnotatedTerm a t)
 }
 
--- I think the real way to decode this would be via first parsing
--- the list into a vector.
-
 data SomeSymbolList = forall (ss :: [Symbol]). AllKnownSymbols ss => SomeSymbolList (SymbolList ss)
 
 data SymbolList (ss :: [Symbol]) where
-    SLOne :: KnownSymbol s => Proxy s -> SymbolList '[s]
+    SLNil :: SymbolList '[]
     SLCons :: (KnownSymbol s, AllKnownSymbols ss) => Proxy s -> SymbolList ss -> SymbolList (s ': ss) 
 
 toSymbolList :: [String] -> SomeSymbolList
-toSymbolList [x] = someSymbolVal x & \case
-  SomeSymbol sym -> SomeSymbolList (SLOne sym)
+toSymbolList [] = SomeSymbolList SLNil
 toSymbolList (x:xs) = someSymbolVal x & \case
   SomeSymbol sym -> toSymbolList xs & \case
     SomeSymbolList syms -> 
@@ -118,10 +114,8 @@ parseSomeLexicon (SomeTypeLexicon typeProxy lex) entityDecls productions =
       pure $ entities & \case
         SomeSymbolList syms ->
             let 
-              typeOf = parseTypeOf 
-                  undefined undefined entityDecls
-              parseTerm = parseParseTerm 
-                  undefined productions
+              typeOf = parseTypeOf entityDecls
+              parseTerm = parseParseTerm productions
               semantics = MontagueSemantics 
                   typeOf parseTerm id
             in 
@@ -133,17 +127,23 @@ getEnumType :: SymbolList ss -> Proxy (ShowableEnum ss)
 getEnumType _ = Proxy
 
 parseTypeOf :: 
-     (String -> Maybe a) 
-  -> (String -> Maybe t) 
-  -> EntityDeclarations 
-  -> (Term a t -> MontagueType t)
-parseTypeOf termParser typeParser decls = undefined
+     (Eq a, Parsable t)
+  => EntityDeclarations 
+  -> (a -> MontagueType t)
+parseTypeOf decls = let
+    pairs = decls & 
+      map (\(x, y) -> (parse @a, parse @t))
+  in \entity ->
+      snd <$> first (\(x, y) -> entity == x) pairs
 
 parseParseTerm :: 
-     (String -> Maybe a)
-  -> ProductionDeclarations 
+     (Parsable a, Parsable t)
+  => ProductionDeclarations 
   -> (String -> MontagueTerm a t)
-parseParseTerm termParser decls = undefined
+parseParseTerm decls = let
+    pairs = join $ (\(xs, y) -> (\x -> (x, parse @a y)) <$> xs) <$> decls
+  in \input ->
+    Atom <$> snd <$> first (\(x, y) -> input == x) pairs
 
 data ShowableType (s :: Symbol) = ShowableType (Proxy s)
 
@@ -166,7 +166,7 @@ data ShowableEnum (ss :: [Symbol]) where
 
 -- | Helper function for types parsable from a string.
 class Parsable a where
-  parse :: String -> Maybe a
+  parse :: String -> Maybe a 
 
 instance AllKnownSymbols ss => Show (ShowableEnum ss) where
     show (SEInl p _)    = symbolVal p
@@ -182,16 +182,34 @@ instance AllKnownSymbols ss => Eq (ShowableEnum ss) where
     (SEInr p1 rest1) == (SEInr p2 rest2) = rest1 == rest2
     _                == _                = False 
 
+instance AllKnownSymbols ss => Parsable (ShowableEnum ss) where
+  parse input = let 
+      values = zip (enumValues' (Proxy @ss)) 
+        (symbolVals (Proxy @ss))
+    in fst <$> find (\x -> snd x == input) values
+
+enumValues :: SymbolList ss -> [ShowableEnum ss]
+enumValues x = case x of
+  SLNil -> [] 
+  SLCons sym syms -> 
+    let values  = enumValues syms
+        lastSym = head values 
+    in [SEInl sym Proxy] ++ (SEInr sym <$> values)
+
+enumValues' :: AllKnownSymbols ss => Proxy ss -> [ShowableEnum ss]
+enumValues' x = enumValues $ symbolList x
 
 class AllKnownSymbols (ss :: [Symbol]) where
   symbolVals :: Proxy ss -> [String]
+  symbolList :: Proxy ss -> SymbolList ss
 
 instance AllKnownSymbols '[] where
   symbolVals _ = []
+  symbolList _ = SLNil
 
 instance forall s ss. (KnownSymbol s, AllKnownSymbols ss) => AllKnownSymbols (s ': ss) where
   symbolVals Proxy = symbolVal (Proxy @s) : symbolVals (Proxy @ss)
-
+  symbolList _     = SLCons (Proxy @s) (symbolList (Proxy @ss))
 
 data SomeShowableEnum = forall (ss :: [Symbol]). 
     SomeShowableEnum (ShowableEnum ss)
