@@ -11,7 +11,6 @@ import GHC.TypeLits
 import Data.PartialOrd hiding ((==))
 import Data.Void
 import Data.Function
-import Data.Constraint
 
 ------------- Public API --------------
 
