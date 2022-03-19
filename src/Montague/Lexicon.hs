@@ -11,6 +11,7 @@ import GHC.TypeLits
 import Data.PartialOrd hiding ((==))
 import Data.Void
 import Data.Function
+import Data.Maybe
 
 ------------- Public API --------------
 
@@ -131,16 +132,16 @@ parseTypeOf :: forall a t.
   -> (a -> MontagueType t)
 parseTypeOf decls = let
     pairs = decls & 
-      map (\(x, y) -> (parse @a, parse @t))
+      map (\(x, y) -> (fromJust $ parse @a, fromJust $ parse @t))
   in \entity ->
       snd <$> first (\(x, y) -> entity == x) pairs
 
-parseParseTerm :: 
+parseParseTerm :: forall a t.
      (Parsable a, Parsable t)
   => ProductionDeclarations 
   -> (String -> MontagueTerm a t)
 parseParseTerm decls = let
-    pairs = join $ (\(xs, y) -> (\x -> (x, parse @a y)) <$> xs) <$> decls
+    pairs = join $ (\(xs, y) -> (\x -> (x, fromJust $ parse @a y)) <$> xs) <$> decls
   in \input ->
     Atom <$> snd <$> first (\(x, y) -> input == x) pairs
 
