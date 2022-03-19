@@ -12,5 +12,5 @@ data MontagueSemantics a t x = MontagueSemantics {
 }
 
 typeOf :: MontagueSemantics a t x -> Term t a -> MontagueType t
-typeOf semantics (Atom x) = typeOfAtom x
+typeOf semantics (Atom x) = (typeOfAtom semantics) x
 typeOf semantics _ = undefined
