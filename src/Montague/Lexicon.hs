@@ -277,6 +277,7 @@ productionDeclaration = do
 
 montagueLexicon = do
     types <- typeDeclaration
+    end
     let typeLexicon = parseTypeLexicon types
 
     -- Ignore this for now. This will be used
@@ -284,6 +285,7 @@ montagueLexicon = do
     -- _ <- many subtypeDeclaration
 
     atoms <- many atomDeclaration
+    end
     productions <- many productionDeclaration
 
     -- TODO: Add better error handling here.
