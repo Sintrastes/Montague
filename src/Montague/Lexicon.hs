@@ -222,7 +222,8 @@ data SomeShowableEnum = forall (ss :: [Symbol]).
 
 ------------- Parsers --------------
 
-parseSchema input = Text.Parsec.parse montagueLexicon "" input
+parseSchema input = Text.Parsec.parse 
+    (montagueLexicon  <* eof) "" input
 
 comment = do
     char '%'
