@@ -230,12 +230,12 @@ comment = do
     many (char ' ')
     char '\n'
 
-token :: Parsec String () t -> Parsec String () ()
+token :: Parsec String () t -> Parsec String () t
 token p = do
     many (char ' ' <|> char '\n' <|> comment)
-    _ <- p
+    res <- p
     many (char ' ' <|> char '\n' <|> comment)
-    return ()
+    return res
 
 orT       = token (char '|')
 equals    = token (char '=')
