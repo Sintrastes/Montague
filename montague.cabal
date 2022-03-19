@@ -31,7 +31,7 @@ library
       , Montague.Display
       , Montague.Autocomplete
     build-depends:
-        base ^>=4.15.0.0
+        base
       , mtl
       , text
       , monad-tree
