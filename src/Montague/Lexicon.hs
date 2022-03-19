@@ -5,6 +5,7 @@ import Montague.Types
 import Montague.Semantics
 import Control.Applicative (empty)
 import Text.Parsec hiding (token, parse, ParseError)
+import qualified Text.Parsec (parse)
 import Text.ParserCombinators.Parsec.Char
 import GHC.Real (odd)
 import Data.Proxy
