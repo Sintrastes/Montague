@@ -281,7 +281,7 @@ montagueLexicon = do
 
     -- Ignore this for now. This will be used
     --  when we implement subtyping.
-    _ <- many subtypeDeclaration
+    -- _ <- many subtypeDeclaration
 
     atoms <- many atomDeclaration
     productions <- many productionDeclaration
