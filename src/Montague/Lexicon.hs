@@ -130,7 +130,7 @@ getEnumType :: SymbolList ss -> Proxy (ShowableEnum ss)
 getEnumType _ = Proxy
 
 parseTypeOf :: forall a t.
-     (Eq a, Parsable t)
+     (Eq a, Parsable a, Parsable t)
   => EntityDeclarations 
   -> (a -> MontagueType t)
 parseTypeOf decls = let
