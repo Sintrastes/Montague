@@ -221,6 +221,11 @@ data SomeShowableEnum = forall (ss :: [Symbol]).
 
 ------------- Parsers --------------
 
+parseSchema :: String -> Maybe SomeLexicon
+parseSchema input = case Text.Parsec.parse "" input of
+  Right x -> Just x
+  Left  x -> Nothing
+
 comment = do
     char '%'
     many (char ' ')
