@@ -32,8 +32,6 @@ library
       , Montague.Autocomplete
     build-depends:
         base
-      , mtl
-      , text
       , monad-tree
       , partial-order
       , parsec
