@@ -246,11 +246,11 @@ comma     = token (char ',')
 arrow     = token (string "-->")
 typeToken = token (string "Type")
 
-entityT = do
+entityT = token $ do
     lower
     many alphaNum
 
-textT = many alphaNum
+textT = token $ many alphaNum
 
 typeDeclaration = do
     typeToken
