@@ -136,7 +136,7 @@ parseTypeOf :: forall a t.
 parseTypeOf decls = let
     pairs = decls & 
       map (\(x, y) -> (fromJust $ parse @a x, fromJust $ parse @t y))
-  in \entity -> maybe empty pure $
+  in \entity -> maybe empty pure $ BasicType <$>
       snd <$> find (\(x, y) -> entity == x) pairs
 
 parseParseTerm :: forall a t.
