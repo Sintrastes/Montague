@@ -3,7 +3,7 @@ module Montague.Lexicon where
 
 import Montague.Types
 import Montague.Semantics
-import Text.Parsec hiding (token, ParseError)
+import Text.Parsec hiding (token, parse, ParseError)
 import Text.ParserCombinators.Parsec.Char
 import GHC.Real (odd)
 import Data.Proxy
@@ -125,7 +125,7 @@ parseSomeLexicon (SomeTypeLexicon typeProxy lex) entityDecls productions =
 getEnumType :: SymbolList ss -> Proxy (ShowableEnum ss)
 getEnumType _ = Proxy
 
-parseTypeOf :: 
+parseTypeOf :: forall a t.
      (Eq a, Parsable t)
   => EntityDeclarations 
   -> (a -> MontagueType t)
