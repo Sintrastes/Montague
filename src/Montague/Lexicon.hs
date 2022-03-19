@@ -3,7 +3,7 @@ module Montague.Lexicon where
 
 import Montague.Types
 import Montague.Semantics
-import Control.Applicative
+import Control.Applicative (empty)
 import Text.Parsec hiding (token, parse, ParseError)
 import Text.ParserCombinators.Parsec.Char
 import GHC.Real (odd)
