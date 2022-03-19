@@ -135,7 +135,7 @@ parseTypeOf :: forall a t.
 parseTypeOf decls = let
     pairs = decls & 
       map (\(x, y) -> (fromJust $ parse @a x, fromJust $ parse @t y))
-  in \entity -> maybe mempty pure $
+  in \entity -> maybe empty pure $
       snd <$> find (\(x, y) -> entity == x) pairs
 
 parseParseTerm :: forall a t.
@@ -145,7 +145,7 @@ parseParseTerm :: forall a t.
 parseParseTerm decls = let
     pairs = join $ (\(xs, y) -> (\x -> (x, fromJust $ parse @a y)) <$> xs) <$> decls
   in \input ->
-    maybe mempty pure $ 
+    maybe empty pure $ 
         Atom <$> snd <$>
            find (\(x, y) -> input == x) pairs
 
