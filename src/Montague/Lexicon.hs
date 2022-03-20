@@ -151,21 +151,6 @@ parseParseTerm decls = let
         Atom <$> snd <$>
            find (\(x, y) -> input == x) pairs
 
-data ShowableType (s :: Symbol) = ShowableType (Proxy s)
-
-instance KnownSymbol s => Show (ShowableType s) where
-    show (ShowableType p) = symbolVal p 
-
--- | Alternative Either implementaton with
--- custom Show instance (does not display tags).
-data Sum x y = 
-      Sum1 x
-    | Sum2 y
-
-instance (Show x, Show y) => Show (Sum x y) where
-    show (Sum1 x) = show x
-    show (Sum2 y) = show y
-
 data ShowableEnum (ss :: [Symbol]) where
     SEInl  :: (KnownSymbol s, AllKnownSymbols ss) => Proxy s -> Proxy ss -> ShowableEnum (s ': ss)
     SEInr  :: (KnownSymbol s, AllKnownSymbols ss) => Proxy s -> ShowableEnum ss -> ShowableEnum (s ': ss)
@@ -287,7 +272,7 @@ montagueLexicon = do
     atoms <- many atomDeclaration
     end
     productions <- many productionDeclaration
-
+    end
     -- TODO: Add better error handling here.
     let Right lexicon = parseSomeLexicon typeLexicon atoms productions
 
