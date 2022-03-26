@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase, ScopedTypeVariables, TypeApplications, TypeOperators, DataKinds, GADTs, KindSignatures #-}
 
 module Montague.Lexicon where
 

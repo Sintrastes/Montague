@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase, ScopedTypeVariables, RankNTypes, TypeApplications, TypeOperators, DataKinds, GADTs, KindSignatures #-}
 
 module Montague (
   module Montague.Types,
