@@ -119,13 +119,14 @@ parseSomeLexicon (SomeTypeLexicon typeProxy lex) entityDecls productions =
       pure $ entities & \case
         SomeSymbolList syms ->
             let 
-              typeOf = parseTypeOf entityDecls
-              parseTerm = parseParseTerm productions
+              entityProxy = getEnumType syms
+              typeOf = parseTypeOf typeProxy entityDecls
+              parseTerm = parseParseTerm typeProxy productions
               semantics = MontagueSemantics 
                   typeOf parseTerm id
             in 
-              SomeLexicon (getEnumType syms) 
-                 typeProxy 
+              SomeLexicon typeProxy 
+                 entityProxy
                  semantics
 
 getEnumType :: SymbolList ss -> Proxy (ShowableEnum ss)
@@ -133,9 +134,10 @@ getEnumType _ = Proxy
 
 parseTypeOf :: forall a t.
      (Eq a, Parsable a, Parsable t)
-  => EntityDeclarations 
+  => Proxy t
+  -> EntityDeclarations 
   -> (a -> MontagueType t)
-parseTypeOf decls = let
+parseTypeOf _ decls = let
     pairs = decls & 
       map (\(x, y) -> (fromJust $ parse @a x, fromJust $ parse @t y))
   in \entity -> maybe empty pure $ BasicType <$>
@@ -143,9 +145,10 @@ parseTypeOf decls = let
 
 parseParseTerm :: forall a t.
      (Parsable a, Parsable t)
-  => ProductionDeclarations 
+  => Proxy t
+  -> ProductionDeclarations 
   -> (String -> MontagueTerm a t)
-parseParseTerm decls = let
+parseParseTerm _ decls = let
     pairs = join $ (\(xs, y) -> (\x -> (x, fromJust $ parse @a y)) <$> xs) <$> decls
   in \input ->
     maybe empty pure $ 
@@ -176,7 +179,7 @@ instance AllKnownSymbols ss => Eq (ShowableEnum ss) where
 
 instance AllKnownSymbols ss => Parsable (ShowableEnum ss) where
   parse input = let 
-      values = zip (enumValues' (Proxy @ss)) 
+      values = zip (enumValues' (Proxy @ss))
         (symbolVals (Proxy @ss))
     in fst <$> find (\x -> snd x == input) values
 
@@ -233,8 +236,9 @@ arrow     = token (string "-->")
 typeToken = token (string "Type")
 
 entityT = token $ do
-    lower
-    many alphaNum
+    x <- lower
+    xs <- many alphaNum
+    pure (x:xs)
 
 textT = token $ many alphaNum
 
