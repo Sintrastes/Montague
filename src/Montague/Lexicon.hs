@@ -54,20 +54,20 @@ data SomeSymbolList = forall (ss :: [Symbol]). AllKnownSymbols ss => SomeSymbolL
 
 data SymbolList (ss :: [Symbol]) where
     SLNil :: SymbolList '[]
-    SLCons :: (KnownSymbol s, AllKnownSymbols ss) => Proxy s -> SymbolList ss -> SymbolList (s ': ss) 
+    SLCons :: (KnownSymbol s, AllKnownSymbols ss) => Proxy s -> SymbolList ss -> SymbolList (s ': ss)
 
 toSymbolList :: [String] -> SomeSymbolList
 toSymbolList [] = SomeSymbolList SLNil
 toSymbolList (x:xs) = someSymbolVal x & \case
   SomeSymbol sym -> toSymbolList xs & \case
-    SomeSymbolList syms -> 
+    SomeSymbolList syms ->
       SomeSymbolList $ SLCons sym syms
 
 -- | Helper function to combine the parser for the head of a
 --    ShowableEnum with the parser for the tail of a ShowableEnum
 --    to produce a parser for the whole ShowableEnum.
-combineTypeParsers :: (KnownSymbol x, AllKnownSymbols xs) => (String -> Maybe (ShowableEnum '[x])) 
-  -> (String -> Maybe (ShowableEnum xs)) 
+combineTypeParsers :: (KnownSymbol x, AllKnownSymbols xs) => (String -> Maybe (ShowableEnum '[x]))
+  -> (String -> Maybe (ShowableEnum xs))
   -> (String -> Maybe (ShowableEnum (x ': xs)))
 combineTypeParsers xParser xsParser = \input ->
     case xParser input of
@@ -82,11 +82,11 @@ injectHead (SEInl sym _) = SEInl sym (Proxy @xs)
 injectTail :: forall x xs. (KnownSymbol x, AllKnownSymbols xs) => ShowableEnum xs -> ShowableEnum (x ': xs)
 injectTail e = SEInr (Proxy @x) e
 
-parseTypeLexicon' :: AllKnownSymbols ss => 
-       SymbolList ss 
+parseTypeLexicon' :: AllKnownSymbols ss =>
+       SymbolList ss
     -> (String -> Maybe (ShowableEnum ss))
-parseTypeLexicon' (SLCons sym rest) = 
-    let 
+parseTypeLexicon' (SLCons sym rest) =
+    let
         headParser = \i -> if i == (symbolVal sym)
           then Just $ SEInl sym Proxy
           else Nothing
@@ -105,27 +105,27 @@ type EntityDeclarations =
     [(String, String)]
 
 type ProductionDeclarations =
-    [([String], String)] 
+    [([String], String)]
 
-parseSomeLexicon :: SomeTypeLexicon 
-    -> EntityDeclarations 
+parseSomeLexicon :: SomeTypeLexicon
+    -> EntityDeclarations
     -> ProductionDeclarations
     -> Either ParseError SomeLexicon
-parseSomeLexicon (SomeTypeLexicon typeProxy lex) entityDecls productions = 
-    let entities = entityDecls & 
+parseSomeLexicon (SomeTypeLexicon typeProxy lex) entityDecls productions =
+    let entities = entityDecls &
           fmap fst &
           toSymbolList
     in
       pure $ entities & \case
         SomeSymbolList syms ->
-            let 
+            let
               entityProxy = getEnumType syms
               typeOf = parseTypeOf typeProxy entityDecls
               parseTerm = parseParseTerm typeProxy productions
-              semantics = MontagueSemantics 
+              semantics = MontagueSemantics
                   typeOf parseTerm id
-            in 
-              SomeLexicon typeProxy 
+            in
+              SomeLexicon typeProxy
                  entityProxy
                  semantics
 
@@ -135,10 +135,10 @@ getEnumType _ = Proxy
 parseTypeOf :: forall a t.
      (Eq a, Parsable a, Parsable t)
   => Proxy t
-  -> EntityDeclarations 
+  -> EntityDeclarations
   -> (a -> MontagueType t)
 parseTypeOf _ decls = let
-    pairs = decls & 
+    pairs = decls &
       map (\(x, y) -> (fromJust $ parse @a x, fromJust $ parse @t y))
   in \entity -> maybe empty pure $ BasicType <$>
       snd <$> find (\(x, y) -> entity == x) pairs
@@ -146,12 +146,12 @@ parseTypeOf _ decls = let
 parseParseTerm :: forall a t.
      (Parsable a, Parsable t)
   => Proxy t
-  -> ProductionDeclarations 
+  -> ProductionDeclarations
   -> (String -> MontagueTerm a t)
 parseParseTerm _ decls = let
     pairs = join $ (\(xs, y) -> (\x -> (x, fromJust $ parse @a y)) <$> xs) <$> decls
   in \input ->
-    maybe empty pure $ 
+    maybe empty pure $
         Atom <$> snd <$>
            find (\(x, y) -> input == x) pairs
 
@@ -162,11 +162,11 @@ data ShowableEnum (ss :: [Symbol]) where
 instance AllKnownSymbols ss => Enum (ShowableEnum ss) where
   fromEnum (SEInl _ syms) = length (symbolVals syms)
   fromEnum (SEInr _ x) = 1 + fromEnum x
-  toEnum n = (enumValues' Proxy) !! n
+  toEnum n = enumValues' Proxy !! n
 
 -- | Helper function for types parsable from a string.
 class Parsable a where
-  parse :: String -> Maybe a 
+  parse :: String -> Maybe a
 
 instance AllKnownSymbols ss => Show (ShowableEnum ss) where
     show (SEInl p _)    = symbolVal p
@@ -175,25 +175,25 @@ instance AllKnownSymbols ss => Show (ShowableEnum ss) where
 instance AllKnownSymbols ss => PartialOrd (ShowableEnum ss) where
     (SEInl sym1 _) <= (SEInl sym2 _)       = symbolVal sym1 == symbolVal sym2
     (SEInr p1 rest1) <= (SEInr p2 rest2) = rest1 Data.PartialOrd.<= rest2
-    _             <= _                   = False 
+    _             <= _                   = False
 
 instance AllKnownSymbols ss => Eq (ShowableEnum ss) where
     (SEInl sym1 _)   == (SEInl sym2 _)   = symbolVal sym1 == symbolVal sym2
     (SEInr p1 rest1) == (SEInr p2 rest2) = rest1 == rest2
-    _                == _                = False 
+    _                == _                = False
 
 instance AllKnownSymbols ss => Parsable (ShowableEnum ss) where
-  parse input = let 
+  parse input = let
       values = zip (enumValues' (Proxy @ss))
         (symbolVals (Proxy @ss))
     in fst <$> find (\x -> snd x == input) values
 
 enumValues :: SymbolList ss -> [ShowableEnum ss]
 enumValues x = case x of
-  SLNil -> [] 
-  SLCons sym syms -> 
+  SLNil -> []
+  SLCons sym syms ->
     let values  = enumValues syms
-        lastSym = head values 
+        lastSym = head values
     in [SEInl sym Proxy] ++ (SEInr sym <$> values)
 
 enumValues' :: AllKnownSymbols ss => Proxy ss -> [ShowableEnum ss]
@@ -211,12 +211,12 @@ instance forall s ss. (KnownSymbol s, AllKnownSymbols ss) => AllKnownSymbols (s 
   symbolVals Proxy = symbolVal (Proxy @s) : symbolVals (Proxy @ss)
   symbolList _     = SLCons (Proxy @s) (symbolList (Proxy @ss))
 
-data SomeShowableEnum = forall (ss :: [Symbol]). 
+data SomeShowableEnum = forall (ss :: [Symbol]).
     SomeShowableEnum (ShowableEnum ss)
 
 ------------- Parsers --------------
 
-parseSchema input = Text.Parsec.parse 
+parseSchema input = Text.Parsec.parse
     (montagueLexicon  <* eof) "" input
 
 comment = do
@@ -234,8 +234,8 @@ token p = do
 orT       = token (char '|')
 equals    = token (char '=')
 end       = token (char '.')
-subtypeOf = token (string ":<") 
-typeOfT   = token (char ':') 
+subtypeOf = token (string ":<")
+typeOfT   = token (char ':')
 comma     = token (char ',')
 arrow     = token (string "-->")
 typeToken = token (string "Type")
