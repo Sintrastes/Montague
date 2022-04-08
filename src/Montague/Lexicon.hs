@@ -159,6 +159,11 @@ data ShowableEnum (ss :: [Symbol]) where
     SEInl  :: (KnownSymbol s, AllKnownSymbols ss) => Proxy s -> Proxy ss -> ShowableEnum (s ': ss)
     SEInr  :: (KnownSymbol s, AllKnownSymbols ss) => Proxy s -> ShowableEnum ss -> ShowableEnum (s ': ss)
 
+instance AllKnownSymbols ss => Enum (ShowableEnum ss) where
+  fromEnum (SEInl _ syms) = length (symbolVals syms)
+  fromEnum (SEInr _ x) = 1 + fromEnum x
+  toEnum n = (enumValues' Proxy) !! n
+
 -- | Helper function for types parsable from a string.
 class Parsable a where
   parse :: String -> Maybe a 
