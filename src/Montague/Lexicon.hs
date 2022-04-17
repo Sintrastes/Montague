@@ -19,6 +19,7 @@ import Data.Void
 import Data.Function
 import Data.Maybe
 import Data.List
+import Data.Functor.Identity
 
 ------------- Public API --------------
 
@@ -271,6 +272,9 @@ typesDeclaration = do
     typeToken
     equals
     sepBy1 typeIdentT orT
+
+typeDeclaration :: Proxy t -> ParsecT String () Identity (MontagueType t) 
+typeDeclaration _ = undefined
 
 subtypeDeclaration = do
     x <- typeIdentT
