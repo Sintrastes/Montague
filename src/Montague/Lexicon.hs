@@ -38,6 +38,14 @@ data ParseError =
   -- The given word was not found in the current lexicon
   | WordNotFound String
 
+instance Show ParseError where
+    show = \case
+        TypeNotDefined ms -> case ms of
+            Nothing -> "Type not defined."
+            (Just s) -> "Type not defined. Did you mean " <> s <> "?"
+        InvalidType -> "Type name must be alphanumeric starting with an uppercase letter."
+        WordNotFound s -> "The word " <> s <> " was not found in the current lexicon."
+        
 
 data SomeTypeLexicon = forall t. (Bounded t, Enum t, Show t, Eq t, PartialOrd t, Parsable t) => SomeTypeLexicon {
   typeProxy :: Proxy t,
@@ -294,6 +302,6 @@ montagueLexicon = do
     productions <- many productionDeclaration
     end
     -- TODO: Add better error handling here.
-    let Right lexicon = parseSomeLexicon typeLexicon atoms productions
-
-    return $ lexicon
+    case parseSomeLexicon typeLexicon atoms productions of
+        Left err -> fail $ show err
+        Right lexicon -> return lexicon
