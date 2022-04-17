@@ -241,6 +241,8 @@ subtypeOf = token (string ":<")
 typeOfT   = token (char ':')
 comma     = token (char ',')
 arrow     = token (string "-->")
+rarrow    = token (string "->") <|> token (string "\\")
+larrow    = token (string "<-") <|> token (string "/")
 typeToken = token (string "Type")
 
 entityT = token $ do
