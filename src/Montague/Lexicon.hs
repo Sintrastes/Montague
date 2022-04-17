@@ -256,18 +256,22 @@ rarrow    = token (string "->") <|> token (string "\\")
 larrow    = token (string "<-") <|> token (string "/")
 typeToken = token (string "Type")
 
+entityT :: Parsec String () [Char]
 entityT = token $ do
     x <- lower
     xs <- many alphaNum
     pure (x:xs)
 
+typeIdentT :: Parsec String () [Char]
 typeIdentT = token $ do
     x <- upper
     xs <- many alphaNum
     pure (x:xs)
 
+textT :: Parsec String () [Char]
 textT = token $ many alphaNum
 
+typesDeclaration :: ParsecT String () Identity [[Char]]
 typesDeclaration = do
     typeToken
     equals
@@ -276,24 +280,28 @@ typesDeclaration = do
 typeDeclaration :: Proxy t -> ParsecT String () Identity (MontagueType t) 
 typeDeclaration _ = undefined
 
+subtypeDeclaration :: ParsecT String () Identity ([Char], [Char])
 subtypeDeclaration = do
     x <- typeIdentT
     subtypeOf
     y <- typeIdentT
     return (x, y)
 
+atomDeclaration :: ParsecT String () Identity ([Char], [Char])
 atomDeclaration = do
     x <- entityT
     typeOfT
     y <- typeIdentT
     return (x, y)
 
+productionDeclaration :: ParsecT String () Identity ([[Char]], [Char])
 productionDeclaration = do
     x <- sepBy1 textT comma
     arrow
     y <- entityT
     return (x, y)
 
+montagueLexicon :: ParsecT String () Identity SomeLexicon
 montagueLexicon = do
     types <- typesDeclaration
     end
