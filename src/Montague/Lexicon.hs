@@ -267,7 +267,7 @@ typeIdentT = token $ do
 
 textT = token $ many alphaNum
 
-typeDeclaration = do
+typesDeclaration = do
     typeToken
     equals
     sepBy1 typeIdentT orT
@@ -291,7 +291,7 @@ productionDeclaration = do
     return (x, y)
 
 montagueLexicon = do
-    types <- typeDeclaration
+    types <- typesDeclaration
     end
     let typeLexicon = parseTypeLexicon types
 
