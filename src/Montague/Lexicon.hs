@@ -250,23 +250,28 @@ entityT = token $ do
     xs <- many alphaNum
     pure (x:xs)
 
+typeIdentT = token $ do
+    x <- upper
+    xs <- many alphaNum
+    pure (x:xs)
+
 textT = token $ many alphaNum
 
 typeDeclaration = do
     typeToken
     equals
-    sepBy1 entityT orT
+    sepBy1 typeIdentT orT
 
 subtypeDeclaration = do
-    x <- entityT
+    x <- typeIdentT
     subtypeOf
-    y <- entityT
+    y <- typeIdentT
     return (x, y)
 
 atomDeclaration = do
     x <- entityT
     typeOfT
-    y <- entityT
+    y <- typeIdentT
     return (x, y)
 
 productionDeclaration = do
