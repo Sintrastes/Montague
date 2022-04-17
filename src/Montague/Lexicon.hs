@@ -1,4 +1,6 @@
 {-# LANGUAGE LambdaCase, ScopedTypeVariables, TypeApplications, TypeOperators, DataKinds, GADTs, KindSignatures #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use tuple-section" #-}
 
 module Montague.Lexicon where
 
@@ -45,7 +47,7 @@ instance Show ParseError where
             (Just s) -> "Type not defined. Did you mean " <> s <> "?"
         InvalidType -> "Type name must be alphanumeric starting with an uppercase letter."
         WordNotFound s -> "The word " <> s <> " was not found in the current lexicon."
-        
+
 
 data SomeTypeLexicon = forall t. (Bounded t, Enum t, Show t, Eq t, PartialOrd t, Parsable t) => SomeTypeLexicon {
   typeProxy :: Proxy t,
@@ -77,7 +79,7 @@ toSymbolList (x:xs) = someSymbolVal x & \case
 combineTypeParsers :: (KnownSymbol x, AllKnownSymbols xs) => (String -> Maybe (ShowableEnum '[x]))
   -> (String -> Maybe (ShowableEnum xs))
   -> (String -> Maybe (ShowableEnum (x ': xs)))
-combineTypeParsers xParser xsParser = \input ->
+combineTypeParsers xParser xsParser input =
     case xParser input of
         Just res -> pure $ injectHead res
         Nothing  -> case xsParser input of
@@ -148,7 +150,7 @@ parseTypeOf :: forall a t.
 parseTypeOf _ decls = let
     pairs = decls &
       map (\(x, y) -> (fromJust $ parse @a x, fromJust $ parse @t y))
-  in \entity -> maybe empty pure $ BasicType <$>
+  in \entity -> maybe empty pure $ BasicType .
       snd <$> find (\(x, y) -> entity == x) pairs
 
 parseParseTerm :: forall a t.
@@ -157,10 +159,10 @@ parseParseTerm :: forall a t.
   -> ProductionDeclarations
   -> (String -> MontagueTerm a t)
 parseParseTerm _ decls = let
-    pairs = join $ (\(xs, y) -> (\x -> (x, fromJust $ parse @a y)) <$> xs) <$> decls
+    pairs = (\(xs, y) -> (\x -> (x, fromJust $ parse @a y)) <$> xs) =<< decls
   in \input ->
     maybe empty pure $
-        Atom <$> snd <$>
+        Atom . snd <$>
            find (\(x, y) -> input == x) pairs
 
 data ShowableEnum (ss :: [Symbol]) where
@@ -168,7 +170,7 @@ data ShowableEnum (ss :: [Symbol]) where
     SEInr  :: (KnownSymbol s, AllKnownSymbols ss) => Proxy s -> ShowableEnum ss -> ShowableEnum (s ': ss)
 
 instance AllKnownSymbols ss => Enum (ShowableEnum ss) where
-    fromEnum x = fromJust $ elemIndex x (enumValues' Proxy)  
+    fromEnum x = fromJust $ elemIndex x (enumValues' Proxy)
     toEnum   n = enumValues' Proxy !! n
 
 instance AllKnownSymbols ss => Bounded (ShowableEnum ss) where
@@ -205,7 +207,7 @@ enumValues x = case x of
   SLCons sym syms ->
     let values  = enumValues syms
         lastSym = head values
-    in [SEInl sym Proxy] ++ (SEInr sym <$> values)
+    in SEInl sym Proxy : (SEInr sym <$> values)
 
 enumValues' :: AllKnownSymbols ss => Proxy ss -> [ShowableEnum ss]
 enumValues' x = enumValues $ symbolList x
@@ -227,8 +229,8 @@ data SomeShowableEnum = forall (ss :: [Symbol]).
 
 ------------- Parsers --------------
 
-parseSchema input = Text.Parsec.parse
-    (montagueLexicon  <* eof) "" input
+parseSchema = Text.Parsec.parse
+    (montagueLexicon  <* eof) ""
 
 comment = do
     char '%'
