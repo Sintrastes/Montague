@@ -280,11 +280,11 @@ typesDeclaration = do
     equals
     sepBy1 typeIdentT orT
 
-typeDeclaration :: Proxy t -> ParsecT String () Identity (MontagueType t) 
-typeDeclaration _ = undefined
+typeDeclaration :: (String -> Maybe t) -> ParsecT String () Identity (MontagueType t) 
+typeDeclaration parse = atomicTypeExpr parse <|> parens (typeExpr parse)
 
 typeExpr :: (String -> Maybe t) -> ParsecT String () Identity (MontagueType t) 
-typeExpr parse = chainl1 (typeDeclaration Proxy) typeOperator
+typeExpr parse = chainl1 (typeDeclaration parse) typeOperator
 
 typeOperator :: ParsecT String () Identity (MontagueType t -> MontagueType t -> MontagueType t) 
 typeOperator = 
