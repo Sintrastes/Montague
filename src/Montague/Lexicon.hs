@@ -272,6 +272,8 @@ typeIdentT = token $ do
 textT :: Parsec String () [Char]
 textT = token $ many alphaNum
 
+parens = between (token $ char '(') (token $ char ')')
+
 typesDeclaration :: ParsecT String () Identity [[Char]]
 typesDeclaration = do
     typeToken
