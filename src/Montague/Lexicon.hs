@@ -6,8 +6,7 @@ module Montague.Lexicon where
 
 import Montague.Types
 import Montague.Semantics
-import Control.Applicative (empty)
-import Text.Parsec hiding (token, parse, ParseError)
+import Text.Parsec hiding (token, parse, ParseError, many, (<|>))
 import qualified Text.Parsec (parse)
 import Text.ParserCombinators.Parsec.Char
 import GHC.Real (odd)
@@ -20,6 +19,8 @@ import Data.Function
 import Data.Maybe
 import Data.List
 import Data.Functor.Identity
+import Control.Monad
+import Control.Applicative
 
 ------------- Public API --------------
 
@@ -279,6 +280,22 @@ typesDeclaration = do
 
 typeDeclaration :: Proxy t -> ParsecT String () Identity (MontagueType t) 
 typeDeclaration _ = undefined
+
+typeExpr :: (String -> Maybe t) -> ParsecT String () Identity (MontagueType t) 
+typeExpr parse = undefined
+
+typeOperator :: ParsecT String () Identity (MontagueType t -> MontagueType t -> MontagueType t) 
+typeOperator = 
+  (leftArrow  <$ larrow) <|>
+  (rightArrow <$ rarrow) <|>
+  ((<|>) <$ orT)
+
+atomicTypeExpr :: (String -> Maybe t) -> ParsecT String () Identity (MontagueType t) 
+atomicTypeExpr parse = do
+    id <- typeIdentT
+    case parse id of
+        Nothing -> fail $ "Could not parse " <> id <> " as a type."
+        Just t  -> pure $ pure $ BasicType t
 
 subtypeDeclaration :: ParsecT String () Identity ([Char], [Char])
 subtypeDeclaration = do
