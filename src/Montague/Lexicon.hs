@@ -282,7 +282,7 @@ typeDeclaration :: Proxy t -> ParsecT String () Identity (MontagueType t)
 typeDeclaration _ = undefined
 
 typeExpr :: (String -> Maybe t) -> ParsecT String () Identity (MontagueType t) 
-typeExpr parse = undefined
+typeExpr parse = chainl1 (typeDeclaration Proxy) typeOperator
 
 typeOperator :: ParsecT String () Identity (MontagueType t -> MontagueType t -> MontagueType t) 
 typeOperator = 
