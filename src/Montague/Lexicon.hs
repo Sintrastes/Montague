@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, ScopedTypeVariables, TypeApplications, TypeOperators, DataKinds, GADTs, KindSignatures #-}
+{-# LANGUAGE LambdaCase, PartialTypeSignatures, ScopedTypeVariables, TypeApplications, TypeOperators, DataKinds, GADTs, KindSignatures #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use tuple-section" #-}
 
@@ -6,7 +6,18 @@ module Montague.Lexicon where
 
 import Montague.Types
 import Montague.Semantics
-import Text.Parsec hiding (token, parse, ParseError, many, (<|>))
+import Text.Parsec
+    ( alphaNum,
+      char,
+      lower,
+      string,
+      upper,
+      between,
+      chainl1,
+      eof,
+      sepBy1,
+      Parsec,
+      ParsecT )
 import qualified Text.Parsec (parse)
 import Text.ParserCombinators.Parsec.Char
 import GHC.Real (odd)
@@ -113,17 +124,17 @@ parseTypeLexicon types = types & toSymbolList & \case
     (SomeSymbolList syms) -> SomeTypeLexicon Proxy $ \i ->
         parseTypeLexicon' syms i
 
-type EntityDeclarations =
-    [(String, String)]
+type EntityDeclarations t =
+    [(String, MontagueType t)]
 
 type ProductionDeclarations =
     [([String], String)]
 
-parseSomeLexicon :: SomeTypeLexicon
-    -> EntityDeclarations
+parseSomeLexicon :: _ => (String -> Maybe t)
+    -> EntityDeclarations t
     -> ProductionDeclarations
     -> Either ParseError SomeLexicon
-parseSomeLexicon (SomeTypeLexicon typeProxy lex) entityDecls productions =
+parseSomeLexicon lex entityDecls productions =
     let entities = entityDecls &
           fmap fst &
           toSymbolList
@@ -132,12 +143,12 @@ parseSomeLexicon (SomeTypeLexicon typeProxy lex) entityDecls productions =
         SomeSymbolList syms ->
             let
               entityProxy = getEnumType syms
-              typeOf = parseTypeOf typeProxy entityDecls
-              parseTerm = parseParseTerm typeProxy productions
+              typeOf = parseTypeOf Proxy entityDecls
+              parseTerm = parseParseTerm Proxy productions
               semantics = MontagueSemantics
                   typeOf parseTerm id
             in
-              SomeLexicon typeProxy
+              SomeLexicon Proxy
                  entityProxy
                  semantics
 
@@ -147,13 +158,13 @@ getEnumType _ = Proxy
 parseTypeOf :: forall a t.
      (Eq a, Parsable a, Parsable t)
   => Proxy t
-  -> EntityDeclarations
+  -> EntityDeclarations t
   -> (a -> MontagueType t)
 parseTypeOf _ decls = let
     pairs = decls &
-      map (\(x, y) -> (fromJust $ parse @a x, fromJust $ parse @t y))
-  in \entity -> maybe empty pure $ BasicType .
-      snd <$> find (\(x, y) -> entity == x) pairs
+      map (\(x, y) -> (fromJust $ parse @a x, y))
+  in \entity -> maybe empty snd 
+        (find (\(x, y) -> entity == x) pairs)
 
 parseParseTerm :: forall a t.
      (Parsable a, Parsable t)
@@ -280,40 +291,40 @@ typesDeclaration = do
     equals
     sepBy1 typeIdentT orT
 
-typeDeclaration :: (String -> Maybe t) -> ParsecT String () Identity (MontagueType t) 
+typeDeclaration :: (String -> Maybe t) -> ParsecT String () Identity (MontagueType t)
 typeDeclaration parse = atomicTypeExpr parse <|> parens (typeExpr parse)
 
-typeExpr :: (String -> Maybe t) -> ParsecT String () Identity (MontagueType t) 
+typeExpr :: (String -> Maybe t) -> ParsecT String () Identity (MontagueType t)
 typeExpr parse = chainl1 (typeDeclaration parse) typeOperator
 
-typeOperator :: ParsecT String () Identity (MontagueType t -> MontagueType t -> MontagueType t) 
-typeOperator = 
+typeOperator :: ParsecT String () Identity (MontagueType t -> MontagueType t -> MontagueType t)
+typeOperator =
   (leftArrow  <$ larrow) <|>
   (rightArrow <$ rarrow) <|>
   ((<|>) <$ orT)
 
-atomicTypeExpr :: (String -> Maybe t) -> ParsecT String () Identity (MontagueType t) 
+atomicTypeExpr :: (String -> Maybe t) -> ParsecT String () Identity (MontagueType t)
 atomicTypeExpr parse = do
     id <- typeIdentT
     case parse id of
         Nothing -> fail $ "Could not parse " <> id <> " as a type."
         Just t  -> pure $ pure $ BasicType t
 
-subtypeDeclaration :: ParsecT String () Identity ([Char], [Char])
+subtypeDeclaration :: ParsecT String () Identity (String, String)
 subtypeDeclaration = do
     x <- typeIdentT
     subtypeOf
     y <- typeIdentT
     return (x, y)
 
-atomDeclaration :: ParsecT String () Identity ([Char], [Char])
-atomDeclaration = do
+atomDeclaration :: (String -> Maybe t) ->  ParsecT String () Identity (String, MontagueType t)
+atomDeclaration parse = do
     x <- entityT
     typeOfT
-    y <- typeIdentT
+    y <- typeExpr parse
     return (x, y)
 
-productionDeclaration :: ParsecT String () Identity ([[Char]], [Char])
+productionDeclaration :: ParsecT String () Identity ([String], String)
 productionDeclaration = do
     x <- sepBy1 textT comma
     arrow
@@ -330,11 +341,12 @@ montagueLexicon = do
     --  when we implement subtyping.
     -- _ <- many subtypeDeclaration
 
-    atoms <- many atomDeclaration
-    end
-    productions <- many productionDeclaration
-    end
-    -- TODO: Add better error handling here.
-    case parseSomeLexicon typeLexicon atoms productions of
-        Left err -> fail $ show err
-        Right lexicon -> return lexicon
+    case typeLexicon of
+        SomeTypeLexicon _ parse -> do
+            atoms <- many $ atomDeclaration parse
+            end
+            productions <- many productionDeclaration
+            end
+            case parseSomeLexicon parse atoms productions of
+                Left err -> fail $ show err
+                Right lexicon -> return lexicon
