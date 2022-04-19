@@ -22,8 +22,8 @@ instance PartialOrd t => PartialOrd (LambekType t) where
 type MontagueType t = NonDet (LambekType t)
 
 instance Show a => Show (LambekType a) where
-  show (RightArrow x y) = "(" ++ show x ++ "->" ++ show y ++ ")"
-  show (LeftArrow x y)  = "(" ++ show x ++ "<-" ++ show y ++ ")"
+  show (RightArrow x y) = "(" ++ show x ++ " → " ++ show y ++ ")"
+  show (LeftArrow x y)  = "(" ++ show x ++ " ← " ++ show y ++ ")"
   show (BasicType x) = show x
 
 -- | Data type for a generic typed term returned as the result of
