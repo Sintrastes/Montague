@@ -246,7 +246,7 @@ parseSchema = Text.Parsec.parse
     (montagueLexicon  <* eof) ""
 
 comment = do
-    char '%'
+    token $ string "--"
     many (char ' ')
     char '\n'
 
