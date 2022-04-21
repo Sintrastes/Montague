@@ -125,7 +125,7 @@ parseTypeLexicon types = types & toSymbolList & \case
         parseTypeLexicon' syms i
 
 type EntityDeclarations t =
-    [(String, MontagueType t)]
+    [DocumentedEntity String t]
 
 type ProductionDeclarations =
     [([String], String)]
@@ -136,7 +136,7 @@ parseSomeLexicon :: _ => (String -> Maybe t)
     -> Either ParseError SomeLexicon
 parseSomeLexicon lex entityDecls productions =
     let entities = entityDecls &
-          fmap fst &
+          fmap entity &
           toSymbolList
     in
       pure $ entities & \case
@@ -162,7 +162,7 @@ parseTypeOf :: forall a t.
   -> (a -> MontagueType t)
 parseTypeOf _ decls = let
     pairs = decls &
-      map (\(x, y) -> (fromJust $ parse @a x, y))
+      map (\(DocumentedEntity _ x y) -> (fromJust $ parse @a x, y))
   in \entity -> maybe empty snd 
         (find (\(x, y) -> entity == x) pairs)
 
@@ -278,7 +278,11 @@ entityT = token $ do
     xs <- many alphaNum
     pure (x:xs)
 
-data DocumentedEntity a t = DocumentedEntity String a (MontagueType t)
+data DocumentedEntity a t = DocumentedEntity {
+  entityName :: String,
+  entity :: a,
+  entityType :: MontagueType t
+}
 
 typeIdentT :: Parsec String () [Char]
 typeIdentT = token $ do
@@ -355,7 +359,7 @@ montagueLexicon = do
 
     case typeLexicon of
         SomeTypeLexicon _ parse -> do
-            atoms <- many $ atomDeclaration parse
+            atoms <- many $ documentedEntity parse
             end
             productions <- many productionDeclaration
             end
