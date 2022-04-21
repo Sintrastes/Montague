@@ -278,6 +278,8 @@ entityT = token $ do
     xs <- many alphaNum
     pure (x:xs)
 
+data DocumentedEntity a t = DocumentedEntity String a (MontagueType t)
+
 typeIdentT :: Parsec String () [Char]
 typeIdentT = token $ do
     x <- upper
@@ -327,6 +329,12 @@ atomDeclaration parse = do
     typeOfT
     y <- typeExpr parse
     return (x, y)
+
+documentedEntity :: (String -> Maybe t) -> Parsec String () (DocumentedEntity String t)
+documentedEntity parse = do
+    docs <- docString
+    (entity, typ) <- atomDeclaration parse
+    pure $ DocumentedEntity docs entity typ
 
 productionDeclaration :: ParsecT String () Identity ([String], String)
 productionDeclaration = do
