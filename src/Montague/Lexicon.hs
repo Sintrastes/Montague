@@ -17,7 +17,7 @@ import Text.Parsec
       eof,
       sepBy1,
       Parsec,
-      ParsecT )
+      ParsecT, try, manyTill )
 import qualified Text.Parsec (parse)
 import Text.ParserCombinators.Parsec.Char
 import GHC.Real (odd)
@@ -247,14 +247,18 @@ parseSchema = Text.Parsec.parse
 
 comment = do
     token $ string "--"
-    many (char ' ')
-    char '\n'
+    manyTill anyChar (try $ char '\n')
+
+docString = do
+    token $ string "--"
+    token $ char '|'
+    manyTill anyChar (try $ char '\n')
 
 token :: Parsec String () t -> Parsec String () t
 token p = do
-    many (char ' ' <|> char '\n' <|> comment)
+    many (char ' ' <|> char '\n' >> pure () <|> (comment >> pure ()))
     res <- p
-    many (char ' ' <|> char '\n' <|> comment)
+    many (char ' ' <|> char '\n' >> pure () <|> (comment >> pure ()))
     return res
 
 orT       = token (char '|')
