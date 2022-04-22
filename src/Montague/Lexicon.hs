@@ -17,7 +17,7 @@ import Text.Parsec
       eof,
       sepBy1,
       Parsec,
-      ParsecT, try, manyTill )
+      ParsecT, try, manyTill, sepBy )
 import qualified Text.Parsec (parse)
 import Text.ParserCombinators.Parsec.Char
 import GHC.Real (odd)
@@ -248,6 +248,7 @@ parseSchema = Text.Parsec.parse
 comment = do
     token $ string "--"
     manyTill anyChar (try $ char '\n')
+    char '\n'
 
 docString = do
     token $ string "--"
@@ -256,9 +257,9 @@ docString = do
 
 token :: Parsec String () t -> Parsec String () t
 token p = do
-    many (char ' ' <|> char '\n' >> pure () <|> (comment >> pure ()))
+    many (try (char ' ' >> pure ()) <|> (char '\n' >> pure ()))
     res <- p
-    many (char ' ' <|> char '\n' >> pure () <|> (comment >> pure ()))
+    many (try (char ' ' >> pure ()) <|> (char '\n' >> pure ()))
     return res
 
 orT       = token (char '|')
@@ -268,8 +269,8 @@ subtypeOf = token (string ":<")
 typeOfT   = token (char ':')
 comma     = token (char ',')
 arrow     = token (string "-->")
-rarrow    = token (string "->") <|> token (string "\\")
-larrow    = token (string "<-") <|> token (string "/")
+rarrow    = try (token (string "->")) <|> token (string "\\")
+larrow    = try (token (string "<-")) <|> token (string "/")
 typeToken = token (string "Type")
 
 entityT :: Parsec String () [Char]
@@ -338,6 +339,7 @@ documentedEntity :: (String -> Maybe t) -> Parsec String () (DocumentedEntity St
 documentedEntity parse = do
     docs <- docString
     (entity, typ) <- atomDeclaration parse
+    end
     pure $ DocumentedEntity docs entity typ
 
 productionDeclaration :: ParsecT String () Identity ([String], String)
@@ -345,6 +347,7 @@ productionDeclaration = do
     x <- sepBy1 textT comma
     arrow
     y <- entityT
+    end
     return (x, y)
 
 montagueLexicon :: ParsecT String () Identity SomeLexicon
@@ -359,10 +362,9 @@ montagueLexicon = do
 
     case typeLexicon of
         SomeTypeLexicon _ parse -> do
-            atoms <- many $ documentedEntity parse
-            end
+            atoms <- many (documentedEntity parse)
             productions <- many productionDeclaration
-            end
+            
             case parseSomeLexicon parse atoms productions of
                 Left err -> fail $ show err
                 Right lexicon -> return lexicon
