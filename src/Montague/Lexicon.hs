@@ -70,6 +70,7 @@ data SomeTypeLexicon = forall t. (Bounded t, Enum t, Show t, Eq t, PartialOrd t,
 data SomeLexicon = forall a t. (Bounded a, Bounded t, Enum a, Enum t, Eq a, Eq t, Parsable t, Parsable a, PartialOrd t, Show a, Show t) => SomeLexicon {
   _someLexicon_typeProxy :: Proxy t,
   entityProxy :: Proxy a,
+  getDocs :: a -> String,
   semantics :: MontagueSemantics a t (AnnotatedTerm a t)
 }
 
@@ -150,6 +151,8 @@ parseSomeLexicon lex entityDecls productions =
             in
               SomeLexicon Proxy
                  entityProxy
+                 (\ent -> maybe "" entityDocs $ 
+                    find (\x -> entity x == show ent) entityDecls)
                  semantics
 
 getEnumType :: SymbolList ss -> Proxy (ShowableEnum ss)
@@ -163,7 +166,7 @@ parseTypeOf :: forall a t.
 parseTypeOf _ decls = let
     pairs = decls &
       map (\(DocumentedEntity _ x y) -> (fromJust $ parse @a x, y))
-  in \entity -> maybe empty snd 
+  in \entity -> maybe empty snd
         (find (\(x, y) -> entity == x) pairs)
 
 parseParseTerm :: forall a t.
@@ -280,7 +283,7 @@ entityT = token $ do
     pure (x:xs)
 
 data DocumentedEntity a t = DocumentedEntity {
-  entityName :: String,
+  entityDocs :: String,
   entity :: a,
   entityType :: MontagueType t
 }
@@ -364,7 +367,7 @@ montagueLexicon = do
         SomeTypeLexicon _ parse -> do
             atoms <- many (documentedEntity parse)
             productions <- many productionDeclaration
-            
+
             case parseSomeLexicon parse atoms productions of
                 Left err -> fail $ show err
                 Right lexicon -> return lexicon
