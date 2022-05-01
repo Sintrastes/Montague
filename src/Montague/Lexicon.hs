@@ -67,6 +67,11 @@ data SomeTypeLexicon = forall t. (Bounded t, Enum t, Show t, Eq t, PartialOrd t,
   parseType :: String -> Maybe t
 }
 
+instance Show SomeTypeLexicon where
+    show (SomeTypeLexicon pT _) = "Type = \n    " ++
+      intercalate "\n  | " (map show $ allEnums pT) ++
+      "."
+
 data SomeLexicon = forall a t. (Bounded a, Bounded t, Enum a, Enum t, Eq a, Eq t, Parsable t, Parsable a, PartialOrd t, Show a, Show t) => SomeLexicon {
   _someLexicon_typeProxy :: Proxy t,
   entityProxy :: Proxy a,
@@ -151,7 +156,7 @@ parseSomeLexicon lex entityDecls productions =
             in
               SomeLexicon Proxy
                  entityProxy
-                 (\ent -> maybe "" entityDocs $ 
+                 (\ent -> maybe "" entityDocs $
                     find (\x -> entity x == show ent) entityDecls)
                  semantics
 
@@ -227,6 +232,9 @@ enumValues x = case x of
 
 enumValues' :: AllKnownSymbols ss => Proxy ss -> [ShowableEnum ss]
 enumValues' x = enumValues $ symbolList x
+
+allEnums :: (Enum t, Bounded t) => Proxy t -> [t]
+allEnums _ = [minBound..maxBound]
 
 class AllKnownSymbols (ss :: [Symbol]) where
   symbolVals :: Proxy ss -> [String]
