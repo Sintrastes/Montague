@@ -89,8 +89,8 @@ getParse semantics aT xs = listToMaybe $ getAllParses semantics aT xs
 
 -- | Get a single parse of a string with regard to some explicitly passed lexicon.
 getParseFromLexicon :: SomeLexicon -> (forall a t. (Show a, Show t) => AnnotatedTerm a t -> r) -> String -> Maybe r
-getParseFromLexicon (SomeLexicon _ aT _ semantics) f input = f <$> getParse semantics aT input
+getParseFromLexicon (SomeLexicon _ aT _ _ semantics) f input = f <$> getParse semantics aT input
 
 -- | Get all parses of a string with regard to a lexicon.
 getAllParsesFromLexicon :: SomeLexicon -> (forall a t. (Show a, Show t) => AnnotatedTerm a t -> r) -> String -> [r]
-getAllParsesFromLexicon (SomeLexicon _ aT _ semantics) f input = f <$> getAllParses semantics aT input
+getAllParsesFromLexicon (SomeLexicon _ aT _ _ semantics) f input = f <$> getAllParses semantics aT input

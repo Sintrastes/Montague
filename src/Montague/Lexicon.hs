@@ -32,6 +32,7 @@ import Data.List
 import Data.Functor.Identity
 import Control.Monad
 import Control.Applicative
+import Control.Monad.Tree (bfs)
 
 ------------- Public API --------------
 
@@ -76,8 +77,23 @@ data SomeLexicon = forall a t. (Bounded a, Bounded t, Enum a, Enum t, Eq a, Eq t
   _someLexicon_typeProxy :: Proxy t,
   entityProxy :: Proxy a,
   getDocs :: a -> String,
+  productionDeclarations :: ProductionDeclarations,
   semantics :: MontagueSemantics a t (AnnotatedTerm a t)
 }
+
+
+instance Show SomeLexicon where
+    show (SomeLexicon pT pE getDocs productionDeclarations semantics) = "Type = \n    " ++
+      intercalate "\n  | " (map show $ allEnums pT) ++
+          ".\n\n" ++
+      intercalate "\n"
+          (map (\x -> "-- | " ++ getDocs x ++ "\n" ++ 
+                    show x ++ ": " ++ 
+                    intercalate "|" (map show $ bfs $ typeOfAtom semantics x) ++ "."
+              ) (allEnums pE)) ++ "\n\n" ++
+      intercalate "\n"
+          (map (\(xs, y) -> intercalate ", " xs ++ "-->" ++ y ++ ".") 
+              productionDeclarations)
 
 data SomeSymbolList = forall (ss :: [Symbol]). AllKnownSymbols ss => SomeSymbolList (SymbolList ss)
 
@@ -158,6 +174,7 @@ parseSomeLexicon lex entityDecls productions =
                  entityProxy
                  (\ent -> maybe "" entityDocs $
                     find (\x -> entity x == show ent) entityDecls)
+                 productions
                  semantics
 
 getEnumType :: SymbolList ss -> Proxy (ShowableEnum ss)
