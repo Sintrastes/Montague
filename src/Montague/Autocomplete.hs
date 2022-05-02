@@ -13,7 +13,7 @@ import Control.Monad
 
 -- | Take a term, and return a list of possible atoms 
 -- that could be added to the right to produce a new production.
-getAutocomplete :: forall a t. (Eq t, Enum a, Bounded a) => MontagueSemantics a t x -> MontagueTerm a t -> [a]
+getAutocomplete :: forall a t x. (Eq t, Enum a, Bounded a) => MontagueSemantics a t x -> MontagueTerm a t -> [a]
 getAutocomplete semantics current = let t = typeOf semantics <$> current in join $ bfs $
   -- look to see if the type has a 
   -- left-facing arrow at the rightmost position.
