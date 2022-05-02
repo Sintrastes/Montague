@@ -30,7 +30,6 @@ import Data.Function
 import Data.Maybe
 import Data.List
 import Data.Functor.Identity
-import Control.Monad
 import Control.Applicative
 import Control.Monad.Tree (bfs)
 
@@ -87,12 +86,12 @@ instance Show SomeLexicon where
       intercalate "\n  | " (map show $ allEnums pT) ++
           ".\n\n" ++
       intercalate "\n"
-          (map (\x -> "-- | " ++ getDocs x ++ "\n" ++ 
-                    show x ++ ": " ++ 
+          (map (\x -> "-- | " ++ getDocs x ++ "\n" ++
+                    show x ++ ": " ++
                     intercalate "|" (map show $ bfs $ typeOfAtom semantics x) ++ "."
               ) (allEnums pE)) ++ "\n\n" ++
       intercalate "\n"
-          (map (\(xs, y) -> intercalate ", " xs ++ "-->" ++ y ++ ".") 
+          (map (\(xs, y) -> intercalate ", " xs ++ "-->" ++ y ++ ".")
               productionDeclarations)
 
 data SomeSymbolList = forall (ss :: [Symbol]). AllKnownSymbols ss => SomeSymbolList (SymbolList ss)

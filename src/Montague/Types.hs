@@ -35,15 +35,15 @@ data Term a t =
 
 instance Show a => Show (Term a t) where
   show (Atom xs) = show xs
-  show (App x xs) = show x ++ "(" ++ (foldr1 (\x -> \y -> x ++ "," ++ y) (map show xs)) ++ ")"
+  show (App x xs) = show x ++ "(" ++ foldr1 (\ x y -> x ++ "," ++ y) (map show xs) ++ ")"
 
 type MontagueTerm a t = NonDet (Term a t)
 
 -- | Helper function for calculating the types of lambek terms
 flatten :: LambekType a -> [LambekType a]
 flatten (BasicType s) = [BasicType s]
-flatten (RightArrow x y) = [x] ++ flatten y
-flatten (LeftArrow x y) = [y] ++ flatten x
+flatten (RightArrow x y) = x : flatten y
+flatten (LeftArrow x y) = y : flatten x
 
 -- | Helper function to check if a predicate has been applied.
 isPartialPred :: Term a t -> Bool
