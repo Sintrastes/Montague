@@ -31,7 +31,7 @@ library
       , Montague.Types
       , Montague.Lexicon
       , Montague.Display
-      -- , Montague.Autocomplete
+      , Montague.Autocomplete
     build-depends:
         base
       , monad-tree
