@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, ScopedTypeVariables, RankNTypes, TypeApplications, TypeOperators, DataKinds, GADTs, KindSignatures #-}
+{-# LANGUAGE LambdaCase, ScopedTypeVariables, RankNTypes, DataKinds, GADTs, KindSignatures #-}
 
 module Montague (
   module Montague.Types,
@@ -35,7 +35,7 @@ annotate :: MontagueSemantics a t x -> Proxy a -> String -> NonDet [AnnotatedTer
 annotate semantics _ xs = do
     lexes <- mapM (parseTerm semantics) $
         -- Convert everything into lowercase for consistancy
-        fmap (fmap toLower) $ 
+        fmap (fmap toLower) $
         -- Split into words
         split ' ' $
         -- Ignore non-period punctuation.
@@ -46,7 +46,7 @@ annotate semantics _ xs = do
 -- | View pattern to use to split a string of tokens into the pattern
 --   xs ++ ys ++ zs.
 viewSubstrings :: [a] -> [([a], [a], [a])]
-viewSubstrings xs = fmap (\n -> splitTwoAt n xs) [0..l - 2]
+viewSubstrings xs = fmap (`splitTwoAt` xs) [0..l - 2]
     where l = length xs
           splitTwoAt n xs =
               let (start, ys) = splitAt n xs in
@@ -60,7 +60,7 @@ reduce semantics [x] = return (interp semantics $ x)
 -- Otherwise...
 reduce semantics xs =
     -- For each possible sub-string...
-    (toTree $ viewSubstrings xs) >>= \case
+    toTree (viewSubstrings xs) >>= \case
         -- If we have a term of type x, right next to a term of type x' -> y
         -- where x <= x', apply the two terms.
         (a, [Annotated t1 x, Annotated t2 (RightArrow x' y)], b)
@@ -77,11 +77,10 @@ reduce semantics xs =
 -- | Get all parses of a string with regard to a lexicon.
 getAllParses :: forall a t x. (PartialOrd t, Eq x) => MontagueSemantics a t x -> Proxy a -> String -> [x]
 getAllParses semantics aT xs = nub parses
-  where 
-    parses = join $ bfs $ 
-        fmap bfs $ 
-        fmap (reduce semantics) $ 
-        annotate semantics aT xs 
+  where
+    parses = join $ bfs $
+        fmap (bfs . reduce semantics) (
+        annotate semantics aT xs)
 
 -- | Get a single parse of a string with regard to a lexicon.
 getParse :: (Eq x, PartialOrd t) => MontagueSemantics a t x -> Proxy a -> String -> Maybe x
