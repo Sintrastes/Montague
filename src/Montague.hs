@@ -37,7 +37,7 @@ annotate semantics _ xs = do
         -- Convert everything into lowercase for consistancy
         fmap (fmap toLower) $
         -- Split into words
-        split ' ' $
+        words $
         -- Ignore non-period punctuation.
         filter (\x -> not $ x `elem` ",;") xs
     types <- mapM (typeOf semantics) lexes
