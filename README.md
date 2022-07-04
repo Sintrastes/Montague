@@ -12,6 +12,9 @@
   <a href="https://www.haskell.org/">
     <img src="https://img.shields.io/badge/Language-Haskell-blue">
   </a>
+  <a href="https://github.com/Sintrastes/Montague/actions/workflows/build.yml">
+    <img src="https://github.com/Sintrastes/Montague/actions/workflows/build.yml/badge.svg">
+  </a>
   <img src="https://img.shields.io/badge/Hackage-TODO-red">
   <img src="https://img.shields.io/badge/License-MIT-blue">
 </p>
