@@ -16,7 +16,7 @@
     <img src="https://github.com/Sintrastes/Montague/actions/workflows/build.yml/badge.svg">
   </a>
   <img src="https://img.shields.io/badge/Hackage-TODO-red">
-  <img src="https://img.shields.io/badge/License-MIT-blue">
+  <img src="https://img.shields.io/badge/License-AGPL v3.0-blue">
 </p>
 
 Montague (named in honor of mathematician and philosopher [Richard Montague](https://en.wikipedia.org/wiki/Richard_Montague)) is a library and domain specific language for non-deterministically parsing natural language expressions into a structured form, so that they can be analyzed, or so that inferences may be made from them.
