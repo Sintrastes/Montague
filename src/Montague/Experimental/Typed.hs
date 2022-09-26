@@ -49,6 +49,7 @@ data LambekTerm a where
 
 instance Eq a => Eq (LambekTerm (T a)) where
   (LAtom x) == (LAtom y) = x == y
+  _ == _ = False
 
 -- Example from SEP:
 every :: Term ((a -> Bool) -> (a -> Bool) -> Bool)
