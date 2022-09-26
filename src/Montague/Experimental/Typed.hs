@@ -82,6 +82,13 @@ every = Lam $ \p -> Lam $ \q -> All $ \x ->
 
 data Person = Nate | William | Michael | Andrew deriving(Eq)
 
+-- | Here we can define a term in terms of a concrete semantics,
+-- but how do we define a term that can depend on the current list of
+-- facts? 
+-- 
+-- I guess we could have the set of "facts" be part of the "world",
+-- and recursively reference (maybe via an implicit parameter)
+-- the search procedure in light of the current set of rules.
 likes :: LambekTerm (L (T Person) (R (T Person) Sentence))
 likes = LLamL $ \x -> LLamR $ \y -> LAtom $
     x == nate && y == william || x == william && y == nate
