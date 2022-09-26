@@ -13,5 +13,9 @@ type GBool w = w -> Bool
 -- | The data for a computational representation of Kripke semantics,
 -- consisting of the current world, and a relation (represented as a function
 -- with multiple return values) representing "related worlds"
-data Kripke w = Kripke w (w -> [w])
+data KripkeFrame w = KripkeFrame {
+    currentWorld :: w,
+    futureWorlds :: w -> [w],
+    pastWorlds :: w -> [w]
+}
 
