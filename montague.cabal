@@ -35,7 +35,9 @@ library
       , Montague.Autocomplete
       , Montague.Experimental.Prop4
       , Montague.Experimental.Typed
+      , Montague.Experimental.TaglessFinal
       , Montague.Experimental.Worlds
+      , Montague.Experimental.Search
     build-depends:
         base
       , ghc-prim
@@ -43,5 +45,8 @@ library
       , partial-order
       , parsec
       , prettyprinter
+      , row-types
+      , comonad
+      , monad-coroutine
     hs-source-dirs:   src
     default-language: Haskell2010
