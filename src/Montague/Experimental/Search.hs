@@ -11,6 +11,11 @@ import Montague.Experimental.Typed
 -- a type of "rule" with any sort of semantics other than structural
 -- unificaton.
 
+-- I guess what this might look like in practice is that rules can refer to
+--  various things in the "world" -- for instance, indexicals (current_user), or
+--  things like the current time and so on. And I think this is probably similar
+--  to earlier ideas I had for how to handle indexicals.
+
 -- Just throwing ideas around here, but maybe what will end up making sense is
 --  using the different truth values for "side-conditions" -- i.e. only actually
 --  trying to evaluate them when they are constant values. Otherwise, we can 
