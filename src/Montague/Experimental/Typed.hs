@@ -21,6 +21,15 @@ data LambekType =
 
 type Sentence = 'T Bool
 
+class BooleanType a where
+  coord :: (Bool -> Bool -> Bool) -> a -> a -> a
+
+instance BooleanType Bool where
+  coord f x y = f x y
+
+instance BooleanType b => BooleanType (a -> b) where
+  coord f x y = \v -> coord f (x v) (y v)
+
 -- | Type family to get the semantic interpretation of a lambek
 -- type.
 type family Bracket (x :: LambekType) :: Type where
