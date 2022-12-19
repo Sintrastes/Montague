@@ -1,5 +1,5 @@
 
-{-# LANGUAGE DataKinds, KindSignatures, TypeFamilies, GADTs, FlexibleInstances #-}
+{-# LANGUAGE DataKinds, KindSignatures, TypeFamilies, GADTs, FlexibleInstances, FlexibleContexts #-}
 
 module Montague.Experimental.Typed where
 
@@ -22,13 +22,16 @@ data LambekType =
 type Sentence = 'T Bool
 
 class BooleanType a where
-  coord :: (Bool -> Bool -> Bool) -> a -> a -> a
+  coord :: (LambekTerm Sentence -> LambekTerm Sentence -> LambekTerm Sentence) -> LambekTerm a -> LambekTerm a -> LambekTerm a
 
-instance BooleanType Bool where
+instance BooleanType Sentence where
   coord f x y = f x y
 
-instance BooleanType b => BooleanType (a -> b) where
-  coord f x y = \v -> coord f (x v) (y v)
+instance BooleanType b => BooleanType (L a b) where
+  coord f x y = LLamL $ \v -> coord f (LAppL v x) (LAppL v y)
+
+instance BooleanType b => BooleanType (R a b) where
+  coord f x y = LLamR $ \v -> coord f (LAppR x v) (LAppR y v)
 
 -- | Type family to get the semantic interpretation of a lambek
 -- type.
@@ -139,6 +142,12 @@ willAlways = WillAlways
 -- intermediate results.
 eval :: Term _Ω _Ω -> Coroutine (Yield Bool) Identity Bool
 eval = undefined
+
+and :: BooleanType a => LambekTerm a -> LambekTerm a -> LambekTerm a
+and x y = coord LAnd x y
+
+or :: BooleanType a => LambekTerm a -> LambekTerm a -> LambekTerm a
+or x y = coord LOr x y
 
 -- | Get the current (partial) truth value from a coroutine.
 currentValue :: Coroutine (Yield Bool) Identity Bool -> Prop4
