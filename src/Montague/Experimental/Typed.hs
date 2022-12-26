@@ -1,5 +1,5 @@
 
-{-# LANGUAGE DataKinds, KindSignatures, TypeFamilies, GADTs, FlexibleInstances, FlexibleContexts #-}
+{-# LANGUAGE DataKinds, KindSignatures, TypeFamilies, GADTs, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses #-}
 
 module Montague.Experimental.Typed where
 
@@ -21,16 +21,17 @@ data LambekType =
 
 type Sentence = 'T Bool
 
-class BooleanType a where
-  coord :: (LambekTerm Sentence -> LambekTerm Sentence -> LambekTerm Sentence) -> LambekTerm a -> LambekTerm a -> LambekTerm a
+class BooleanType _Ω a where
+  coord :: (LambekTerm _Ω (T _Ω) -> LambekTerm _Ω (T _Ω) -> LambekTerm _Ω (T _Ω)) 
+    -> LambekTerm _Ω a -> LambekTerm _Ω a -> LambekTerm _Ω a
 
-instance BooleanType Sentence where
+instance BooleanType _Ω (T _Ω) where
   coord f x y = f x y
 
-instance BooleanType b => BooleanType (L a b) where
+instance BooleanType _Ω b => BooleanType _Ω (L a b) where
   coord f x y = LLamL $ \v -> coord f (LAppL v x) (LAppL v y)
 
-instance BooleanType b => BooleanType (R a b) where
+instance BooleanType _Ω b => BooleanType _Ω (R a b) where
   coord f x y = LLamR $ \v -> coord f (LAppR x v) (LAppR y v)
 
 -- | Type family to get the semantic interpretation of a lambek
@@ -71,19 +72,19 @@ unify = undefined
 -- | The world is the totality of facts, not of things. -- Wittgenstein
 type Facts _Ω w = [Term _Ω (w -> Bool)]
 
-data LambekTerm a where
-    LLamL  :: (LambekTerm a -> LambekTerm b) -> LambekTerm (L a b)
-    LLamR  :: (LambekTerm a -> LambekTerm b) -> LambekTerm (R a b)
-    LAppL  :: LambekTerm a -> LambekTerm (L a b) -> LambekTerm b
-    LAppR  :: LambekTerm (R a b) -> LambekTerm a -> LambekTerm b
-    LAtom  :: Typeable a => a -> LambekTerm (T a)
-    LAnd   :: LambekTerm Sentence -> LambekTerm Sentence -> LambekTerm Sentence
-    LOr    :: LambekTerm Sentence -> LambekTerm Sentence -> LambekTerm Sentence
-    LAll   :: (LambekTerm a -> LambekTerm Sentence) -> LambekTerm Sentence
-    LSome  :: (LambekTerm Sentence -> LambekTerm Sentence) 
-       -> LambekTerm Sentence
+data LambekTerm _Ω a where
+    LLamL  :: (LambekTerm _Ω a -> LambekTerm _Ω b) -> LambekTerm _Ω (L a b)
+    LLamR  :: (LambekTerm _Ω a -> LambekTerm _Ω b) -> LambekTerm _Ω (R a b)
+    LAppL  :: LambekTerm _Ω a -> LambekTerm _Ω (L a b) -> LambekTerm _Ω b
+    LAppR  :: LambekTerm _Ω (R a b) -> LambekTerm _Ω a -> LambekTerm _Ω b
+    LAtom  :: Typeable a => a -> LambekTerm _Ω (T a)
+    LAnd   :: LambekTerm _Ω (T _Ω) -> LambekTerm _Ω (T _Ω) -> LambekTerm _Ω (T _Ω)
+    LOr    :: LambekTerm _Ω (T _Ω) -> LambekTerm _Ω (T _Ω) -> LambekTerm _Ω (T _Ω)
+    LAll   :: (LambekTerm _Ω a -> LambekTerm _Ω (T _Ω)) -> LambekTerm _Ω (T _Ω)
+    LSome  :: (LambekTerm _Ω (T _Ω) -> LambekTerm _Ω (T _Ω)) 
+       -> LambekTerm _Ω (T _Ω)
 
-instance Eq a => Eq (LambekTerm (T a)) where
+instance Eq a => Eq (LambekTerm _Ω (T a)) where
   (LAtom x) == (LAtom y) = x == y
   _ == _ = False
 
@@ -101,17 +102,17 @@ data Person = Nate | William | Michael | Andrew deriving(Eq)
 -- I guess we could have the set of "facts" be part of the "world",
 -- and recursively reference (maybe via an implicit parameter)
 -- the search procedure in light of the current set of rules.
-likes :: LambekTerm (L (T Person) (R (T Person) Sentence))
+-- likes :: LambekTerm _Ω (L (T Person) (R (T Person) (T _Ω)))
 likes = LLamL $ \x -> LLamR $ \y -> LAtom $
     x == nate && y == william || x == william && y == nate
 
-nate :: LambekTerm (T Person)
+-- nate :: LambekTerm _Ω (T Person)
 nate = LAtom Nate
 
-william :: LambekTerm (T Person)
+-- william :: LambekTerm _Ω (T Person)
 william = LAtom William
 
-example :: LambekTerm Sentence
+-- example :: LambekTerm _Ω (T _Ω)
 example = nate `LAppL` likes `LAppR` william
 
 -- | -ed morpeme: play-ed -> played. am-ed -> was. see-ed -> saw.
@@ -143,10 +144,10 @@ willAlways = WillAlways
 eval :: Term _Ω _Ω -> Coroutine (Yield Bool) Identity Bool
 eval = undefined
 
-and :: BooleanType a => LambekTerm a -> LambekTerm a -> LambekTerm a
+and :: BooleanType _Ω a => LambekTerm _Ω a -> LambekTerm _Ω a -> LambekTerm _Ω a
 and x y = coord LAnd x y
 
-or :: BooleanType a => LambekTerm a -> LambekTerm a -> LambekTerm a
+or :: BooleanType _Ω a => LambekTerm _Ω a -> LambekTerm _Ω a -> LambekTerm _Ω a
 or x y = coord LOr x y
 
 -- | Get the current (partial) truth value from a coroutine.
