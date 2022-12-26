@@ -1,5 +1,5 @@
 
-{-# LANGUAGE DataKinds, KindSignatures, TypeFamilies, GADTs, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses #-}
+{-# LANGUAGE DataKinds, KindSignatures, TypeFamilies, GADTs, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses, LambdaCase #-}
 
 module Montague.Experimental.Typed where
 
@@ -77,12 +77,25 @@ data LambekTerm _Ω a where
     LLamR  :: (LambekTerm _Ω a -> LambekTerm _Ω b) -> LambekTerm _Ω (R a b)
     LAppL  :: LambekTerm _Ω a -> LambekTerm _Ω (L a b) -> LambekTerm _Ω b
     LAppR  :: LambekTerm _Ω (R a b) -> LambekTerm _Ω a -> LambekTerm _Ω b
-    LAtom  :: Typeable a => a -> LambekTerm _Ω (T a)
+    LAtom  :: (Show a, Typeable a) => a -> LambekTerm _Ω (T a)
     LAnd   :: LambekTerm _Ω (T _Ω) -> LambekTerm _Ω (T _Ω) -> LambekTerm _Ω (T _Ω)
     LOr    :: LambekTerm _Ω (T _Ω) -> LambekTerm _Ω (T _Ω) -> LambekTerm _Ω (T _Ω)
     LAll   :: (LambekTerm _Ω a -> LambekTerm _Ω (T _Ω)) -> LambekTerm _Ω (T _Ω)
     LSome  :: (LambekTerm _Ω (T _Ω) -> LambekTerm _Ω (T _Ω)) 
        -> LambekTerm _Ω (T _Ω)
+    LVar   :: String -> Proxy a -> LambekTerm _Ω a
+
+instance (Show _Ω) => Show (LambekTerm _Ω a) where
+  show = \case
+    LLamL f   -> "λₗx."  ++ (show $ f (LVar "x" Proxy)) -- TODO: Make sure variables are not captured here.
+    LLamR f   -> "λᵣx." ++ (show $ f (LVar "x" Proxy)) -- TODO: Make sure variables are not captured here.
+    LAppL f x -> (show f) ++ " " ++ (show x)
+    LAppR f x -> (show f) ++ " " ++ (show x)
+    LAtom x   -> show x
+    LAnd x y  -> (show x) ++ " ∧ " ++ (show y)
+    LOr x y   -> (show x) ++ " ∨ " ++ (show y)
+    LAll f    -> "∀x." ++ (show $ f (LVar "x" Proxy)) -- TODO: Make sure variables are not captured here.
+    LSome f   -> "∃x." ++ (show $ f (LVar "x" Proxy)) -- TODO: Make sure variables are not captured here.
 
 instance Eq a => Eq (LambekTerm _Ω (T a)) where
   (LAtom x) == (LAtom y) = x == y
@@ -93,7 +106,7 @@ every :: Term _Ω ((a -> _Ω) -> (a -> _Ω) -> _Ω)
 every = Lam $ \p -> Lam $ \q -> All $ \x ->
   And (App p x) (App q x)
 
-data Person = Nate | William | Michael | Andrew deriving(Eq)
+data Person = Nate | William | Michael | Andrew deriving(Eq, Show)
 
 -- | Here we can define a term in terms of a concrete semantics,
 -- but how do we define a term that can depend on the current list of
@@ -102,7 +115,7 @@ data Person = Nate | William | Michael | Andrew deriving(Eq)
 -- I guess we could have the set of "facts" be part of the "world",
 -- and recursively reference (maybe via an implicit parameter)
 -- the search procedure in light of the current set of rules.
--- likes :: LambekTerm _Ω (L (T Person) (R (T Person) (T _Ω)))
+likes :: LambekTerm Bool (L (T Person) (R (T Person) (T Bool)))
 likes = LLamL $ \x -> LLamR $ \y -> LAtom $
     x == nate && y == william || x == william && y == nate
 
@@ -114,6 +127,10 @@ william = LAtom William
 
 -- example :: LambekTerm _Ω (T _Ω)
 example = nate `LAppL` likes `LAppR` william
+
+example2 = (nate `LAppL` likes `LAppR` william) 
+    `Montague.Experimental.Typed.and` 
+      (william `LAppL` likes `LAppR` nate)
 
 -- | -ed morpeme: play-ed -> played. am-ed -> was. see-ed -> saw.
 ed :: Term _Ω _Ω -> Term _Ω _Ω
