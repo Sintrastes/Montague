@@ -18,6 +18,7 @@ data LambekType =
     T Type 
   | L LambekType LambekType
   | R LambekType LambekType
+  | Conj LambekType LambekType
 
 type Sentence = 'T Bool
 
