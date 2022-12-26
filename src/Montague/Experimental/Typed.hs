@@ -1,5 +1,5 @@
 
-{-# LANGUAGE DataKinds, KindSignatures, TypeFamilies, GADTs, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses, LambdaCase #-}
+{-# LANGUAGE TypeOperators, DataKinds, KindSignatures, TypeApplications, TypeFamilies, GADTs, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses, LambdaCase #-}
 
 module Montague.Experimental.Typed where
 
@@ -9,16 +9,29 @@ module Montague.Experimental.Typed where
 import Montague.Experimental.Worlds
 import Montague.Experimental.Prop4
 import GHC.Types
-import Data.Data
+import Type.Reflection (TypeRep, Typeable, typeOf)
+import Data.Data (Proxy(..))
 import Control.Monad.Coroutine
 import Data.Functor.Identity
 import Control.Monad.Coroutine.SuspensionFunctors (Yield)
 
-data LambekType = 
-    T Type 
-  | L LambekType LambekType
-  | R LambekType LambekType
-  | Conj LambekType LambekType
+data LambekType where 
+    T    :: Type -> LambekType
+    L    :: LambekType -> LambekType -> LambekType
+    R    :: LambekType -> LambekType -> LambekType
+    Conj :: LambekType -> LambekType -> LambekType
+    Disj :: LambekType -> LambekType -> LambekType
+
+type (∧) = Conj
+type (∨) = Disj
+
+instance Show LambekType where
+  show = \case
+    T x      -> "" -- TODO: show $ typeRep x
+    R x y    -> (show x) ++ "\\" ++ (show y)
+    L x y    -> (show x) ++ "/"  ++ (show y)
+    Conj x y -> (show x) ++ "∧"  ++ (show y)
+    Disj x y -> (show x) ++ "∨"  ++ (show y)
 
 type Sentence = 'T Bool
 
@@ -40,7 +53,9 @@ instance BooleanType _Ω b => BooleanType _Ω (R a b) where
 type family Bracket (x :: LambekType) :: Type where
   Bracket (L a b)  = Bracket a -> Bracket b
   Bracket (R a b)  = Bracket a -> Bracket b
-  Bracket (T a) = a
+  Bracket (T a)    = a
+  Bracket (a ∧ b)  = (Bracket a, Bracket b)
+  Bracket (a ∨ b)  = Either (Bracket a) (Bracket b)
 
 -- | A type of terms abstracted over a type of "truth values"
 -- _Ω.
