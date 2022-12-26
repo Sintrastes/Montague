@@ -1,5 +1,5 @@
 
-{-# LANGUAGE TypeOperators, DataKinds, KindSignatures, TypeApplications, TypeFamilies, GADTs, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses, LambdaCase #-}
+{-# LANGUAGE ScopedTypeVariables, TypeOperators, DataKinds, KindSignatures, TypeApplications, TypeFamilies, GADTs, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses, LambdaCase #-}
 
 module Montague.Experimental.Typed where
 
@@ -24,8 +24,8 @@ data LambekType where
 
 type (∧) = Conj
 type (∨) = Disj
-type (/) = R
-type (\\) = L
+type (/) = L
+type (\\) = R
 
 instance Show LambekType where
   show = \case
@@ -44,7 +44,7 @@ class BooleanType _Ω a where
 instance BooleanType _Ω (T _Ω) where
   coord f x y = f x y
 
-instance BooleanType _Ω b => BooleanType _Ω (L a b) where
+instance BooleanType _Ω b => BooleanType _Ω (L b a) where
   coord f x y = LLamL $ \v -> coord f (LAppL v x) (LAppL v y)
 
 instance BooleanType _Ω b => BooleanType _Ω (R a b) where
@@ -91,9 +91,9 @@ unify = undefined
 type Facts _Ω w = [Term _Ω (w -> Bool)]
 
 data LambekTerm _Ω a where
-    LLamL  :: (LambekTerm _Ω a -> LambekTerm _Ω b) -> LambekTerm _Ω (L a b)
+    LLamL  :: (LambekTerm _Ω b -> LambekTerm _Ω a) -> LambekTerm _Ω (L a b)
     LLamR  :: (LambekTerm _Ω a -> LambekTerm _Ω b) -> LambekTerm _Ω (R a b)
-    LAppL  :: LambekTerm _Ω a -> LambekTerm _Ω (L a b) -> LambekTerm _Ω b
+    LAppL  :: LambekTerm _Ω a -> LambekTerm _Ω (L b a) -> LambekTerm _Ω b
     LAppR  :: LambekTerm _Ω (R a b) -> LambekTerm _Ω a -> LambekTerm _Ω b
     LAtom  :: (Show a, Typeable a) => a -> LambekTerm _Ω (T a)
     LAnd   :: LambekTerm _Ω (T _Ω) -> LambekTerm _Ω (T _Ω) -> LambekTerm _Ω (T _Ω)
@@ -122,7 +122,7 @@ instance Eq a => Eq (LambekTerm _Ω (T a)) where
 -- | "Type-raising" operator. Converts a type a to a type b/(a\b).
 -- Useful for making non-boolean types boolean for the sake of coordination.
 raise :: LambekTerm _Ω a -> LambekTerm _Ω (b/(a\\b))
-raise = undefined
+raise x = LLamL $ \(v :: LambekTerm _Ω (a\\b)) -> LAppR v x
 
 -- Example from SEP:
 every :: Term _Ω ((a -> _Ω) -> (a -> _Ω) -> _Ω)
@@ -138,7 +138,7 @@ data Person = Nate | William | Michael | Andrew deriving(Eq, Show)
 -- I guess we could have the set of "facts" be part of the "world",
 -- and recursively reference (maybe via an implicit parameter)
 -- the search procedure in light of the current set of rules.
-likes :: LambekTerm Bool (L (T Person) (R (T Person) (T Bool)))
+likes :: LambekTerm Bool ((T Person \\ T Bool) / T Person)
 likes = LLamL $ \x -> LLamR $ \y -> LAtom $
     x == nate && y == william || x == william && y == nate
 
@@ -153,7 +153,7 @@ example = nate `LAppL` likes `LAppR` william
 
 example2 = (nate `LAppL` likes `LAppR` william) 
     `Montague.Experimental.Typed.and` 
-      (william `LAppL` likes `LAppR` nate)
+     (william `LAppL` likes `LAppR` nate)
 
 -- TODO: Coordination via type-raising.
 -- example3 = (nate `Montague.Experimental.Typed.and` will) `LAppL` 
