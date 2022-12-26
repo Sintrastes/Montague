@@ -132,6 +132,10 @@ example2 = (nate `LAppL` likes `LAppR` william)
     `Montague.Experimental.Typed.and` 
       (william `LAppL` likes `LAppR` nate)
 
+-- TODO: Coordination via type-raising.
+-- example3 = (nate `Montague.Experimental.Typed.and` will) `LAppL` 
+--  likes `LAppR` michael
+
 -- | -ed morpeme: play-ed -> played. am-ed -> was. see-ed -> saw.
 ed :: Term _Ω _Ω -> Term _Ω _Ω
 ed = undefined
