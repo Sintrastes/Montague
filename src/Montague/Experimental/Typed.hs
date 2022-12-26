@@ -24,6 +24,8 @@ data LambekType where
 
 type (∧) = Conj
 type (∨) = Disj
+type (/) = R
+type (\\) = L
 
 instance Show LambekType where
   show = \case
@@ -116,6 +118,11 @@ instance (Show _Ω) => Show (LambekTerm _Ω a) where
 instance Eq a => Eq (LambekTerm _Ω (T a)) where
   (LAtom x) == (LAtom y) = x == y
   _ == _ = False
+
+-- | "Type-raising" operator. Converts a type a to a type b/(a\b).
+-- Useful for making non-boolean types boolean for the sake of coordination.
+raise :: LambekTerm _Ω a -> LambekTerm _Ω (b/(a\\b))
+raise = undefined
 
 -- Example from SEP:
 every :: Term _Ω ((a -> _Ω) -> (a -> _Ω) -> _Ω)
