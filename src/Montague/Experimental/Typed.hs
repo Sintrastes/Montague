@@ -34,11 +34,13 @@ type (⇑) = Scoped
 
 instance Show LambekType where
   show = \case
-    T x      -> "" -- TODO: show $ typeRep x
-    R x y    -> (show x) ++ "\\" ++ (show y)
-    L x y    -> (show x) ++ "/"  ++ (show y)
-    Conj x y -> (show x) ++ "∧"  ++ (show y)
-    Disj x y -> (show x) ++ "∨"  ++ (show y)
+    T x         -> "" -- TODO: show $ typeRep x
+    R x y       -> (show x) ++ "\\" ++ (show y)
+    L x y       -> (show x) ++ "/"  ++ (show y)
+    Conj x y    -> (show x) ++ "∧"  ++ (show y)
+    Disj x y    -> (show x) ++ "∨"  ++ (show y)
+    Extract x y -> (show x) ++ "↑"  ++ (show y)
+    Scoped x y  -> (show x) ++ "⇑"  ++ (show y)
 
 type Sentence = 'T Bool
 
@@ -63,6 +65,8 @@ type family Bracket (x :: LambekType) :: Type where
   Bracket (T a)    = a
   Bracket (a ∧ b)  = (Bracket a, Bracket b)
   Bracket (a ∨ b)  = Either (Bracket a) (Bracket b)
+  Bracket (a ↑ b) = (Bracket a) -> (Bracket b)
+  Bracket (a ⇑ b) = (Bracket a -> Bracket b) -> Bracket b
 
 -- | A type of terms in the lambek calculus abstracted over a type
 -- of "truth values" _Ω.
