@@ -39,6 +39,7 @@ library
       , Montague.Experimental.TaglessFinal
       , Montague.Experimental.Worlds
       , Montague.Experimental.Search
+      , Montague.Experimental.Examples
     build-depends:
         base
       , ghc-prim
