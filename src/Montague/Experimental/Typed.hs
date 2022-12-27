@@ -124,8 +124,15 @@ instance Eq a => Eq (LambekTerm _Ω (T a)) where
 raise :: LambekTerm _Ω a -> LambekTerm _Ω (b/(a\\b))
 raise x = LLamL $ \(v :: LambekTerm _Ω (a\\b)) -> LAppR x v
 
+-- | Function ("proof") witnessing the associativity of the lambek
+--  calculus.
 assoc :: LambekTerm _Ω ((a \\ b) / c) -> LambekTerm _Ω (a \\ (b / c))
-assoc = undefined
+assoc x = LLamR $ \y -> LLamL $ \z -> y `LAppR` (x `LAppL` z)
+
+-- | Function ("proof") witnessing the associativity of the lambek
+--  calculus in the opposite direction as assoc.
+unassoc :: LambekTerm _Ω (a \\ (b / c)) -> LambekTerm _Ω ((a \\ b) / c)
+unassoc x = LLamL $ \z -> LLamR $ \y -> (y `LAppR` x) `LAppL` z
 
 -- Example from SEP:
 every :: Term _Ω ((a -> _Ω) -> (a -> _Ω) -> _Ω)
