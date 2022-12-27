@@ -21,6 +21,7 @@ data LambekType where
     L       :: LambekType -> LambekType -> LambekType
     R       :: LambekType -> LambekType -> LambekType
     Extract :: LambekType -> LambekType -> LambekType
+    Scoped  :: LambekType -> LambekType -> LambekType
     Conj    :: LambekType -> LambekType -> LambekType
     Disj    :: LambekType -> LambekType -> LambekType
 
@@ -29,6 +30,7 @@ type (∨) = Disj
 type (/) = L
 type (\\) = R
 type (↑) = Extract
+type (⇑) = Scoped
 
 instance Show LambekType where
   show = \case
