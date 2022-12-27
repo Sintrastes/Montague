@@ -17,6 +17,7 @@ import Data.Functor.Identity
 import Control.Monad.Coroutine.SuspensionFunctors (Yield)
 import Montague.Experimental.LambekType
 import Data.List
+import Control.Exception (AllocationLimitExceeded)
 
 type Sentence = 'T Bool
 
@@ -84,6 +85,7 @@ data Term a where
 data Sem = 
     Pred String [Sem]
   | Individual Person
+  | Subject Subject
   | And Sem Sem
   | Or Sem Sem
   | All (Sem -> Sem)
@@ -91,6 +93,7 @@ data Sem =
   | Not Sem
   | Var String
   | The Sem
+  | Const Bool
 
 -- | Semantics for the definite determiner.
 ι = The
@@ -135,7 +138,11 @@ instance Eq a => Eq (Term (T a)) where
 -- | "Type-raising" operator. Converts a type a to a type b/(a\b).
 -- Useful for making non-boolean types boolean for the sake of coordination.
 raise :: Term a -> Term (b/(a\\b))
-raise x = LamL $ \(v :: Term (a\\b)) -> AppR x v
+raise x = LamL $ \v -> AppR x v
+
+-- | Variant of type-raising operator "from the other side".
+raise' :: Term a -> Term ((b/a)\\b)
+raise' x = LamR $ \v -> AppL v x
 
 -- | Function ("proof") witnessing the associativity of the lambek
 --  calculus.
@@ -147,13 +154,39 @@ assoc x = LamR $ \y -> LamL $ \z -> y .> (x <. z)
 unassoc :: Term (a \\ (b / c)) -> Term ((a \\ b) / c)
 unassoc x = LamL $ \z -> LamR $ \y -> (y .> x) <. z
 
+-- | Variant of unassoc for type-raised arguments.
+-- except I don't think this makes sense at all...
+-- unassoc' :: Term (a / (b \\ c)) -> Term ((a / b) \\ c) 
+-- unassoc' x = LamR $ \y -> y
+
 -- Example from SEP:
 --  Needs to be re-worked with the approach from Carpenter.
 -- every :: Term _Ω ((a -> (T _Ω)) (T _Ω) (a -> (T _Ω))
 -- every = Lam $ \p -> Lam $ \q -> All $ \x ->
 --  And (App p x) (App q x)
 
-data Person = Nate | William | Michael | Andrew deriving(Eq, Show)
+data Person = 
+      Nate 
+    | William 
+    | Michael 
+    | Andrew 
+    | Socrates 
+  deriving(Eq, Show)
+
+data Subject =
+      Food
+    | Cooking
+    | Gardening
+    | Sports
+    | Philosophy
+    | Politics
+    | Anime
+    | Movies
+    | Hiking
+  deriving(Eq, Show)
+
+cooking = Atom Cooking
+anime = Atom Anime
 
 -- | Here we can define a term in terms of a concrete semantics,
 -- but how do we define a term that can depend on the current list of
@@ -162,12 +195,24 @@ data Person = Nate | William | Michael | Andrew deriving(Eq, Show)
 -- I guess we could have the set of "facts" be part of the "world",
 -- and recursively reference (maybe via an implicit parameter)
 -- the search procedure in light of the current set of rules.
-likes :: Term ((T Person \\ T Sem) / T Person)
+likes :: Term ((NP Person \\ S Sem) / NP Person)
 likes = LamL $ \(Atom x) -> LamR $ \(Atom y) -> Atom $
     Pred "likes" [Individual x, Individual y]
 
-the :: Term (T Sem) -> Term (T Sem)
-the (Atom x) = Atom (ι x) 
+-- | Likes, in the sense of a person and a subject.
+likes2 :: Term ((NP Person \\ S Sem) / NP Subject)
+likes2 = LamL $ \(Atom x) -> LamR $ \(Atom y) -> Atom $
+    Pred "likes" [Individual y, Subject x]
+
+-- | Definite determiner -- converts a noun into a
+-- noun phrase.
+the :: Term (N a Sem) -> Term (NP a)
+the (LamN x) = undefined -- Atom (ι x) 
+
+-- | An example of a noun which is not a proper noun.
+man :: Term (N Person Sem)
+man = LamN $ \x -> 
+  Atom $ Const True
 
 -- who (or which, since we do not distinguish animacy), used to construct relative
 --  clauses.
@@ -179,10 +224,28 @@ who = LamL $ \v -> LamR $ \p -> LamN $ \x -> let
   in
      Atom $ And a1 a2 
 
-nate :: Term (T Person)
+relativeClauseExample :: Term (S Sem ↑ NP Person)
+relativeClauseExample = LamS $ \x ->
+    x .> (likes <. william)
+
+-- "the man who likes William"
+relativeClauseUsage :: Term (NP Person)
+relativeClauseUsage = the $ man .> (who <. LamS (\x -> x .> (likes <. william)))
+
+-- "nate likes william and michael"
+rightCoordinationExample = (nate .> assoc likes) 
+  .> (raise' william `and'` raise' michael)
+
+-- "the man who likes cooking and anime"
+relativeClauseUsage2 = the $ 
+  man .> (who <. 
+    LamS (\x -> (x .> assoc likes2) 
+        .> (raise' cooking `and'` raise' anime)))
+
+nate :: Term (NP Person)
 nate = Atom Nate
 
-william :: Term (T Person)
+william :: Term (NP Person)
 william = Atom William
 
 michael = Atom Michael
@@ -191,14 +254,10 @@ example :: Term (T Sem)
 example = nate .> (likes <. william)
 
 -- Coordination
-example2 = (nate .> (likes <. william))
-    `Montague.Experimental.Typed.and` 
-     (william .> (likes <. nate))
+example2 = (nate .> (likes <. william)) `and'` (william .> (likes <. nate))
 
 -- Coordination via type-raising.
-example3 = raise nate
-   `Montague.Experimental.Typed.and` raise william
-   <. (likes <. michael)
+example3 = raise nate `and'` raise william <. (likes <. michael)
 
 -- | -ed morpeme: play-ed -> played. am-ed -> was. see-ed -> saw.
 ed :: Term (T _Ω) -> Term (T _Ω)
@@ -221,8 +280,8 @@ ed = undefined
 -- willAlways = WillAlways
 
 -- TODO: There should probably be a typeclass for those to make this generic. 
-and :: BooleanType Sem a => Term a -> Term a -> Term a
-and x y = coord And x y
+and' :: BooleanType Sem a => Term a -> Term a -> Term a
+and' x y = coord And x y
 
 or :: BooleanType Sem a => Term a -> Term a -> Term a
 or x y = coord Or x y

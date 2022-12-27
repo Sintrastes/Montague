@@ -43,7 +43,7 @@ library
     build-depends:
         base
       , ghc-prim
-      -- , monad-tree
+      , monad-tree
       , partial-order
       , parsec
       , prettyprinter
