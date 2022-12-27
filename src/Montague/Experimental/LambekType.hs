@@ -1,16 +1,32 @@
-{-# LANGUAGE TypeOperators, DataKinds, GADTs #-}
+{-# LANGUAGE TypeOperators, DataKinds, GADTs, LambdaCase #-}
 
 module Montague.Experimental.LambekType where
 import Data.Kind
 
+-- | Type of terms in the lambek calculus.
 data LambekType where 
+    -- | Generic constructor for injecting a Haskell type
+    -- into a Lambek type. Used for both noun phrases and sentences.
     T       :: Type -> LambekType
+    -- | Specific constructor for injecting a type of individuals
+    -- (together with a "boolean type") as a noun.
+    N       :: Type -> Type -> LambekType
+    -- | Left arrow. Consumes an arugment on the right.
     L       :: LambekType -> LambekType -> LambekType
+    -- | Right arrow. Consumes and argument on the left.
     R       :: LambekType -> LambekType -> LambekType
+    -- | Extraction operator. Used to account for unbounded dependencies.
     Extract :: LambekType -> LambekType -> LambekType
+    -- | Scoping operator. Used to account for the grammar of quantifiers like every and some.
     Scoped  :: LambekType -> LambekType -> LambekType
+    -- | Conjunction operator on types. Used for coordnation.
     Conj    :: LambekType -> LambekType -> LambekType
+    -- | Disjunction operator on types. Used for coordnation.
     Disj    :: LambekType -> LambekType -> LambekType
+
+-- Typealiases to better fit with the terminology in Carpenter.
+type NP i = T i
+type S o  = T o
 
 instance Show LambekType where
   show = \case

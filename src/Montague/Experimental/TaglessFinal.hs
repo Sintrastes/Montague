@@ -9,6 +9,7 @@ module Montague.Experimental.TaglessFinal where
 import GHC.Types
 import Data.Data
 import Montague.Experimental.LambekType
+import Montague.Experimental.Typed (Person(..))
 
 class TermAlg term where
     laml  :: (term b -> term a) -> term (a / b)
@@ -28,5 +29,5 @@ class SemAlg term where
     all  :: (term -> term) -> term
     some :: (term -> term) -> term
     not  :: term   -> term
-    var  :: String -> term
+    svar  :: String -> term
     the  :: term   -> term

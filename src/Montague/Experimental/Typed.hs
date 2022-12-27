@@ -38,18 +38,42 @@ instance BooleanType _Ω b => BooleanType _Ω (R a b) where
 type family Bracket (x :: LambekType) :: Type where
   Bracket (L a b)  = Bracket b -> Bracket a
   Bracket (R a b)  = Bracket a -> Bracket b
+  Bracket (N a b)  = a -> b
   Bracket (T a)    = a
   Bracket (a ∧ b)  = (Bracket a, Bracket b)
   Bracket (a ∨ b)  = Either (Bracket a) (Bracket b)
   Bracket (a ↑ b)  = Bracket a -> Bracket b
   Bracket (a ⇑ b)  = (Bracket a -> Bracket b) -> Bracket b
 
+-- eval :: Term x -> Bracket x
+-- eval = \case
+--   Atom x -> x
+--   LamL f -> \x -> let y = Atom x in _
+
+-- Maybe this would work better with functional dependencies?
+-- class Bracket (x :: LambekType) a | x -> a where
+--     eval :: Term x -> a
+
 -- | A type of terms in the lambek calculus
 data Term a where
     LamL  :: (Term b -> Term a) -> Term (a / b)
     LamR  :: (Term a -> Term b) -> Term (a \\ b)
+    -- I'm not exactly sure how this rule would work in a GADT.
+    --
+    -- The idea is that if we can choose some (possibly empty)
+    --  terms l and r that concatenate to a, then we can construct
+    --  a ↑ b
+    LamS  :: (Term b -> Term a) -> Term (a ↑ b)
+    -- | Constructor for building a new noun from a function from
+    --  ind -> o.
+    LamN  :: (Term (NP ind) -> Term (S o)) -> Term (N ind o)
     AppL  :: Term (b / a) -> Term a -> Term b
     AppR  :: Term a -> Term (a \\ b) -> Term b
+    -- | Constructor for applying scoped functions.
+    --
+    -- Note: NOT a valid rule in the calculus, only used
+    -- internally.
+    AppS  :: Term (a ↑ b) -> Term b -> Term a
     Atom  :: (Show a, Typeable a) => a -> Term (T a)
     TVar   :: String -> Proxy a -> Term a
 
@@ -142,15 +166,28 @@ likes :: Term ((T Person \\ T Sem) / T Person)
 likes = LamL $ \(Atom x) -> LamR $ \(Atom y) -> Atom $
     Pred "likes" [Individual x, Individual y]
 
--- nate :: Term _Ω (T Person)
+the :: Term (T Sem) -> Term (T Sem)
+the (Atom x) = Atom (ι x) 
+
+-- who (or which, since we do not distinguish animacy), used to construct relative
+--  clauses.
+who :: Term (N n Sem \\ N n Sem / (S Sem ↑ NP n))
+who = LamL $ \v -> LamR $ \p -> LamN $ \x -> let 
+     Atom a1 = v `AppS` x
+     LamN p' = p
+     Atom a2 = p' x
+  in
+     Atom $ And a1 a2 
+
+nate :: Term (T Person)
 nate = Atom Nate
 
--- william :: Term _Ω (T Person)
+william :: Term (T Person)
 william = Atom William
 
 michael = Atom Michael
 
--- example :: Term _Ω (T _Ω)
+example :: Term (T Sem)
 example = nate .> (likes <. william)
 
 -- Coordination
