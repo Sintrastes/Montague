@@ -34,6 +34,7 @@ library
       , Montague.Display
       , Montague.Autocomplete
       , Montague.Experimental.Prop4
+      , Montague.Experimental.LambekType
       , Montague.Experimental.Typed
       , Montague.Experimental.TaglessFinal
       , Montague.Experimental.Worlds

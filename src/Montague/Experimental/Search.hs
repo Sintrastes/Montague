@@ -3,6 +3,7 @@
 module Montague.Experimental.Search where
 import Data.Row
 import Montague.Experimental.Typed
+import Montague.Experimental.LambekType
 
 -- Research Question: Is there actually anything we can do here
 -- when generalizing over truth values? This would lead to a kind

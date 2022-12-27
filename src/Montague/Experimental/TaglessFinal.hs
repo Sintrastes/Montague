@@ -1,5 +1,6 @@
 
 {-# LANGUAGE DataKinds, KindSignatures, TypeFamilies, GADTs, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Montague.Experimental.TaglessFinal where
 
@@ -7,17 +8,14 @@ module Montague.Experimental.TaglessFinal where
 
 import GHC.Types
 import Data.Data
+import Montague.Experimental.LambekType
 
-class TermAlg _Ω term where
-    lam  :: (term _Ω a -> term _Ω b) -> term _Ω (a -> b)
-    app  :: term _Ω (a -> b) -> term _Ω a -> term _Ω b
-    atom :: Typeable a => a -> term _Ω a
-    and  :: term _Ω _Ω -> term _Ω _Ω -> term _Ω _Ω
-    or   :: term _Ω _Ω -> term _Ω _Ω -> term _Ω _Ω
-    all  :: (term _Ω a    -> term _Ω _Ω) -> term _Ω _Ω
-    some :: (term _Ω _Ω -> term _Ω _Ω) -> term _Ω _Ω
-    will :: term _Ω _Ω -> term _Ω _Ω
-    willAlways :: term _Ω _Ω -> term _Ω _Ω
+class TermAlg term where
+    laml  :: (term b -> term a) -> term (a / b)
+    lamr  :: (term a -> term b) -> term (a \\ b)
+    appl  :: term (a / b) -> term b -> term a
+    appr  :: term (a \\ b) -> term a -> term b
+    atom :: Typeable a => a -> term (T a)
 
-class TermAlg _Ω term => TermExprAlg _Ω term where
-    var :: String -> term _Ω a
+class TermAlg term => TermExprAlg term where
+    var :: String -> term a
