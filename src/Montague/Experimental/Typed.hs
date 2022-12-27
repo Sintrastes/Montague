@@ -21,12 +21,12 @@ import Data.List
 instance Show LambekType where
   show = \case
     T x         -> "" -- TODO: show $ typeRep x
-    R x y       -> (show x) ++ "\\" ++ (show y)
-    L x y       -> (show x) ++ "/"  ++ (show y)
-    Conj x y    -> (show x) ++ "∧"  ++ (show y)
-    Disj x y    -> (show x) ++ "∨"  ++ (show y)
-    Extract x y -> (show x) ++ "↑"  ++ (show y)
-    Scoped x y  -> (show x) ++ "⇑"  ++ (show y)
+    R x y       -> show x ++ "\\" ++ show y
+    L x y       -> show x ++ "/"  ++ show y
+    Conj x y    -> show x ++ "∧"  ++ show y
+    Disj x y    -> show x ++ "∨"  ++ show y
+    Extract x y -> show x ++ "↑"  ++ show y
+    Scoped x y  -> show x ++ "⇑"  ++ show y
 
 type Sentence = 'T Bool
 
@@ -76,6 +76,10 @@ data Sem =
   | Some (Sem -> Sem)
   | Not Sem
   | Var String
+  | The Sem
+
+-- | Semantics for the definite determiner.
+ι = The
 
 -- | The world is the totality of facts, not of things. -- Wittgenstein
 type Facts _Ω = [Term (T _Ω)]
@@ -108,6 +112,7 @@ instance Show Sem where
       Or x y    -> show x ++ " ∨ " ++ show y
       All f     -> "∀x." ++ show (f (Var "x")) -- TODO: Make sure variables are not captured here.
       Some f    -> "∃x." ++ show (f (Var "x")) -- TODO: Make sure variables are not captured here.
+      The x     -> "ι(" ++ show x ++ ")"
 
 instance Eq a => Eq (Term (T a)) where
   (Atom x) == (Atom y) = x == y
