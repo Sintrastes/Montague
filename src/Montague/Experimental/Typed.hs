@@ -17,16 +17,18 @@ import Data.Functor.Identity
 import Control.Monad.Coroutine.SuspensionFunctors (Yield)
 
 data LambekType where 
-    T    :: Type -> LambekType
-    L    :: LambekType -> LambekType -> LambekType
-    R    :: LambekType -> LambekType -> LambekType
-    Conj :: LambekType -> LambekType -> LambekType
-    Disj :: LambekType -> LambekType -> LambekType
+    T       :: Type -> LambekType
+    L       :: LambekType -> LambekType -> LambekType
+    R       :: LambekType -> LambekType -> LambekType
+    Extract :: LambekType -> LambekType -> LambekType
+    Conj    :: LambekType -> LambekType -> LambekType
+    Disj    :: LambekType -> LambekType -> LambekType
 
 type (∧) = Conj
 type (∨) = Disj
 type (/) = L
 type (\\) = R
+type (↑) = Extract
 
 instance Show LambekType where
   show = \case
