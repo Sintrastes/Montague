@@ -12,6 +12,16 @@ data LambekType where
     Conj    :: LambekType -> LambekType -> LambekType
     Disj    :: LambekType -> LambekType -> LambekType
 
+instance Show LambekType where
+  show = \case
+    T x         -> "" -- TODO: show $ typeRep x
+    R x y       -> show x ++ "\\" ++ show y
+    L x y       -> show x ++ "/"  ++ show y
+    Conj x y    -> show x ++ "∧"  ++ show y
+    Disj x y    -> show x ++ "∨"  ++ show y
+    Extract x y -> show x ++ "↑"  ++ show y
+    Scoped x y  -> show x ++ "⇑"  ++ show y
+
 type (∧) = Conj
 type (∨) = Disj
 type (/) = L

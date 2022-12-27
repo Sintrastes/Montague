@@ -18,16 +18,6 @@ import Control.Monad.Coroutine.SuspensionFunctors (Yield)
 import Montague.Experimental.LambekType
 import Data.List
 
-instance Show LambekType where
-  show = \case
-    T x         -> "" -- TODO: show $ typeRep x
-    R x y       -> show x ++ "\\" ++ show y
-    L x y       -> show x ++ "/"  ++ show y
-    Conj x y    -> show x ++ "∧"  ++ show y
-    Disj x y    -> show x ++ "∨"  ++ show y
-    Extract x y -> show x ++ "↑"  ++ show y
-    Scoped x y  -> show x ++ "⇑"  ++ show y
-
 type Sentence = 'T Bool
 
 class BooleanType _Ω a where

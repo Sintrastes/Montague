@@ -19,3 +19,14 @@ class TermAlg term where
 
 class TermAlg term => TermExprAlg term where
     var :: String -> term a
+
+class SemAlg term where
+    pred :: String -> [term] -> term
+    individual :: Person   -> term
+    and  :: term -> term   -> term
+    or   :: term -> term   -> term
+    all  :: (term -> term) -> term
+    some :: (term -> term) -> term
+    not  :: term   -> term
+    var  :: String -> term
+    the  :: term   -> term
