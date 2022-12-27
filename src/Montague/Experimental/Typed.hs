@@ -16,6 +16,7 @@ import Control.Monad.Coroutine
 import Data.Functor.Identity
 import Control.Monad.Coroutine.SuspensionFunctors (Yield)
 import Montague.Experimental.LambekType
+import Data.List
 
 instance Show LambekType where
   show = \case
@@ -45,13 +46,13 @@ instance BooleanType _Ω b => BooleanType _Ω (R a b) where
 -- | Type family to get the semantic interpretation of a lambek
 -- type.
 type family Bracket (x :: LambekType) :: Type where
-  Bracket (L a b)  = Bracket a -> Bracket b
+  Bracket (L a b)  = Bracket b -> Bracket a
   Bracket (R a b)  = Bracket a -> Bracket b
   Bracket (T a)    = a
   Bracket (a ∧ b)  = (Bracket a, Bracket b)
   Bracket (a ∨ b)  = Either (Bracket a) (Bracket b)
-  Bracket (a ↑ b) = (Bracket a) -> (Bracket b)
-  Bracket (a ⇑ b) = (Bracket a -> Bracket b) -> Bracket b
+  Bracket (a ↑ b)  = Bracket a -> Bracket b
+  Bracket (a ⇑ b)  = (Bracket a -> Bracket b) -> Bracket b
 
 -- | A type of terms in the lambek calculus
 data Term a where
@@ -101,10 +102,12 @@ instance Show (Term a) where
 
 instance Show Sem where
     show = \case
-      And x y  -> show x ++ " ∧ " ++ show y
-      Or x y   -> show x ++ " ∨ " ++ show y
-      All f    -> "∀x." ++ show (f (Var "x")) -- TODO: Make sure variables are not captured here.
-      Some f   -> "∃x." ++ show (f (Var "x")) -- TODO: Make sure variables are not captured here.
+      Pred p xs -> p ++ "(" ++ intercalate ", " (show <$> xs) ++ ")"
+      Var x -> x
+      And x y   -> show x ++ " ∧ " ++ show y
+      Or x y    -> show x ++ " ∨ " ++ show y
+      All f     -> "∀x." ++ show (f (Var "x")) -- TODO: Make sure variables are not captured here.
+      Some f    -> "∃x." ++ show (f (Var "x")) -- TODO: Make sure variables are not captured here.
 
 instance Eq a => Eq (Term (T a)) where
   (Atom x) == (Atom y) = x == y
@@ -141,11 +144,8 @@ data Person = Nate | William | Michael | Andrew deriving(Eq, Show)
 -- and recursively reference (maybe via an implicit parameter)
 -- the search procedure in light of the current set of rules.
 likes :: Term ((T Person \\ T Sem) / T Person)
-likes = LamL $ \x -> LamR $ \y -> Atom $
-    Pred "likes" [Individual Nate, Individual William] `And` 
-      Pred "likes" [Individual William, Individual Nate]
-    -- This was the previous "direct" interpretation:
-         -- x == nate && y == william || x == william && y == nate
+likes = LamL $ \(Atom x) -> LamR $ \(Atom y) -> Atom $
+    Pred "likes" [Individual x, Individual y]
 
 -- nate :: Term _Ω (T Person)
 nate = Atom Nate
@@ -187,18 +187,6 @@ ed = undefined
 --
 -- willAlways :: Term _Ω (T _Ω) -> Term _Ω (T _Ω)
 -- willAlways = WillAlways
-
--- | Here is what an evaluation function for our algebra could look like.
--- We can try to evaluate universal and existential propositions,
--- and "fail" if they are not definitive.
--- 
--- Returns a coroutine which can be run indefinitely to continue producing 
--- intermediate results.
--- eval :: Term _Ω (T _Ω) -> Coroutine (Yield Bool) Identity Bool
--- eval = undefined
-
-eval :: Term a -> Bracket a
-eval = undefined
 
 -- TODO: There should probably be a typeclass for those to make this generic. 
 and :: BooleanType Sem a => Term a -> Term a -> Term a
