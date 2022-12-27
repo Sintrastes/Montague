@@ -52,10 +52,10 @@ instance BooleanType _Ω (T _Ω) where
   coord f (Atom x) (Atom y) = Atom $ f x y
 
 instance BooleanType _Ω b => BooleanType _Ω (L b a) where
-  coord f x y = LamL $ \v -> coord f (AppL x v) (AppL y v)
+  coord f x y = LamL $ \v -> coord f (x <. v) (y <. v)
 
 instance BooleanType _Ω b => BooleanType _Ω (R a b) where
-  coord f x y = LamR $ \v -> coord f (AppR v x) (AppR v y)
+  coord f x y = LamR $ \v -> coord f (v .> x) (v .> y)
 
 -- | Type family to get the semantic interpretation of a lambek
 -- type.
@@ -76,6 +76,9 @@ data Term a where
     AppR  :: Term a -> Term (a \\ b) -> Term b
     Atom  :: (Show a, Typeable a) => a -> Term (T a)
     TVar   :: String -> Proxy a -> Term a
+
+(<.) = AppL
+(.>) = AppR
 
 -- | An example type of raw semantic expressions.
 data Sem = 
@@ -130,12 +133,12 @@ raise x = LamL $ \(v :: Term (a\\b)) -> AppR x v
 -- | Function ("proof") witnessing the associativity of the lambek
 --  calculus.
 assoc :: Term ((a \\ b) / c) -> Term (a \\ (b / c))
-assoc x = LamR $ \y -> LamL $ \z -> y `AppR` (x `AppL` z)
+assoc x = LamR $ \y -> LamL $ \z -> y .> (x <. z)
 
 -- | Function ("proof") witnessing the associativity of the lambek
 --  calculus in the opposite direction as assoc.
 unassoc :: Term (a \\ (b / c)) -> Term ((a \\ b) / c)
-unassoc x = LamL $ \z -> LamR $ \y -> (y `AppR` x) `AppL` z
+unassoc x = LamL $ \z -> LamR $ \y -> (y .> x) <. z
 
 -- Example from SEP:
 --  Needs to be re-worked with the approach from Carpenter.
@@ -168,17 +171,17 @@ william = Atom William
 michael = Atom Michael
 
 -- example :: Term _Ω (T _Ω)
-example = nate `AppR` (likes `AppL` william)
+example = nate .> (likes <. william)
 
 -- Coordination
-example2 = (nate `AppR` (likes `AppL` william))
+example2 = (nate .> (likes <. william))
     `Montague.Experimental.Typed.and` 
-     (william `AppR` (likes `AppL` nate))
+     (william .> (likes <. nate))
 
 -- Coordination via type-raising.
 example3 = raise nate
    `Montague.Experimental.Typed.and` raise william
-   `AppL` (likes `AppL` michael)
+   <. (likes <. michael)
 
 -- | -ed morpeme: play-ed -> played. am-ed -> was. see-ed -> saw.
 ed :: Term (T _Ω) -> Term (T _Ω)
