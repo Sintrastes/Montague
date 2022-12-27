@@ -46,7 +46,7 @@ type Sentence = 'T Bool
 
 class BooleanType _Ω a where
   coord :: (_Ω -> _Ω -> _Ω) 
-    -> Term _Ω a -> Term _Ω a -> Term _Ω a
+    -> Term a -> Term a -> Term a
 
 instance BooleanType _Ω (T _Ω) where
   coord f (Atom x) (Atom y) = Atom $ f x y
@@ -68,23 +68,14 @@ type family Bracket (x :: LambekType) :: Type where
   Bracket (a ↑ b) = (Bracket a) -> (Bracket b)
   Bracket (a ⇑ b) = (Bracket a -> Bracket b) -> Bracket b
 
--- | A type of terms in the lambek calculus abstracted over a type
--- of "truth values" _Ω.
---
--- The symbol Ω was chosen to evoke the similarity of the 
---  subobject classifier in topos theory.
-data Term _Ω a where
-    LamL  :: (Term _Ω b -> Term _Ω a) -> Term _Ω (L a b)
-    LamR  :: (Term _Ω a -> Term _Ω b) -> Term _Ω (R a b)
-    AppL  :: Term _Ω (b / a) -> Term _Ω a -> Term _Ω b
-    AppR  :: Term _Ω a -> Term _Ω (a \\ b) -> Term _Ω b
-    Atom  :: (Show a, Typeable a) => a -> Term _Ω (T a)
-    -- And   :: Term _Ω (T _Ω) -> Term _Ω (T _Ω) -> Term _Ω (T _Ω)
-    -- Or    :: Term _Ω (T _Ω) -> Term _Ω (T _Ω) -> Term _Ω (T _Ω)
-    -- All   :: (Term _Ω a -> Term _Ω (T _Ω)) -> Term _Ω (T _Ω)
-    -- Some  :: (Term _Ω (T _Ω) -> Term _Ω (T _Ω)) 
-    --   -> Term _Ω (T _Ω)
-    TVar   :: String -> Proxy a -> Term _Ω a
+-- | A type of terms in the lambek calculus
+data Term a where
+    LamL  :: (Term b -> Term a) -> Term (a / b)
+    LamR  :: (Term a -> Term b) -> Term (a \\ b)
+    AppL  :: Term (b / a) -> Term a -> Term b
+    AppR  :: Term a -> Term (a \\ b) -> Term b
+    Atom  :: (Show a, Typeable a) => a -> Term (T a)
+    TVar   :: String -> Proxy a -> Term a
 
 -- | An example type of raw semantic expressions.
 data Sem = 
@@ -98,21 +89,21 @@ data Sem =
   | Var String
 
 -- | The world is the totality of facts, not of things. -- Wittgenstein
-type Facts _Ω = [Term _Ω (T _Ω)]
+type Facts _Ω = [Term (T _Ω)]
 
-data SomeTerm _Ω = forall a. Typeable a => SomeTerm (Term _Ω a)
+data SomeTerm _Ω = forall a. Typeable a => SomeTerm (Term a)
 
-subst :: [(String, SomeTerm _Ω)] -> Term _Ω a -> Term _Ω a
+subst :: [(String, SomeTerm _Ω)] -> Term a -> Term a
 subst [] t = t
 subst ((x, y):xs) t = subst xs (substVar x y t)
 
-substVar :: String -> SomeTerm _Ω -> Term _Ω a -> Term _Ω a
+substVar :: String -> SomeTerm _Ω -> Term a -> Term a
 substVar x y t = undefined
 
-unify :: Term _Ω a -> Term _Ω a -> [(String, SomeTerm _Ω)]
+unify :: Term a -> Term a -> [(String, SomeTerm _Ω)]
 unify = undefined
 
-instance (Show _Ω) => Show (Term _Ω a) where
+instance Show (Term a) where
   show = \case
     LamL f   -> "λₗx."  ++ show (f (TVar "x" Proxy)) -- TODO: Make sure variables are not captured here.
     LamR f   -> "λᵣx." ++ show (f (TVar "x" Proxy)) -- TODO: Make sure variables are not captured here.
@@ -127,23 +118,23 @@ instance Show Sem where
       All f    -> "∀x." ++ show (f (Var "x")) -- TODO: Make sure variables are not captured here.
       Some f   -> "∃x." ++ show (f (Var "x")) -- TODO: Make sure variables are not captured here.
 
-instance Eq a => Eq (Term _Ω (T a)) where
+instance Eq a => Eq (Term (T a)) where
   (Atom x) == (Atom y) = x == y
   _ == _ = False
 
 -- | "Type-raising" operator. Converts a type a to a type b/(a\b).
 -- Useful for making non-boolean types boolean for the sake of coordination.
-raise :: Term _Ω a -> Term _Ω (b/(a\\b))
-raise x = LamL $ \(v :: Term _Ω (a\\b)) -> AppR x v
+raise :: Term a -> Term (b/(a\\b))
+raise x = LamL $ \(v :: Term (a\\b)) -> AppR x v
 
 -- | Function ("proof") witnessing the associativity of the lambek
 --  calculus.
-assoc :: Term _Ω ((a \\ b) / c) -> Term _Ω (a \\ (b / c))
+assoc :: Term ((a \\ b) / c) -> Term (a \\ (b / c))
 assoc x = LamR $ \y -> LamL $ \z -> y `AppR` (x `AppL` z)
 
 -- | Function ("proof") witnessing the associativity of the lambek
 --  calculus in the opposite direction as assoc.
-unassoc :: Term _Ω (a \\ (b / c)) -> Term _Ω ((a \\ b) / c)
+unassoc :: Term (a \\ (b / c)) -> Term ((a \\ b) / c)
 unassoc x = LamL $ \z -> LamR $ \y -> (y `AppR` x) `AppL` z
 
 -- Example from SEP:
@@ -161,7 +152,7 @@ data Person = Nate | William | Michael | Andrew deriving(Eq, Show)
 -- I guess we could have the set of "facts" be part of the "world",
 -- and recursively reference (maybe via an implicit parameter)
 -- the search procedure in light of the current set of rules.
-likes :: Term Sem ((T Person \\ T Sem) / T Person)
+likes :: Term ((T Person \\ T Sem) / T Person)
 likes = LamL $ \x -> LamR $ \y -> Atom $
     Pred "likes" [Individual Nate, Individual William] `And` 
       Pred "likes" [Individual William, Individual Nate]
@@ -190,7 +181,7 @@ example3 = raise nate
    `AppL` (likes `AppL` michael)
 
 -- | -ed morpeme: play-ed -> played. am-ed -> was. see-ed -> saw.
-ed :: Term _Ω (T _Ω) -> Term _Ω (T _Ω)
+ed :: Term (T _Ω) -> Term (T _Ω)
 ed = undefined
 
 -- | "will" -- a future tense modal operator over possible worlds.
@@ -218,14 +209,14 @@ ed = undefined
 -- eval :: Term _Ω (T _Ω) -> Coroutine (Yield Bool) Identity Bool
 -- eval = undefined
 
-eval :: Term _Ω a -> Bracket a
+eval :: Term a -> Bracket a
 eval = undefined
 
 -- TODO: There should probably be a typeclass for those to make this generic. 
-and :: BooleanType Sem a => Term Sem a -> Term Sem a -> Term Sem a
+and :: BooleanType Sem a => Term a -> Term a -> Term a
 and x y = coord And x y
 
-or :: BooleanType Sem a => Term Sem a -> Term Sem a -> Term Sem a
+or :: BooleanType Sem a => Term a -> Term a -> Term a
 or x y = coord Or x y
 
 -- | Get the current (partial) truth value from a coroutine.
