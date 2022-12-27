@@ -45,10 +45,10 @@ instance BooleanType _Ω (T _Ω) where
   coord f x y = f x y
 
 instance BooleanType _Ω b => BooleanType _Ω (L b a) where
-  coord f x y = LLamL $ \v -> coord f (LAppL v x) (LAppL v y)
+  coord f x y = LLamL $ \v -> coord f (LAppL x v) (LAppL y v)
 
 instance BooleanType _Ω b => BooleanType _Ω (R a b) where
-  coord f x y = LLamR $ \v -> coord f (LAppR x v) (LAppR y v)
+  coord f x y = LLamR $ \v -> coord f (LAppR v x) (LAppR v y)
 
 -- | Type family to get the semantic interpretation of a lambek
 -- type.
@@ -93,8 +93,8 @@ type Facts _Ω w = [Term _Ω (w -> Bool)]
 data LambekTerm _Ω a where
     LLamL  :: (LambekTerm _Ω b -> LambekTerm _Ω a) -> LambekTerm _Ω (L a b)
     LLamR  :: (LambekTerm _Ω a -> LambekTerm _Ω b) -> LambekTerm _Ω (R a b)
-    LAppL  :: LambekTerm _Ω a -> LambekTerm _Ω (L b a) -> LambekTerm _Ω b
-    LAppR  :: LambekTerm _Ω (R a b) -> LambekTerm _Ω a -> LambekTerm _Ω b
+    LAppL  :: LambekTerm _Ω (b / a) -> LambekTerm _Ω a -> LambekTerm _Ω b
+    LAppR  :: LambekTerm _Ω a -> LambekTerm _Ω (a \\ b) -> LambekTerm _Ω b
     LAtom  :: (Show a, Typeable a) => a -> LambekTerm _Ω (T a)
     LAnd   :: LambekTerm _Ω (T _Ω) -> LambekTerm _Ω (T _Ω) -> LambekTerm _Ω (T _Ω)
     LOr    :: LambekTerm _Ω (T _Ω) -> LambekTerm _Ω (T _Ω) -> LambekTerm _Ω (T _Ω)
@@ -122,7 +122,10 @@ instance Eq a => Eq (LambekTerm _Ω (T a)) where
 -- | "Type-raising" operator. Converts a type a to a type b/(a\b).
 -- Useful for making non-boolean types boolean for the sake of coordination.
 raise :: LambekTerm _Ω a -> LambekTerm _Ω (b/(a\\b))
-raise x = LLamL $ \(v :: LambekTerm _Ω (a\\b)) -> LAppR v x
+raise x = LLamL $ \(v :: LambekTerm _Ω (a\\b)) -> LAppR x v
+
+assoc :: LambekTerm _Ω ((a \\ b) / c) -> LambekTerm _Ω (a \\ (b / c))
+assoc = undefined
 
 -- Example from SEP:
 every :: Term _Ω ((a -> _Ω) -> (a -> _Ω) -> _Ω)
@@ -148,16 +151,20 @@ nate = LAtom Nate
 -- william :: LambekTerm _Ω (T Person)
 william = LAtom William
 
+michael = LAtom Michael
+
 -- example :: LambekTerm _Ω (T _Ω)
-example = nate `LAppL` likes `LAppR` william
+example = nate `LAppR` (likes `LAppL` william)
 
-example2 = (nate `LAppL` likes `LAppR` william) 
+-- Coordination
+example2 = (nate `LAppR` (likes `LAppL` william))
     `Montague.Experimental.Typed.and` 
-     (william `LAppL` likes `LAppR` nate)
+     (william `LAppR` (likes `LAppL` nate))
 
--- TODO: Coordination via type-raising.
--- example3 = (nate `Montague.Experimental.Typed.and` will) `LAppL` 
---  likes `LAppR` michael
+-- Coordination via type-raising.
+example3 = raise nate
+   `Montague.Experimental.Typed.and` raise william
+   `LAppL` (likes `LAppL` michael)
 
 -- | -ed morpeme: play-ed -> played. am-ed -> was. see-ed -> saw.
 ed :: Term _Ω _Ω -> Term _Ω _Ω
