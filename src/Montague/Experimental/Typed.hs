@@ -45,11 +45,11 @@ instance Show LambekType where
 type Sentence = 'T Bool
 
 class BooleanType _Ω a where
-  coord :: (Term _Ω (T _Ω) -> Term _Ω (T _Ω) -> Term _Ω (T _Ω)) 
+  coord :: (_Ω -> _Ω -> _Ω) 
     -> Term _Ω a -> Term _Ω a -> Term _Ω a
 
 instance BooleanType _Ω (T _Ω) where
-  coord f x y = f x y
+  coord f (Atom x) (Atom y) = Atom $ f x y
 
 instance BooleanType _Ω b => BooleanType _Ω (L b a) where
   coord f x y = LamL $ \v -> coord f (AppL x v) (AppL y v)
@@ -79,12 +79,23 @@ data Term _Ω a where
     AppL  :: Term _Ω (b / a) -> Term _Ω a -> Term _Ω b
     AppR  :: Term _Ω a -> Term _Ω (a \\ b) -> Term _Ω b
     Atom  :: (Show a, Typeable a) => a -> Term _Ω (T a)
-    And   :: Term _Ω (T _Ω) -> Term _Ω (T _Ω) -> Term _Ω (T _Ω)
-    Or    :: Term _Ω (T _Ω) -> Term _Ω (T _Ω) -> Term _Ω (T _Ω)
-    All   :: (Term _Ω a -> Term _Ω (T _Ω)) -> Term _Ω (T _Ω)
-    Some  :: (Term _Ω (T _Ω) -> Term _Ω (T _Ω)) 
-       -> Term _Ω (T _Ω)
-    Var   :: String -> Proxy a -> Term _Ω a
+    -- And   :: Term _Ω (T _Ω) -> Term _Ω (T _Ω) -> Term _Ω (T _Ω)
+    -- Or    :: Term _Ω (T _Ω) -> Term _Ω (T _Ω) -> Term _Ω (T _Ω)
+    -- All   :: (Term _Ω a -> Term _Ω (T _Ω)) -> Term _Ω (T _Ω)
+    -- Some  :: (Term _Ω (T _Ω) -> Term _Ω (T _Ω)) 
+    --   -> Term _Ω (T _Ω)
+    TVar   :: String -> Proxy a -> Term _Ω a
+
+-- | An example type of raw semantic expressions.
+data Sem = 
+    Pred String [Sem]
+  | Individual Person
+  | And Sem Sem
+  | Or Sem Sem
+  | All (Sem -> Sem)
+  | Some (Sem -> Sem)
+  | Not Sem
+  | Var String
 
 -- | The world is the totality of facts, not of things. -- Wittgenstein
 type Facts _Ω = [Term _Ω (T _Ω)]
@@ -103,15 +114,18 @@ unify = undefined
 
 instance (Show _Ω) => Show (Term _Ω a) where
   show = \case
-    LamL f   -> "λₗx."  ++ (show $ f (Var "x" Proxy)) -- TODO: Make sure variables are not captured here.
-    LamR f   -> "λᵣx." ++ (show $ f (Var "x" Proxy)) -- TODO: Make sure variables are not captured here.
-    AppL f x -> (show f) ++ " " ++ (show x)
-    AppR f x -> (show f) ++ " " ++ (show x)
+    LamL f   -> "λₗx."  ++ show (f (TVar "x" Proxy)) -- TODO: Make sure variables are not captured here.
+    LamR f   -> "λᵣx." ++ show (f (TVar "x" Proxy)) -- TODO: Make sure variables are not captured here.
+    AppL f x -> show f ++ " " ++ show x
+    AppR f x -> show f ++ " " ++ show x
     Atom x   -> show x
-    And x y  -> (show x) ++ " ∧ " ++ (show y)
-    Or x y   -> (show x) ++ " ∨ " ++ (show y)
-    All f    -> "∀x." ++ (show $ f (Var "x" Proxy)) -- TODO: Make sure variables are not captured here.
-    Some f   -> "∃x." ++ (show $ f (Var "x" Proxy)) -- TODO: Make sure variables are not captured here.
+
+instance Show Sem where
+    show = \case
+      And x y  -> show x ++ " ∧ " ++ show y
+      Or x y   -> show x ++ " ∨ " ++ show y
+      All f    -> "∀x." ++ show (f (Var "x")) -- TODO: Make sure variables are not captured here.
+      Some f   -> "∃x." ++ show (f (Var "x")) -- TODO: Make sure variables are not captured here.
 
 instance Eq a => Eq (Term _Ω (T a)) where
   (Atom x) == (Atom y) = x == y
@@ -147,9 +161,12 @@ data Person = Nate | William | Michael | Andrew deriving(Eq, Show)
 -- I guess we could have the set of "facts" be part of the "world",
 -- and recursively reference (maybe via an implicit parameter)
 -- the search procedure in light of the current set of rules.
-likes :: Term Bool ((T Person \\ T Bool) / T Person)
+likes :: Term Sem ((T Person \\ T Sem) / T Person)
 likes = LamL $ \x -> LamR $ \y -> Atom $
-    x == nate && y == william || x == william && y == nate
+    Pred "likes" [Individual Nate, Individual William] `And` 
+      Pred "likes" [Individual William, Individual Nate]
+    -- This was the previous "direct" interpretation:
+         -- x == nate && y == william || x == william && y == nate
 
 -- nate :: Term _Ω (T Person)
 nate = Atom Nate
@@ -198,13 +215,17 @@ ed = undefined
 -- 
 -- Returns a coroutine which can be run indefinitely to continue producing 
 -- intermediate results.
-eval :: Term _Ω (T _Ω) -> Coroutine (Yield Bool) Identity Bool
+-- eval :: Term _Ω (T _Ω) -> Coroutine (Yield Bool) Identity Bool
+-- eval = undefined
+
+eval :: Term _Ω a -> Bracket a
 eval = undefined
 
-and :: BooleanType _Ω a => Term _Ω a -> Term _Ω a -> Term _Ω a
+-- TODO: There should probably be a typeclass for those to make this generic. 
+and :: BooleanType Sem a => Term Sem a -> Term Sem a -> Term Sem a
 and x y = coord And x y
 
-or :: BooleanType _Ω a => Term _Ω a -> Term _Ω a -> Term _Ω a
+or :: BooleanType Sem a => Term Sem a -> Term Sem a -> Term Sem a
 or x y = coord Or x y
 
 -- | Get the current (partial) truth value from a coroutine.
