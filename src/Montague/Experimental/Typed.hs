@@ -315,7 +315,7 @@ mortal = Atom Mortal
 
 -- syllogism1 = socrates .> is <. a man
 
--- syllogism2 = every man .> is <. mortal
+syllogism2 = AppS (every <. man) (\x -> x .> (is <. mortal))
 
 syllogism3 = socrates .> (is <. mortal)
 
