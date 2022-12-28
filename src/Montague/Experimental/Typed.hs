@@ -1,6 +1,7 @@
 
 {-# LANGUAGE ScopedTypeVariables, TypeOperators, DataKinds, KindSignatures, TypeApplications, 
    TypeFamilies, GADTs, FlexibleInstances, FlexibleContexts, MultiParamTypeClasses, LambdaCase #-}
+{-# LANGUAGE FunctionalDependencies #-}
 
 module Montague.Experimental.Typed where
 
@@ -165,6 +166,8 @@ unassoc x = LamL $ \z -> LamR $ \y -> (y .> x) <. z
 -- every = Lam $ \p -> Lam $ \q -> All $ \x ->
 --  And (App p x) (App q x)
 
+class HasAttributes n a | n -> a where
+
 data Person = 
       Nate 
     | William 
@@ -172,6 +175,23 @@ data Person =
     | Andrew 
     | Socrates 
   deriving(Eq, Show)
+
+-- | Type of attributes that specifically apply
+-- to persons.
+data PersonAttrs = 
+      Mortal
+    | Man
+    | Performing PersonEvent
+  deriving(Eq, Show)
+
+instance HasAttributes Person PersonAttrs
+
+-- | Type of events that can be performed by persons.
+data PersonEvent = 
+      Running
+    | Walking
+    | Talking
+   deriving(Eq, Show) 
 
 data Subject =
       Food
@@ -249,6 +269,27 @@ william :: Term (NP Person)
 william = Atom William
 
 michael = Atom Michael
+
+socrates = Atom Socrates
+
+class Entity n o | n -> o where
+  inj :: n -> o
+
+instance Entity Person Sem where
+  inj = Individual
+
+-- | The copula, in the sense of attribution.
+is :: Show a => Entity n Sem => HasAttributes n a => Term (NP n \\ S Sem / T a)
+is = LamL $ \attr -> LamR $ \(Atom entity) -> 
+  Atom $ Pred (show attr) [inj entity]
+
+mortal = Atom Mortal
+
+-- syllogism1 = socrates .> is <. a man
+
+-- syllogism2 = all man .> are <. mortal
+
+syllogism3 = socrates .> (is <. mortal)
 
 example :: Term (T Sem)
 example = nate .> (likes <. william)
