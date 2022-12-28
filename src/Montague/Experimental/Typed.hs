@@ -65,17 +65,20 @@ data Term a where
     -- The idea is that if we can choose some (possibly empty)
     --  terms l and r that concatenate to a, then we can construct
     --  a ↑ b
-    LamS  :: (Term b -> Term a) -> Term (a ↑ b)
+    LamE  :: (Term b -> Term a) -> Term (a ↑ b)
+    LamS  :: ((Term b -> Term a) -> Term a) -> Term (b ⇑ a)
     -- | Constructor for building a new noun from a function from
     --  ind -> o.
     LamN  :: (Term (NP ind) -> Term (S o)) -> Term (N ind o)
     AppL  :: Term (b / a) -> Term a -> Term b
     AppR  :: Term a -> Term (a \\ b) -> Term b
-    -- | Constructor for applying scoped functions.
+    -- | Constructor for applying extracted functions.
     --
     -- Note: NOT a valid rule in the calculus, only used
     -- internally.
-    AppS  :: Term (a ↑ b) -> Term b -> Term a
+    AppE  :: Term (a ↑ b) -> Term b -> Term a
+    -- Also not sure if this is right or not.
+    AppS  :: Term (b ⇑ a) -> (Term b -> Term a) -> Term a
     Atom  :: (Show a, Typeable a) => a -> Term (T a)
     TVar   :: String -> Proxy a -> Term a
 
@@ -83,18 +86,19 @@ data Term a where
 (.>) = AppR
 
 -- | An example type of raw semantic expressions.
-data Sem = 
-    Pred String [Sem]
-  | Individual Person
-  | Subject Subject
-  | And Sem Sem
-  | Or Sem Sem
-  | All (Sem -> Sem)
-  | Some (Sem -> Sem)
-  | Not Sem
-  | Var String
-  | The Sem
-  | Const Bool
+data Sem where
+    Pred       :: String -> [Sem] -> Sem
+    Individual :: Person -> Sem
+    Subject    :: Subject -> Sem
+    And        :: Sem -> Sem -> Sem
+    Or         :: Sem -> Sem -> Sem
+    Implies    :: Sem -> Sem -> Sem
+    All        :: (a -> Sem) -> Sem
+    Exists     :: (a -> Sem) -> Sem
+    Not        :: Sem -> Sem
+    Var        :: String -> Sem
+    The        :: Sem -> Sem
+    Const      :: Bool -> Sem
 
 -- | Semantics for the definite determiner.
 ι = The
@@ -128,8 +132,8 @@ instance Show Sem where
       Var x -> x
       And x y   -> show x ++ " ∧ " ++ show y
       Or x y    -> show x ++ " ∨ " ++ show y
-      All f     -> "∀x." ++ show (f (Var "x")) -- TODO: Make sure variables are not captured here.
-      Some f    -> "∃x." ++ show (f (Var "x")) -- TODO: Make sure variables are not captured here.
+      All f     -> "∀x." -- ++ show (f (Var "x")) -- TODO: Make sure variables are not captured here.
+      Exists f  -> "∃x." -- ++ show (f (Var "x")) -- TODO: Make sure variables are not captured here.
       The x     -> "ι(" ++ show x ++ ")"
 
 instance Eq a => Eq (Term (T a)) where
@@ -238,19 +242,19 @@ man = LamN $ \x ->
 --  clauses.
 who :: Term (N n Sem \\ N n Sem / (S Sem ↑ NP n))
 who = LamL $ \v -> LamR $ \p -> LamN $ \x -> let 
-     Atom a1 = v `AppS` x
+     Atom a1 = v `AppE` x
      LamN p' = p
      Atom a2 = p' x
   in
      Atom $ And a1 a2 
 
 relativeClauseExample :: Term (S Sem ↑ NP Person)
-relativeClauseExample = LamS $ \x ->
+relativeClauseExample = LamE $ \x ->
     x .> (likes <. william)
 
 -- "the man who likes William"
 relativeClauseUsage :: Term (NP Person)
-relativeClauseUsage = the $ man .> (who <. LamS (\x -> x .> (likes <. william)))
+relativeClauseUsage = the $ man .> (who <. LamE (\x -> x .> (likes <. william)))
 
 -- "nate likes william and michael"
 rightCoordinationExample = (nate .> assoc likes) 
@@ -259,7 +263,7 @@ rightCoordinationExample = (nate .> assoc likes)
 -- "the man who likes cooking and anime"
 relativeClauseUsage2 = the $ 
   man .> (who <. 
-    LamS (\x -> (x .> assoc likes2) 
+    LamE (\x -> (x .> assoc likes2) 
         .> (raise' cooking `and'` raise' anime)))
 
 nate :: Term (NP Person)
@@ -283,11 +287,35 @@ is :: Show a => Entity n Sem => HasAttributes n a => Term (NP n \\ S Sem / T a)
 is = LamL $ \attr -> LamR $ \(Atom entity) -> 
   Atom $ Pred (show attr) [inj entity]
 
+every :: Typeable n => Show n => Term ((NP n ⇑ S Sem) / N n Sem)
+every = LamL $ \(LamN p) -> LamS $ \q -> Atom $
+    All $ \(x :: n) -> let 
+      Atom p1 = p (Atom x)
+      Atom p2 = q (Atom x)
+    in 
+      p1 `Implies` p2
+
+some :: Typeable n => Show n => Term ((NP n ⇑ S Sem) / N n Sem)
+some = LamL $ \(LamN p) -> LamS $ \q -> Atom $
+    Exists $ \(x :: n) -> let 
+      Atom p1 = p (Atom x)
+      Atom p2 = q (Atom x)
+    in
+      p1 `And` p2
+
+no :: Typeable n => Show n => Term ((NP n ⇑ S Sem) / N n Sem)
+no = LamL $ \(LamN p) -> LamS $ \q -> Atom $
+    Exists $ \(x :: n) -> let 
+      Atom p1 = p (Atom x)
+      Atom p2 = q (Atom x)
+    in
+      Not $ p1 `And` p2
+
 mortal = Atom Mortal
 
 -- syllogism1 = socrates .> is <. a man
 
--- syllogism2 = all man .> are <. mortal
+-- syllogism2 = every man .> is <. mortal
 
 syllogism3 = socrates .> (is <. mortal)
 
