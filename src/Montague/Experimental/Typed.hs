@@ -277,14 +277,18 @@ the :: forall a.
    => Enum a 
    => Eval Sem Bool 
    => Term (N a Sem) -> Term (NP a)
-the (LamN p) = Atom (Val $ head holdsFor)
-  where
-    entities :: [a] = [toEnum 0 ..]
-    holdsFor = filter (evalAtom . p . Atom . Val) entities 
+the p' = let 
+  LamN p = eval p' 
 
-    evalAtom :: Term (S Sem) -> Bool
-    evalAtom (Atom (Val x)) = evaluate x
-    evalAtom (Atom (Var _)) = False
+  entities :: [a] = [toEnum 0 ..]
+  holdsFor = filter (evalAtom . p . Atom . Val) entities
+
+  evalAtom :: Term (S Sem) -> Bool
+  evalAtom (Atom (Val x)) = evaluate x
+  evalAtom (Atom (Var _)) = False
+ in 
+  Atom (Val $ trace (show holdsFor) $ head holdsFor)
+    
 
 -- | An example of a noun which is not a proper noun.
 man :: Term (N Person Sem)
