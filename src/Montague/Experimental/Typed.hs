@@ -82,6 +82,7 @@ data Term a where
     Atom  :: (Show a, Typeable a) => Var a -> Term (T a)
     TVar  :: String -> Term a
 
+-- Debugging utility used to see the top level constructor.
 toplevel = \case
   LamL _   -> "LamL"
   LamR _   -> "LamR"
@@ -94,7 +95,6 @@ toplevel = \case
   AppS _ _ -> "AppS"
   Atom _   -> "Atom"
   TVar _   -> "TVar"
-
 
 -- | Evaluate a lambda expression to normal form by beta reduction.
 eval :: Term a -> Term a
@@ -126,8 +126,14 @@ data Sem where
     All        :: (Var a -> Sem) -> Sem
     Exists     :: (Var a -> Sem) -> Sem
     Not        :: Sem -> Sem
-    The        :: Sem -> Sem
+    The        :: (Var a -> Sem) -> Sem
     Const      :: Bool -> Sem
+
+class Eval e a | e -> a where
+  evaluate :: e -> a
+
+instance Eval Sem Bool where
+  evaluate _ = True
 
 data Var a = Var String | Val a
 
@@ -177,7 +183,7 @@ instance Show Sem where
       Implies x y -> show x ++ " → " ++ show y
       All f     -> "∀x." ++ show (f (Var "x")) -- TODO: Make sure variables are not captured here.
       Exists f  -> "∃x." ++ show (f (Var "x")) -- TODO: Make sure variables are not captured here.
-      The x     -> "ι(" ++ show x ++ ")"
+      The x     -> "ι(" -- ++ show x ++ ")"
       Individual x -> show x
       Subject x    -> show x
       Const x -> show x
@@ -213,7 +219,7 @@ data Person =
     | Michael 
     | Andrew 
     | Socrates 
-  deriving(Eq, Show)
+  deriving(Eq, Show, Enum)
 
 -- | Type of attributes that specifically apply
 -- to persons.
@@ -265,13 +271,20 @@ likes2 = LamL $ \(Atom x) -> LamR $ \(Atom y) -> Atom $ Val $
 
 -- | Definite determiner -- converts a noun into a
 -- noun phrase.
-the :: Term (N a Sem) -> Term (NP a)
-the (LamN x) = undefined -- Atom (ι x) 
+the :: forall a. Typeable a => Show a => Enum a => Eval Sem Bool => Term (N a Sem) -> Term (NP a)
+the (LamN p) = Atom (Val $ head holdsFor)
+  where
+    entities :: [a] = [toEnum 0 ..]
+    holdsFor = filter (evalAtom . p . Atom . Val) entities 
+
+    evalAtom :: Term (S Sem) -> Bool
+    evalAtom (Atom (Val x)) = evaluate x
+    evalAtom (Atom (Var _)) = False
 
 -- | An example of a noun which is not a proper noun.
 man :: Term (N Person Sem)
-man = LamN $ \x -> 
-  Atom $ Val $ Const True
+man = LamN $ \x -> let Atom x' = evalAtom x in
+  Atom $ Val $ Pred (show Man) [Individual x']
 
 -- who (or which, since we do not distinguish animacy), used to construct relative
 --  clauses.
