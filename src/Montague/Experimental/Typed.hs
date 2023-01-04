@@ -271,7 +271,12 @@ likes2 = LamL $ \(Atom x) -> LamR $ \(Atom y) -> Atom $ Val $
 
 -- | Definite determiner -- converts a noun into a
 -- noun phrase.
-the :: forall a. Typeable a => Show a => Enum a => Eval Sem Bool => Term (N a Sem) -> Term (NP a)
+the :: forall a. 
+      Typeable a 
+   => Show a 
+   => Enum a 
+   => Eval Sem Bool 
+   => Term (N a Sem) -> Term (NP a)
 the (LamN p) = Atom (Val $ head holdsFor)
   where
     entities :: [a] = [toEnum 0 ..]
