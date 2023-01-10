@@ -8,6 +8,10 @@ data LambekType where
     -- | Generic constructor for injecting a Haskell type
     -- into a Lambek type. Used for both noun phrases and sentences.
     T       :: Type -> LambekType
+    -- | Constructor for a polar interrogative.
+    Sy      :: Type -> LambekType
+    -- | Constructor for a Wh-interrogative
+    Sw      :: Type -> Type -> LambekType
     -- | Specific constructor for injecting a type of individuals
     -- (together with a "boolean type") as a noun.
     N       :: Type -> Type -> LambekType
