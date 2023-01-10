@@ -288,7 +288,26 @@ the p' = let
   evalAtom (Atom (Var _)) = False
  in 
   Atom (Val $ trace (show holdsFor) $ head holdsFor)
-    
+
+-- | "did", as in a question.
+did :: Term (Sy Sem / (NP b \\ S Sem) / NP a)
+did = _
+
+-- | "who", as used in a question.
+who :: Term (Sw Sem / (NP a \\ S Sem))
+who = _
+
+-- | "who" or "whom" as used in a question.
+whom :: Term (Sw Sem / (Sy Sem ↑ NP a))
+whom = _
+
+-- | "which", as used in a question.
+which1 :: Term (Sw Sem / (NP a \\ S Sem) / N a Sem)
+which1 = _
+
+-- | "which", as used in a question.
+which2 :: Term (Sw Sem / (Sy Sem ↑ NP a) / N a Sem)
+which2 = _
 
 -- | An example of a noun which is not a proper noun.
 man :: Term (N Person Sem)
