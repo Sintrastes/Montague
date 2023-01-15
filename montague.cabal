@@ -36,6 +36,8 @@ library
       , Montague.Experimental.Prop4
       , Montague.Experimental.LambekType
       , Montague.Experimental.Typed
+      , Montague.Experimental.ProofRelevant
+      , Montague.Experimental.PregroupGrammar
       , Montague.Experimental.TaglessFinal
       , Montague.Experimental.Worlds
       , Montague.Experimental.Search
