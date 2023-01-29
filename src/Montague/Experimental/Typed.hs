@@ -82,6 +82,8 @@ data Term a where
     Atom  :: (Show a, Typeable a) => Var a -> Term (NP 'Nothing a)
     TypedAtom :: (Show a, Typeable a) => Var a -> Term (NP t a)
     Sentence  :: (Show sem, Typeable sem) => Var sem -> Term (S sem)
+    Interrogative :: (Show sem, Typeable sem) => Term (S sem) -> Term (Sy sem)
+    WhSentence :: (Term (NP Nothing a) -> Term (S sem)) -> Term (Sw a sem)
     TVar  :: String -> Term a
 
 -- Debugging utility used to see the top level constructor.
@@ -328,24 +330,50 @@ the p' = let
   Atom (Val $ trace (show holdsFor) $ head holdsFor)
 
 -- | "did", as in a question.
-did :: Term (Sy Sem / (NP Nothing b \\ S Sem) / NP Nothing a)
-did = undefined
+did :: Term (Sy Sem / (NP Nothing a \\ S Sem) / NP Nothing a)
+did = LamL $ \x -> LamL $ \v -> let 
+  z = AppR x v 
+ in 
+  Interrogative z
 
 -- | "who", as used in a question.
 who :: Term (Sw a Sem / (NP Nothing a \\ S Sem))
-who = undefined
+who = LamL $ \v -> 
+  WhSentence $ \x ->
+    AppR x v
 
 -- | "who" or "whom" as used in a question.
 whom :: Term (Sw a Sem / (Sy Sem ↑ NP Nothing a))
-whom = undefined
+whom = LamL $ \v ->
+  WhSentence $ \x -> let 
+    Interrogative z = AppE v x 
+  in 
+    z
+
+appN :: Term (N a Sem) -> Term (NP Nothing a) -> Term (S Sem)
+appN n np = let 
+-- Note: This assumes there's no other way to specify a noun.
+  LamN n' = n
+ in 
+  n' np
+
 
 -- | "which", as used in a question.
 which1 :: Term (Sw a Sem / (NP Nothing a \\ S Sem) / N a Sem)
-which1 = undefined
+which1 = LamL $ \p -> LamL $ \v -> WhSentence $ \x -> let
+  Sentence z1 = evalSentence $ appN p x
+  Sentence z2 = evalSentence $ AppR x v
+ in
+  Sentence $ Val $ And z2 z1
 
 -- | "which", as used in a question.
 which2 :: Term (Sw a Sem / (Sy Sem ↑ NP Nothing a) / N a Sem)
-which2 = undefined
+which2 = LamL $ \p -> LamL $ \v -> WhSentence $ \x -> let
+  Sentence z1 = evalSentence $ appN p x
+  Interrogative z2 = AppE v x
+  Sentence z3 = evalSentence z2
+ in
+  Sentence $ Val $ And z3 z1
 
 picture :: Term (N Object Sem / NP (Just Of) Person)
 picture = LamL $ \person -> LamN $ \picture -> let 
