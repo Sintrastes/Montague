@@ -8,3 +8,6 @@ type FreePregroup a = [FreePregroupPower a]
 data FreePregroupPower a = 
     LeftPow  Int a
   | RightPow Int a
+
+-- | Just some really basic categories to try this out with.
+data ToyCats = N | S | NP
