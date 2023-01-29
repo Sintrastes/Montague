@@ -1,4 +1,6 @@
 
+module Montague.Experimental.ProofRelevant where
+
 {-
 
 Consider the sentence "Would you like coffee, or tea?".

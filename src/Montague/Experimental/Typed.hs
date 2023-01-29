@@ -80,6 +80,7 @@ data Term a where
     -- Also not sure if this is right or not.
     AppS  :: Term (b ⇑ a) -> (Term b -> Term a) -> Term a
     Atom  :: (Show a, Typeable a) => Var a -> Term (NP 'Nothing a)
+    TypedAtom :: (Show a, Typeable a) => Var a -> Term (NP t a)
     Sentence  :: (Show sem, Typeable sem) => Var sem -> Term (S sem)
     TVar  :: String -> Term a
 
@@ -107,12 +108,28 @@ eval (AppS (LamS f) x) = eval $ f x
 eval (AppS f x) = eval $ AppS (eval f) (eval <$> x)
 eval x = x
 
+argument :: Term (NP t a) -> Term (NP Nothing a)
+argument (TypedAtom x) = Atom x
+argument (Atom x) = Atom x
+
 -- evalAtom :: Term a -> Term a
 evalSentence :: (Show sem, Typeable sem) => Term (S sem) -> Term (S sem)
-evalSentence x = evalAtom' $ eval x
+evalSentence x = evalSentence' $ eval x
 
-evalAtom' (TVar x) = Sentence $ Var x
+evalSentence' (TVar x) = Sentence $ Var x
+evalSentence' x = x
+
+evalAtom :: (Show a, Typeable a) => Term (NP Nothing a) -> Term (NP Nothing a)
+evalAtom x = evalAtom' $ eval x
+
+evalAtom' (TVar x) = Atom $ Var x
 evalAtom' x = x
+
+evalTypedAtom :: (Show a, Typeable a) => Term (NP t a) -> Term (NP t a)
+evalTypedAtom x = evalTypedAtom' $ eval x
+
+evalTypedAtom' (TVar x) = TypedAtom $ Var x
+evalTypedAtom' x = x
 
 (<.) = AppL
 (.>) = AppR
@@ -175,6 +192,8 @@ instance Show (Term a) where
     AppS x f -> show (f (TVar "x")) ++ "(" ++ show x ++ ")"
     AppE f x -> show f ++ "(" ++ show x ++ ")"
     Atom x   -> show x
+    TypedAtom x -> show x
+    Sentence x -> show x
     TVar x   -> x
 
 instance Show Sem where
@@ -238,7 +257,7 @@ data Object =
   | MountainC
   | River
   | Stream
-     deriving(Show, Eq)
+     deriving(Show, Eq, Enum, Bounded)
 
 -- | Type of attributes that specifically apply
 -- to persons.
@@ -328,12 +347,34 @@ which1 = undefined
 which2 :: Term (Sw a Sem / (Sy Sem ↑ NP Nothing a) / N a Sem)
 which2 = undefined
 
-picture :: Term (N Object Sem)
-picture = LamN $ \x -> let Atom x' = eval x in
-  Sentence $ Val $ Pred "picture" [Individual x']
+picture :: Term (N Object Sem / NP (Just Of) Person)
+picture = LamL $ \person -> LamN $ \picture -> let 
+  Atom picture' = evalAtom picture 
+  TypedAtom person' = evalTypedAtom person
+ in
+  Sentence $ Val $ 
+    -- Note: This is a slightly different semantics than in Carpenter.
+    --  This is a more neo-davidsonian representation where the argument
+    --  "of" is not required.
+    And (Val $ Pred "picture" [Individual picture']) 
+        (Val $ Pred "of" [Individual picture', Individual person'])
+
+of' :: Term (NP (Just Of) Person / NP Nothing Person)
+of' = LamL $ \x -> let
+  Atom x' = evalAtom x
+ in
+   TypedAtom x'
 
 robin :: Term (NP Nothing Person)
 robin = Atom $ Val Robin
+
+-- | Carpenter page 135 example
+--
+--     > eval relationalNounExample
+--     λx.picture(x) ∧ of(x, Robin)
+-- 
+relationalNounExample :: Term (N Object Sem)
+relationalNounExample = picture <. (of' <. robin)
 
 -- | An example of a noun which is not a proper noun.
 man :: Term (N Person Sem)
