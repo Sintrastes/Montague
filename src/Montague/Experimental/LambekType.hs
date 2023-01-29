@@ -3,11 +3,14 @@
 module Montague.Experimental.LambekType where
 import Data.Kind
 
+data NounPhraseType = Of | To | From | On | For | By
+
 -- | Type of terms in the lambek calculus.
 data LambekType where 
     -- | Generic constructor for injecting a Haskell type
-    -- into a Lambek type. Used for both noun phrases and sentences.
+    -- into a Lambek type. Used for sentences.
     T       :: Type -> LambekType
+    NP      :: Maybe NounPhraseType -> Type -> LambekType
     -- | Constructor for a polar interrogative.
     Sy      :: Type -> LambekType
     -- | Constructor for a Wh-interrogative
@@ -29,7 +32,6 @@ data LambekType where
     Disj    :: LambekType -> LambekType -> LambekType
 
 -- Typealiases to better fit with the terminology in Carpenter.
-type NP i = T i
 type S o  = T o
 
 instance Show LambekType where

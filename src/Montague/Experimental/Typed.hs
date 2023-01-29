@@ -26,8 +26,8 @@ class BooleanType _Ω a where
   coord :: (Var _Ω -> Var _Ω -> _Ω) 
     -> Term a -> Term a -> Term a
 
-instance BooleanType _Ω (T _Ω) where
-  coord f (Atom x) (Atom y) = Atom $ Val $ f x y
+instance (Typeable _Ω, Show _Ω) => BooleanType _Ω (S _Ω) where
+  coord f (Sentence x) (Sentence y) = Sentence $ Val $ f x y
 
 instance BooleanType _Ω b => BooleanType _Ω (L b a) where
   coord f x y = LamL $ \v -> coord f (x <. v) (y <. v)
@@ -69,7 +69,7 @@ data Term a where
     LamS  :: ((Term b -> Term a) -> Term a) -> Term (b ⇑ a)
     -- | Constructor for building a new noun from a function from
     --  ind -> o.
-    LamN  :: (Term (NP ind) -> Term (S o)) -> Term (N ind o)
+    LamN  :: (Term (NP Nothing ind) -> Term (S o)) -> Term (N ind o)
     AppL  :: Term (b / a) -> Term a -> Term b
     AppR  :: Term a -> Term (a \\ b) -> Term b
     -- | Constructor for applying extracted functions.
@@ -79,7 +79,8 @@ data Term a where
     AppE  :: Term (a ↑ b) -> Term b -> Term a
     -- Also not sure if this is right or not.
     AppS  :: Term (b ⇑ a) -> (Term b -> Term a) -> Term a
-    Atom  :: (Show a, Typeable a) => Var a -> Term (T a)
+    Atom  :: (Show a, Typeable a) => Var a -> Term (NP 'Nothing a)
+    Sentence  :: (Show sem, Typeable sem) => Var sem -> Term (S sem)
     TVar  :: String -> Term a
 
 -- Debugging utility used to see the top level constructor.
@@ -106,10 +107,11 @@ eval (AppS (LamS f) x) = eval $ f x
 eval (AppS f x) = eval $ AppS (eval f) (eval <$> x)
 eval x = x
 
-evalAtom :: Show a => Typeable a => Term (T a) -> Term (T a)
-evalAtom x = evalAtom' $ eval x
+-- evalAtom :: Term a -> Term a
+evalSentence :: (Show sem, Typeable sem) => Term (S sem) -> Term (S sem)
+evalSentence x = evalAtom' $ eval x
 
-evalAtom' (TVar x) = Atom $ Var x
+evalAtom' (TVar x) = Sentence $ Var x
 evalAtom' x = x
 
 (<.) = AppL
@@ -118,7 +120,7 @@ evalAtom' x = x
 -- | An example type of raw semantic expressions.
 data Sem where
     Pred       :: String -> [Sem] -> Sem
-    Individual :: Var Person -> Sem
+    Individual :: Show a => Var a -> Sem
     Subject    :: Var Subject -> Sem
     And        :: Var Sem -> Var Sem -> Sem
     Or         :: Var Sem -> Var Sem -> Sem
@@ -188,7 +190,7 @@ instance Show Sem where
       Subject x    -> show x
       Const x -> show x
 
-instance Eq a => Eq (Term (T a)) where
+instance Eq a => Eq (Term (NP t a)) where
   (Atom (Val x)) == (Atom (Val y)) = x == y
   _ == _ = False
 
@@ -218,8 +220,25 @@ data Person =
     | William 
     | Michael 
     | Andrew 
+    | Robin
+    | Bob
     | Socrates 
   deriving(Eq, Show, Enum)
+
+data Object = 
+    PictureA
+  | PictureB
+  | PictureC
+  | Rock
+  | Camera
+  | Ball
+  | Tree
+  | MountainA
+  | MountainB
+  | MountainC
+  | River
+  | Stream
+     deriving(Show, Eq)
 
 -- | Type of attributes that specifically apply
 -- to persons.
@@ -260,13 +279,13 @@ anime = Atom $ Val Anime
 -- I guess we could have the set of "facts" be part of the "world",
 -- and recursively reference (maybe via an implicit parameter)
 -- the search procedure in light of the current set of rules.
-likes :: Term ((NP Person \\ S Sem) / NP Person)
-likes = LamL $ \(Atom x) -> LamR $ \(Atom y) -> Atom $ Val $
+likes :: Term ((NP Nothing Person \\ S Sem) / NP Nothing Person)
+likes = LamL $ \(Atom x) -> LamR $ \(Atom y) -> Sentence $ Val $
     Pred "likes" [Individual x, Individual y]
 
 -- | Likes, in the sense of a person and a subject.
-likes2 :: Term ((NP Person \\ S Sem) / NP Subject)
-likes2 = LamL $ \(Atom x) -> LamR $ \(Atom y) -> Atom $ Val $
+likes2 :: Term ((NP Nothing Person \\ S Sem) / NP Nothing Subject)
+likes2 = LamL $ \(Atom x) -> LamR $ \(Atom y) -> Sentence $ Val $
     Pred "likes" [Individual y, Subject x]
 
 -- | Definite determiner -- converts a noun into a
@@ -276,7 +295,7 @@ the :: forall a.
    => Show a 
    => Enum a 
    => Eval Sem Bool 
-   => Term (N a Sem) -> Term (NP a)
+   => Term (N a Sem) -> Term (NP Nothing a)
 the p' = let 
   LamN p = eval p' 
 
@@ -284,53 +303,60 @@ the p' = let
   holdsFor = filter (evalAtom . p . Atom . Val) entities
 
   evalAtom :: Term (S Sem) -> Bool
-  evalAtom (Atom (Val x)) = evaluate x
-  evalAtom (Atom (Var _)) = False
+  evalAtom (Sentence (Val x)) = evaluate x
+  evalAtom (Sentence (Var _)) = False
  in 
   Atom (Val $ trace (show holdsFor) $ head holdsFor)
 
 -- | "did", as in a question.
-did :: Term (Sy Sem / (NP b \\ S Sem) / NP a)
-did = _
+did :: Term (Sy Sem / (NP Nothing b \\ S Sem) / NP Nothing a)
+did = undefined
 
 -- | "who", as used in a question.
-who :: Term (Sw Sem / (NP a \\ S Sem))
-who = _
+who :: Term (Sw a Sem / (NP Nothing a \\ S Sem))
+who = undefined
 
 -- | "who" or "whom" as used in a question.
-whom :: Term (Sw Sem / (Sy Sem ↑ NP a))
-whom = _
+whom :: Term (Sw a Sem / (Sy Sem ↑ NP Nothing a))
+whom = undefined
 
 -- | "which", as used in a question.
-which1 :: Term (Sw Sem / (NP a \\ S Sem) / N a Sem)
-which1 = _
+which1 :: Term (Sw a Sem / (NP Nothing a \\ S Sem) / N a Sem)
+which1 = undefined
 
 -- | "which", as used in a question.
-which2 :: Term (Sw Sem / (Sy Sem ↑ NP a) / N a Sem)
-which2 = _
+which2 :: Term (Sw a Sem / (Sy Sem ↑ NP Nothing a) / N a Sem)
+which2 = undefined
+
+picture :: Term (N Object Sem)
+picture = LamN $ \x -> let Atom x' = eval x in
+  Sentence $ Val $ Pred "picture" [Individual x']
+
+robin :: Term (NP Nothing Person)
+robin = Atom $ Val Robin
 
 -- | An example of a noun which is not a proper noun.
 man :: Term (N Person Sem)
-man = LamN $ \x -> let Atom x' = evalAtom x in
-  Atom $ Val $ Pred (show Man) [Individual x']
+man = LamN $ \x -> let Atom x' = eval x in
+  Sentence $ Val $ Pred (show Man) [Individual x']
 
 -- who (or which, since we do not distinguish animacy), used to construct relative
 --  clauses.
-who :: Term (N n Sem \\ N n Sem / (S Sem ↑ NP n))
-who = LamL $ \v -> LamR $ \p -> LamN $ \x -> let 
-     Atom a1 = v `AppE` x
+who2 :: Term (N n Sem \\ N n Sem / (S Sem ↑ NP Nothing n))
+who2 = LamL $ \v -> LamR $ \p -> LamN $ \x -> let 
+     Sentence a1 = v `AppE` x
      LamN p' = p
-     Atom a2 = p' x
+     Sentence a2 = p' x
   in
-     Atom $ Val $ And a1 a2
+     Sentence $ Val $ And a1 a2
 
-relativeClauseExample :: Term (S Sem ↑ NP Person)
+relativeClauseExample :: Term (S Sem ↑ NP Nothing Person)
 relativeClauseExample = LamE $ \x ->
     x .> (likes <. william)
 
 -- "the man who likes William"
-relativeClauseUsage :: Term (NP Person)
-relativeClauseUsage = the $ man .> (who <. LamE (\x -> x .> (likes <. william)))
+relativeClauseUsage :: Term (NP Nothing Person)
+relativeClauseUsage = the $ man .> (who2 <. LamE (\x -> x .> (likes <. william)))
 
 -- "nate likes william and michael"
 rightCoordinationExample = (nate .> assoc likes) 
@@ -338,14 +364,14 @@ rightCoordinationExample = (nate .> assoc likes)
 
 -- "the man who likes cooking and anime"
 relativeClauseUsage2 = the $ 
-  man .> (who <. 
+  man .> (who2 <. 
     LamE (\x -> (x .> assoc likes2) 
         .> (raise' cooking `and'` raise' anime)))
 
-nate :: Term (NP Person)
+nate :: Term (NP Nothing Person)
 nate = Atom $ Val Nate
 
-william :: Term (NP Person)
+william :: Term (NP Nothing Person)
 william = Atom $ Val William
 
 michael = Atom $ Val Michael
@@ -359,34 +385,34 @@ instance Entity Person Sem where
   inj = Individual
 
 -- | The copula, in the sense of attribution.
-is :: Typeable n => Show n => Show a => Entity n Sem => HasAttributes n a => Term (NP n \\ S Sem / T a)
-is = LamL $ \attr -> LamR $ \e -> let Atom entity = evalAtom e in
-  Atom $ Val $ Pred (show attr) [inj entity]
+is :: Typeable n => Show n => Show a => Entity n Sem => HasAttributes n a => Term (NP Nothing n \\ S Sem / NP Nothing a)
+is = LamL $ \attr -> LamR $ \e -> let Atom entity = eval e in
+  Sentence $ Val $ Pred (show attr) [inj entity]
 
-every :: Typeable n => Show n => Term ((NP n ⇑ S Sem) / N n Sem)
-every = LamL $ \p' -> LamS $ \q -> Atom $ Val $ 
+every :: Typeable n => Show n => Term ((NP Nothing n ⇑ S Sem) / N n Sem)
+every = LamL $ \p' -> LamS $ \q -> Sentence $ Val $ 
     All $ \x -> let 
       LamN p = p'
-      e1 = evalAtom $ p (Atom x)
-      e2 = evalAtom $ q (Atom x)
-      Atom p1 = e1
-      Atom p2 = e2
+      e1 = eval $ p (Atom x)
+      e2 = eval $ q (Atom x)
+      Sentence p1 = e1
+      Sentence p2 = e2
     in 
       p1 `Implies` p2
 
-some :: Typeable n => Show n => Term ((NP n ⇑ S Sem) / N n Sem)
-some = LamL $ \(LamN p) -> LamS $ \q -> Atom $ Val $
+some :: Typeable n => Show n => Term ((NP Nothing n ⇑ S Sem) / N n Sem)
+some = LamL $ \(LamN p) -> LamS $ \q -> Sentence $ Val $
     Exists $ \(x :: Var n) -> let 
-      Atom p1 = eval $ p (Atom x)
-      Atom p2 = eval $ q (Atom x)
+      Sentence p1 = eval $ p (Atom x)
+      Sentence p2 = eval $ q (Atom x)
     in
       p1 `And` p2
 
-no :: Typeable n => Show n => Term ((NP n ⇑ S Sem) / N n Sem)
-no = LamL $ \(LamN p) -> LamS $ \q -> Atom $ Val $ 
+no :: Typeable n => Show n => Term ((NP Nothing n ⇑ S Sem) / N n Sem)
+no = LamL $ \(LamN p) -> LamS $ \q -> Sentence $ Val $ 
     Exists $ \(x :: Var n) -> let 
-      Atom p1 = eval $ p (Atom x)
-      Atom p2 = eval $ q (Atom x)
+      Sentence p1 = eval $ p (Atom x)
+      Sentence p2 = eval $ q (Atom x)
     in
       Not $ p1 `And` p2
 
