@@ -84,6 +84,8 @@ data Term a where
     Sentence  :: (Show sem, Typeable sem) => Var sem -> Term (S sem)
     Interrogative :: (Show sem, Typeable sem) => Term (S sem) -> Term (Sy sem)
     WhSentence :: (Term (NP Nothing a) -> Term (S sem)) -> Term (Sw a sem)
+    It :: Term ExIt
+    There :: Term ExThere
     TVar  :: String -> Term a
 
 -- Debugging utility used to see the top level constructor.
@@ -436,6 +438,23 @@ relativeClauseUsage2 = the $
   man .> (who2 <. 
     LamE (\x -> (x .> assoc likes2) 
         .> (raise' cooking `and'` raise' anime)))
+
+it :: Term ExIt
+it = It
+
+there :: Term ExThere
+there = There
+
+rained :: Term (ExIt \\ S Sem)
+rained = LamR $ \_ -> Sentence $
+  Val $ Pred "rained" []
+ 
+snowed :: Term (ExIt \\ S Sem)
+snowed  = LamR $ \_ -> Sentence $
+  Val $ Pred "snowed" []
+
+-- | Following carpenter
+weatherExample = it .> snowed
 
 nate :: Term (NP Nothing Person)
 nate = Atom $ Val Nate

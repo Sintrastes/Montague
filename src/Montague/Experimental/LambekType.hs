@@ -22,6 +22,10 @@ data LambekType where
     L       :: LambekType -> LambekType -> LambekType
     -- | Right arrow. Consumes and argument on the left.
     R       :: LambekType -> LambekType -> LambekType
+    -- | Type of expletive for "it"
+    ExIt    :: LambekType
+    -- | Type of expletive for "there"
+    ExThere :: LambekType 
     -- | Extraction operator. Used to account for unbounded dependencies.
     Extract :: LambekType -> LambekType -> LambekType
     -- | Scoping operator. Used to account for the grammar of quantifiers like every and some.
