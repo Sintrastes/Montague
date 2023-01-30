@@ -502,6 +502,9 @@ example2 = (nate .> (likes <. william)) `and'` (william .> (likes <. nate))
 -- Coordination via type-raising.
 example3 = raise nate `and'` raise william <. (likes <. michael)
 
+-- Example of a question
+example4 = who <. (likes <. william)
+
 -- | -ed morpeme: play-ed -> played. am-ed -> was. see-ed -> saw.
 ed :: Term (T _Ω) -> Term (T _Ω)
 ed = undefined
