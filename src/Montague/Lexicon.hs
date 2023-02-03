@@ -151,7 +151,7 @@ type EntityDeclarations t =
 type ProductionDeclarations =
     [([String], String)]
 
-parseSomeLexicon :: _ => (String -> Maybe t)
+parseSomeLexicon :: forall t. _ => (String -> Maybe t)
     -> EntityDeclarations t
     -> ProductionDeclarations
     -> Either ParseError SomeLexicon
@@ -165,7 +165,7 @@ parseSomeLexicon lex entityDecls productions =
             let
               entityProxy = getEnumType syms
               typeOf = parseTypeOf Proxy entityDecls
-              parseTerm = parseParseTerm Proxy productions
+              parseTerm = parseParseTerm (Proxy @t) productions
               semantics = MontagueSemantics
                   typeOf parseTerm id
             in
@@ -194,7 +194,7 @@ parseParseTerm :: forall a t.
      (Parsable a, Parsable t)
   => Proxy t
   -> ProductionDeclarations
-  -> (String -> MontagueTerm a t)
+  -> (String -> MontagueTerm a)
 parseParseTerm _ decls = let
     pairs = (\(xs, y) -> (\x -> (x, fromJust $ parse @a y)) <$> xs) =<< decls
   in \input ->

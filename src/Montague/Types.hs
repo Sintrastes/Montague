@@ -29,17 +29,17 @@ instance Show a => Show (LambekType a) where
 -- | Data type for a generic typed term returned as the result of
 -- parsing a natural language statement, given a type a
 -- of atoms, and a type t of types.
-data Term a t =
+data Term a =
     Atom a
   | Var String
-  | Lambda String (Term a t)
-  | App (Term a t) [Term a t] deriving(Eq)
+  | Lambda String (Term a)
+  | App (Term a) [Term a] deriving(Eq)
 
-instance Show a => Show (Term a t) where
+instance Show a => Show (Term a) where
   show (Atom xs) = show xs
   show (App x xs) = show x ++ "(" ++ foldr1 (\ x y -> x ++ "," ++ y) (map show xs) ++ ")"
 
-type MontagueTerm a t = NonDet (Term a t)
+type MontagueTerm a = NonDet (Term a)
 
 -- | Helper function for calculating the types of lambek terms
 flatten :: LambekType a -> [LambekType a]
@@ -48,20 +48,20 @@ flatten (RightArrow x y) = x : flatten y
 flatten (LeftArrow x y) = y : flatten x
 
 -- | Helper function to check if a predicate has been applied.
-isPartialPred :: Term a t -> Bool
+isPartialPred :: Term a -> Bool
 isPartialPred (App _ _)  = True
 isPartialPred (Atom _) = False
 
 -- | Partial function that turns a curried term f(x)(y) into one of the form f(x,y)
 applyPartialTerm (App x xs) y = App x (xs ++ [y])
 
-data AnnotatedTerm a t = Annotated (Term a t) (LambekType t)
+data AnnotatedTerm a t = Annotated (Term a) (LambekType t)
   deriving(Eq)
 
 instance (Show a, Show t) => Show (AnnotatedTerm a t) where
   show (Annotated term typ) = show term ++ ": " ++ show typ
 
-type Lexicon a t = String -> MontagueTerm a t
+type Lexicon a t = String -> AnnotatedTerm a t
 
 ----------------- Helper functions for building up types from trees.
 

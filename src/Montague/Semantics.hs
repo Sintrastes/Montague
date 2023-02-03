@@ -7,10 +7,10 @@ import Montague.Types
 -- base types t in the type x.
 data MontagueSemantics a t x = MontagueSemantics {
     typeOfAtom :: a -> MontagueType t,
-    parseTerm  :: String -> MontagueTerm a t,
+    parseTerm  :: String -> MontagueTerm a,
     interp     :: AnnotatedTerm a t -> x
 }
 
-typeOf :: MontagueSemantics a t x -> Term a t -> MontagueType t
+typeOf :: MontagueSemantics a t x -> Term a -> MontagueType t
 typeOf semantics (Atom x) = (typeOfAtom semantics) x
 typeOf semantics _ = undefined
