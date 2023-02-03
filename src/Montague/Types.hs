@@ -31,6 +31,8 @@ instance Show a => Show (LambekType a) where
 -- of atoms, and a type t of types.
 data Term a t =
     Atom a
+  | Var String
+  | Lambda String (Term a t)
   | App (Term a t) [Term a t] deriving(Eq)
 
 instance Show a => Show (Term a t) where

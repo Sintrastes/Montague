@@ -10,6 +10,10 @@ data LambekType where
     -- | Generic constructor for injecting a Haskell type
     -- into a Lambek type. Used for sentences.
     T       :: Type -> LambekType
+    -- | Experimental -- for neo-davidsonian semantics. Type of a sentence
+    -- abstracted over an event.
+    EvS     :: Type -> LambekType
+    Pr      :: Type -> Type -> LambekType
     NP      :: Maybe NounPhraseType -> Type -> LambekType
     -- | Constructor for a polar interrogative.
     Sy      :: Type -> LambekType
@@ -22,6 +26,8 @@ data LambekType where
     L       :: LambekType -> LambekType -> LambekType
     -- | Right arrow. Consumes and argument on the left.
     R       :: LambekType -> LambekType -> LambekType
+    -- | A type for talking about times, e.x. "two-thirty", "wednesday", "next week"...
+    Time    :: LambekType
     -- | Type of expletive for "it"
     ExIt    :: LambekType
     -- | Type of expletive for "there"

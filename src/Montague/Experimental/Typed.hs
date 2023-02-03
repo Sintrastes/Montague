@@ -81,9 +81,13 @@ data Term a where
     AppS  :: Term (b ⇑ a) -> (Term b -> Term a) -> Term a
     Atom  :: (Show a, Typeable a) => Var a -> Term (NP 'Nothing a)
     TypedAtom :: (Show a, Typeable a) => Var a -> Term (NP t a)
+    -- | Time, in terms of hours and minutes.
+    TimeAtom :: Int -> Int -> Term Time
+    EvSentence :: (Show sem, Typeable sem) => (Term ExIt -> Var sem) -> Term (EvS sem)
     Sentence  :: (Show sem, Typeable sem) => Var sem -> Term (S sem)
     Interrogative :: (Show sem, Typeable sem) => Term (S sem) -> Term (Sy sem)
     WhSentence :: (Term (NP Nothing a) -> Term (S sem)) -> Term (Sw a sem)
+    IntroPred :: (Term (NP Nothing n) -> Term (S sem)) -> Term (Pr n sem)
     It :: Term ExIt
     There :: Term ExThere
     TVar  :: String -> Term a
@@ -197,6 +201,7 @@ instance Show (Term a) where
     AppE f x -> show f ++ "(" ++ show x ++ ")"
     Atom x   -> show x
     TypedAtom x -> show x
+    TimeAtom h m -> show h ++ ":" ++ show m
     Sentence x -> show x
     TVar x   -> x
 
@@ -448,6 +453,32 @@ there = There
 rained :: Term (ExIt \\ S Sem)
 rained = LamR $ \_ -> Sentence $
   Val $ Pred "rained" []
+
+-- | An example of a spoken time.
+twoThirty :: Term Time
+twoThirty = TimeAtom 2 30
+
+-- | Is, in terms of being a particular time.
+isT :: Term ((ExIt \\ S Sem) / Time)
+isT = LamL $ \(TimeAtom h m) -> 
+  LamR $ \_ ->
+    Sentence $ Val $ 
+      Pred "time_is" [Individual (Val h), Individual (Val m)]
+
+timeExample = it .> (isT <. twoThirty)
+
+-- | Neo-davidsonian variant of "rained" that says something about
+-- weather events.
+--
+-- Except I'm not sure how this would compose with adjectives.
+--
+-- I guess the easiest way might be to introduce a new category
+--  "EvS" for sentences abstracted over events, and give a rule
+--  EvS -> S that existentially quanitifes over the event.
+--
+rainedD :: Term (ExIt \\ EvS Sem)
+rainedD = LamR $ \_ -> EvSentence $ \e -> 
+  Val $ Pred "rained" [Individual $ Val e]
  
 snowed :: Term (ExIt \\ S Sem)
 snowed  = LamR $ \_ -> Sentence $
@@ -455,6 +486,22 @@ snowed  = LamR $ \_ -> Sentence $
 
 -- | Following carpenter
 weatherExample = it .> snowed
+
+weatherExample2 = it .> (rainedD .> heavily)
+
+-- Example of an adverb specifically acting on weather predicates.
+heavily :: Term ((ExIt \\ EvS Sem) \\ (ExIt \\ EvS Sem))
+heavily = LamR $ \p -> LamR $ \_ -> 
+  EvSentence $ \e -> let
+   EvSentence z = AppR e p  
+  in
+   Val $ And 
+     (z e)
+     (Val $ Pred "heavily" [Individual $ Val e])
+
+almost :: Term ((ExIt \\ S Sem) / (ExIt \\ S Sem))
+almost = LamL $ \p -> LamR $ \e -> 
+  AppR e p
 
 nate :: Term (NP Nothing Person)
 nate = Atom $ Val Nate
@@ -476,6 +523,18 @@ instance Entity Person Sem where
 is :: Typeable n => Show n => Show a => Entity n Sem => HasAttributes n a => Term (NP Nothing n \\ S Sem / NP Nothing a)
 is = LamL $ \attr -> LamR $ \e -> let Atom entity = eval e in
   Sentence $ Val $ Pred (show attr) [inj entity]
+
+-- | The copula, in alternate formulation involving predicative categories.
+-- 
+-- Note that this still allows us to restrict predicates,
+--  as Pr is indexed over the type of noun.
+--
+-- It just means that this has be enforced at the level of the 
+--  underlying semantic category.
+--
+isPr :: Term (NP Nothing n \\ S Sem / Pr n Sem)
+isPr = LamL $ \(IntroPred attr) -> LamR $ \e -> 
+  attr e
 
 every :: Typeable n => Show n => Term ((NP Nothing n ⇑ S Sem) / N n Sem)
 every = LamL $ \p' -> LamS $ \q -> Sentence $ Val $ 
