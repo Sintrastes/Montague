@@ -47,7 +47,16 @@ data BasicAtom =
    | Cat
    | With
    | Spoon
-   | Is deriving(Show, Eq)
+   | Is 
+   -- Variables
+   | AVar String
+   -- Logical constants and connectives
+   | And BasicAtom BasicAtom 
+   | Or BasicAtom BasicAtom
+   | Implies BasicAtom BasicAtom 
+   | All String BasicAtom
+   | Exists String BasicAtom
+     deriving(Show, Eq)
 
 typeOfTerm :: Term BasicAtom BasicType -> MontagueType BasicType
 typeOfTerm = \case
@@ -71,6 +80,11 @@ typeOfTerm = \case
     Atom Cat     -> pure $ BasicType Person
 -- Atom With
     Atom Spoon   -> pure $ BasicType Thing
+    Atom (And x y) -> undefined -- if x, y are Sentence, then Sentence.
+    Atom (Or x y)  -> undefined -- if x, y are Sentence, then Sentence.
+    Atom (Implies x y) -> undefined -- if x, y are Sentence, then Sentence.
+    Atom (All x y)     -> undefined -- If y with x subst for a Sentence is a Sentence, then Sentence,
+    Atom (Exists x y)  -> undefined -- If y with x subst for a Sentence is a Sentence, then Sentence,
 
 -- Example lexicon.
 myLexicon :: Lexicon BasicAtom BasicType
