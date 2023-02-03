@@ -34,6 +34,7 @@ data BasicAtom =
    | Rachel
    | Will
    | Michael
+   | Socrates
    | Book
    | Table
    | Chair
@@ -89,26 +90,43 @@ typeOfTerm = \case
 -- Example lexicon.
 myLexicon :: Lexicon BasicAtom BasicType
 myLexicon = \case
-    "nate"    -> pure $ Atom Nate
-    "nathan"  -> pure $ Atom Nate
-    "rick"    -> pure $ Atom Rick
-    "rachel"  -> pure $ Atom Rachel
-    "will"    -> pure $ Atom Will
-    "william" -> pure $ Atom Will
-    "michael" -> pure $ Atom Michael
-    "book"    -> pure $ Atom Book
-    "table"   -> pure $ Atom Table
-    "chair"   -> pure $ Atom Chair
-    "mother"  -> pure $ Atom Mother
-    "mom"     -> pure $ Atom Mother
-    "father"  -> pure $ Atom Father
-    "dad"     -> pure $ Atom Father
-    "cat"     -> pure $ Atom Cat
-    "dog"     -> pure $ Atom Dog
-    "spoon"   -> pure $ Atom Spoon
-    "is"      -> pure $ Atom Is
-    "happy"   -> pure $ Atom Happy
-    _         -> empty
+    "nate"      -> pure $ Atom Nate
+    "nathan"    -> pure $ Atom Nate
+    "rick"      -> pure $ Atom Rick
+    "rachel"    -> pure $ Atom Rachel
+    "will"      -> pure $ Atom Will
+    "william"   -> pure $ Atom Will
+    "michael"   -> pure $ Atom Michael
+    "book"      -> pure $ Atom Book
+    "table"     -> pure $ Atom Table
+    "chair"     -> pure $ Atom Chair
+    "mother"    -> pure $ Atom Mother
+    "mom"       -> pure $ Atom Mother
+    "father"    -> pure $ Atom Father
+    "dad"       -> pure $ Atom Father
+    "cat"       -> pure $ Atom Cat
+    "dog"       -> pure $ Atom Dog
+    "spoon"     -> pure $ Atom Spoon
+    "is"        -> pure $ Atom Is
+    "happy"     -> pure $ Atom Happy
+    "all"       -> undefined
+    "men"       -> undefined
+    "are"       -> pure $ Atom Is
+    "mortal"    -> undefined
+    "socrates"  -> pure $ Atom Socrates
+    "colorless" -> undefined
+    "green"     -> undefined
+    "ideas"     -> undefined
+    "sleep"     -> undefined
+    "furiously" -> undefined
+    "i"         -> undefined
+    "killed"    -> undefined
+    "the"       -> undefined
+    "man"       -> undefined
+    "with"      -> undefined
+    "a"         -> undefined
+    "spoon"     -> undefined
+    _           -> empty
 
 instance MontagueSemantics BasicAtom BasicType (AnnotatedTerm BasicAtom BasicType) where
    typeOf    = typeOfTerm
