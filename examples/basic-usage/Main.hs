@@ -110,6 +110,10 @@ myLexicon = \case
     "is"        -> pure $ Atom Is
     "happy"     -> pure $ Atom Happy
     "all"       -> undefined
+    "every"     -> pure $ Lambda "p" $ Lambda "q" $ All "x" $
+                    Implies 
+                        (App (Var "p") (Var "x"))
+                        (App (Var "q") (Var "x"))
     "men"       -> undefined
     "are"       -> pure $ Atom Is
     "mortal"    -> undefined

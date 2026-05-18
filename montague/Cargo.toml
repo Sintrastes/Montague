@@ -1,0 +1,13 @@
+[package]
+name = "montague"
+version = "0.1.0"
+edition = "2021"
+description = "Non-deterministic parser for natural languages (Montague Semantics)"
+license = "AGPL-3.0"
+
+[dependencies]
+
+[dev-dependencies]
+# Full ISO Prolog interpreter — supports tabling (library(tabling)),
+# negation-as-failure, and CLP for future integration tests.
+scryer-prolog = "0.10"
