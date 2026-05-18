@@ -25,6 +25,8 @@ It is loosely based on the general ideas of [Montague Semantics](https://plato.s
 
 To try it out for yorself, see [montague-reflex](https://github.com/Sintrastes/montague-reflex) for a web and mobile interface for Montague.
 
+**Note**: Montague was originally prototyped in Haskell, but is currently in the process of being re-written in Rust. While Haskell is a great language, I think that Rust is the better choice for this project in the long term, as it makes it a lot easier to integrate Montague into various potential end-user applications.
+
 Inspiration
 -----------
 
@@ -43,77 +45,25 @@ This (as far as I know of) novel approach was first formulated in 2018 when I
  into a meaningful logical format (for instance, queries in a typed logic programming 
  language). Montague is an attempt to put these ideas in practice.
 
-Basic Usage
------------ 
+Montague in The AI Era
+-----------------------
 
-In order to support the largest amount of use cases, Montague does not perscribe any specific format for it's output, but some example output types might include prolog, datalog, or some other logic programming language clauses. The two core types in Montague are `LambekType t` and `Term a t`, where `t` is a user-defined tye of "base types" 
-to be used in production (such as `noun`, `person`), and `a` is a user-defined type 
-of "atomic terms" reresenting the type of structured output produced by Montague.
+I originally developed Montague right before the explosion in interest in generative AI, the transformer architecture, and LLMs. My goal with the project was to accomplish things that [LLMs can now very readily do](https://github.com/safishamsi/graphify). So what now is the point of Montague?
 
-For example, some basic definitions of `a` and `t` might include:
+One of the major concerns people have over the rise of AI systems is their large resource requirements. Another concern (though this is becoming less and less of a concern with each generation of frontier models) are things like inaccuracies and "hallucinations".
 
-```haskell
-data MyType =
-    Noun
-  | NounPhrase
-  | Sentence
-  | Person
-  | Place
-  | Thing
+I think that one way we might work to address these concerns, but still build useful AI systems for everyday people and knowledge workers designed to enchance (rather than replace) intellegence is to incorporate small language models with "good-old-fashioned AI" (i.e. logic programming, symbolic reasoning). 
 
-data MyAtom =
-    Bob
-  | Alice
-  | NewYork
-  | LosAngeles
-  | Car
-  | Owns
-  | LivesIn
-```
+Moving forward, I think Montague (or something like it) could prove incredibly useful as a "first pass" for AI-based query engines (e.x. first try to use Montague to parse and analyze a sentence, if it fails, invoke an LLM, or use a small language model to refine the grammatical schema based on the failed query). There are other fascinating possibilities as well (for instance, the use of Montague to encourage AI agents to be more percise in analyzing user queries, prompting them to ask clarifying questions to the user if Montague determines an important sentence ambiguity).
 
-Given such types, the typeclass `MontagueSemantics a t x` is used
- to determine an interpretation of `Term a t` into
- x, where x is the user's target structured output, as opposed to 
- `Term a t`, which is only used internally by Montague.
+There are probably hundreds of other potentially interesting applications and techniques riffing on the techniques from Montague. I hope at the very least this project inspires other to build bigger and better things!
 
-```haskell
-class (Eq x, PartialOrd t) => MontagueSemantics a t x | a -> t, a -> x where
-    typeOf    :: Term a t -> MontagueType t
-    parseTerm :: String -> MontagueTerm a t
-    interp    :: AnnotatedTerm a t -> x
-```
-
-For instance, an example implementation of this is:
-
-```haskell
-instance MontagueSemantics MyAtom MyType (AnnotatedTerm MyAtom MyType) where
-    typeOf = \case
-        Atom Bob        -> pure $ BasicType Person
-        Atom Alice      -> pure $ BasicType Person
-        Atom NewYork    -> pure $ BasicType Place
-        Atom LosAngeles -> pure $ BasicType Place
-        Atom Car        -> pure $ BasicType Thing
-        Atom Owns       -> pure $ (BasicType Person) `RightArrow` (BasicType Sentence) 
-                                      `LeftArrow` (BasicType Thing)
-        Atom LivesIn    -> pure $ (BasicType Person) `RightArrow` (BasicType Sentence) 
-                                      `LeftArrow` (BasicType Place)
-        _ -> empty
-    parseTerm = \case
-        "bob"         -> pure $ Atom Bob
-        "alice"       -> pure $ Atom Alice
-        "new york"    -> pure $ Atom NewYork
-        "los angeles" -> pure $ Atom LosAngeles
-        "car"         -> pure $ Atom Car
-        "owns"        -> pure $ Atom Owns
-        "lives in"    -> pure $ Atom LivesIn
-        _             -> empty
-    interp = id
-```
+**AI Disclosure**: As much as I enjoy software development for it's own sake, and appreciate some good human-written hand-crafted code -- I'm also a fan of getting things done, and have limited free time to work on this (and other) projects. The ideas in this project (unless otherwise cited) are all my own, but I make use of agentic AI to help assist me in the development of Montague. 
 
 Domain specific language
 ------------------------
 
-As the above definitions needed in order to implement `MontagueSemantics` is fairly tedious to implement by hand, Montague provides a domain-specific language (similar to happy or alex) for defining schemas for parsing natural language syntax into structured formated for a specific domain. Schemas can be defined in `.mont` files, and are formatted by providing a header section with definitions of types and atoms, followed by a list of sequents denoting which strings map to whics atoms:
+Although Montague has a set of Rust (and Haskell) APIs to work with directly, Montague also provides a domain-specific language (similar to happy or alex) for defining schemas for parsing natural language syntax into structured formated for a specific domain. Schemas can be defined in `.mont` files, and are formatted by providing a header section with definitions of types and atoms, followed by a list of sequents denoting which strings map to whics atoms:
 
 ```
 % example.mont
@@ -149,20 +99,6 @@ the         --> The.
 man, person --> Man. 
 with        --> With.
 spoon       --> Spoon.
-```
-
-Given such a file, the template haskell splice
-
-```haskell
-$(montagueSchemaFromFile "example.mont")
-```
-
-Alternatively, the above syntax may be used inline with the splice:
-
-```haskell
-$(loadMontagueSchema [mont|
-    ...
-|])
 ```
 
 Todo
