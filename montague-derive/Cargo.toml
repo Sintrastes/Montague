@@ -1,0 +1,13 @@
+[package]
+name = "montague-derive"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Proc-macros for authoring Montague profiles (#[derive(MontagueProfile)])"
+
+[lib]
+proc-macro = true
+
+[dependencies]

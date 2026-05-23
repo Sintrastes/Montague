@@ -1,0 +1,15 @@
+[package]
+name = "montague-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Command-line interface for Montague — parse, lower, query .mont schemas"
+
+[[bin]]
+name = "mont"
+path = "src/main.rs"
+
+[dependencies]
+montague = { path = "../montague", version = "0.2.0" }

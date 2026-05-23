@@ -1,0 +1,16 @@
+[package]
+name = "montague-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Core types and parsing engine for Montague — Lambek-calculus categorial-grammar parser with subtyping"
+readme = "../README.md"
+
+[dependencies]
+
+[dev-dependencies]
+# Full ISO Prolog interpreter — supports tabling (library(tabling)),
+# negation-as-failure, and CLP for future integration tests.
+scryer-prolog = { workspace = true }

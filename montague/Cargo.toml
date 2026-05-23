@@ -1,14 +1,16 @@
 [package]
 name = "montague"
-version = "0.1.1"
-edition = "2021"
-description = "Non-deterministic parser for natural languages (Montague Semantics)"
-license = "AGPL-3.0"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Montague — Lambek-calculus categorial-grammar parser with subtyping (umbrella crate)"
 readme = "../README.md"
 
 [dependencies]
-
-[dev-dependencies]
-# Full ISO Prolog interpreter — supports tabling (library(tabling)),
-# negation-as-failure, and CLP for future integration tests.
-scryer-prolog = "0.10"
+montague-core = { workspace = true }
+montague-fol = { workspace = true }
+montague-mont = { workspace = true }
+montague-pretty = { workspace = true }
+montague-prolog = { workspace = true }

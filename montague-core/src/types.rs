@@ -24,9 +24,7 @@ impl<T: LatticeOrd> LatticeOrd for LambekType<T> {
             (LambekType::RightArrow(x, y), LambekType::RightArrow(x2, y2)) => {
                 x2.leq(x) && y.leq(y2)
             }
-            (LambekType::LeftArrow(x, y), LambekType::LeftArrow(x2, y2)) => {
-                x2.leq(x) && y.leq(y2)
-            }
+            (LambekType::LeftArrow(x, y), LambekType::LeftArrow(x2, y2)) => x2.leq(x) && y.leq(y2),
             _ => false,
         }
     }

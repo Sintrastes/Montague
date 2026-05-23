@@ -1,0 +1,11 @@
+[package]
+name = "montague-fol"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "First-order logic profile (and, or, not, implies, forall, exists, iota, eq) for Montague"
+
+[dependencies]
+montague-core = { workspace = true }

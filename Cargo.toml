@@ -1,3 +1,32 @@
 [workspace]
-members = ["montague"]
+members = [
+    "montague-core",
+    "montague-fol",
+    "montague-mont",
+    "montague-prolog",
+    "montague-pretty",
+    "montague-derive",
+    "montague",
+    "montague-cli",
+]
 resolver = "2"
+
+[workspace.package]
+version = "0.2.0"
+edition = "2021"
+license = "AGPL-3.0"
+repository = "https://github.com/Sintrastes/Montague"
+authors = ["Nathan Bedell"]
+
+[workspace.dependencies]
+# Internal crates — paths for local development, version for crates.io.
+montague-core = { path = "montague-core", version = "0.2.0" }
+montague-fol = { path = "montague-fol", version = "0.2.0" }
+montague-mont = { path = "montague-mont", version = "0.2.0" }
+montague-prolog = { path = "montague-prolog", version = "0.2.0" }
+montague-pretty = { path = "montague-pretty", version = "0.2.0" }
+montague-derive = { path = "montague-derive", version = "0.2.0" }
+
+# External crates.
+thiserror = "1.0"
+scryer-prolog = "0.10"

@@ -1362,9 +1362,62 @@ dependencies = [
 
 [[package]]
 name = "montague"
-version = "0.1.1"
+version = "0.2.0"
+dependencies = [
+ "montague-core",
+ "montague-fol",
+ "montague-mont",
+ "montague-pretty",
+ "montague-prolog",
+]
+
+[[package]]
+name = "montague-cli"
+version = "0.2.0"
+dependencies = [
+ "montague",
+]
+
+[[package]]
+name = "montague-core"
+version = "0.2.0"
 dependencies = [
  "scryer-prolog",
+]
+
+[[package]]
+name = "montague-derive"
+version = "0.2.0"
+
+[[package]]
+name = "montague-fol"
+version = "0.2.0"
+dependencies = [
+ "montague-core",
+]
+
+[[package]]
+name = "montague-mont"
+version = "0.2.0"
+dependencies = [
+ "montague-core",
+ "thiserror",
+]
+
+[[package]]
+name = "montague-pretty"
+version = "0.2.0"
+dependencies = [
+ "montague-core",
+]
+
+[[package]]
+name = "montague-prolog"
+version = "0.2.0"
+dependencies = [
+ "montague-core",
+ "scryer-prolog",
+ "thiserror",
 ]
 
 [[package]]

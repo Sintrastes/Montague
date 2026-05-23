@@ -9,7 +9,10 @@
 //!         → Scryer Prolog machine
 //!           → query mortal(socrates) → LeafAnswer::True
 
-use montague::{reduce, AnnotatedTerm, LambekType, LatticeOrd, Term};
+// Test-local type aliases (MTerm/MLT/MAT) disambiguate from scryer_prolog::Term.
+#![allow(clippy::upper_case_acronyms)]
+
+use montague_core::{reduce, AnnotatedTerm, LambekType, LatticeOrd, Term};
 use scryer_prolog::{LeafAnswer, MachineBuilder};
 
 // Disambiguate from scryer_prolog::Term
@@ -71,7 +74,10 @@ fn left(x: MLT<BT>, y: MLT<BT>) -> MLT<BT> {
 
 /// `(Noun → Sentence) ← Adjective`
 fn is_type() -> MLT<BT> {
-    left(right(basic(BT::Noun), basic(BT::Sentence)), basic(BT::Adjective))
+    left(
+        right(basic(BT::Noun), basic(BT::Sentence)),
+        basic(BT::Adjective),
+    )
 }
 
 /// `Adjective ← Noun`  ("a man" → adjectival predicate)
@@ -82,7 +88,10 @@ fn a_type() -> MLT<BT> {
 /// `(Sentence ← (Noun → Sentence)) ← Noun`
 fn every_type() -> MLT<BT> {
     left(
-        left(basic(BT::Sentence), right(basic(BT::Noun), basic(BT::Sentence))),
+        left(
+            basic(BT::Sentence),
+            right(basic(BT::Noun), basic(BT::Sentence)),
+        ),
         basic(BT::Noun),
     )
 }
@@ -156,11 +165,8 @@ fn annotate(input: &str) -> Vec<Vec<MAT<BA, BT>>> {
 
 fn parse(input: &str) -> Vec<MAT<BA, BT>> {
     // A stub Semantics whose only job is to call `interp = identity`.
-    let sem = montague::Semantics::new(
-        |_: &BA| vec![],
-        |_: &str| vec![],
-        |at: MAT<BA, BT>| at,
-    );
+    let sem =
+        montague_core::Semantics::new(|_: &BA| vec![], |_: &str| vec![], |at: MAT<BA, BT>| at);
 
     let mut results: Vec<MAT<BA, BT>> = Vec::new();
     for seq in annotate(input) {
@@ -191,9 +197,7 @@ fn atom_name(a: &BA) -> Option<&'static str> {
 /// Extract the Prolog predicate name.
 fn vp_pred_name(t: &MTerm<BA>) -> Option<&'static str> {
     match t {
-        MTerm::App(f, args)
-            if matches!(f.as_ref(), MTerm::Atom(BA::Is)) && args.len() == 1 =>
-        {
+        MTerm::App(f, args) if matches!(f.as_ref(), MTerm::Atom(BA::Is)) && args.len() == 1 => {
             match &args[0] {
                 MTerm::Atom(a) => atom_name(a),
                 _ => None,
@@ -215,9 +219,7 @@ fn is_quantifier_lambda(t: &MTerm<BA>) -> bool {
 fn to_prolog_clause(at: &MAT<BA, BT>) -> Option<String> {
     match &at.term {
         // Predication: App(Is, [predicate_or_a_noun, subject])
-        MTerm::App(f, args)
-            if matches!(f.as_ref(), MTerm::Atom(BA::Is)) && args.len() == 2 =>
-        {
+        MTerm::App(f, args) if matches!(f.as_ref(), MTerm::Atom(BA::Is)) && args.len() == 2 => {
             let subj = match &args[1] {
                 MTerm::Atom(a) => atom_name(a)?,
                 _ => return None,

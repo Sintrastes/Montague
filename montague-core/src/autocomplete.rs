@@ -1,5 +1,5 @@
-use crate::types::{AnnotatedTerm, LambekType, LatticeOrd};
 use crate::semantics::Semantics;
+use crate::types::{AnnotatedTerm, LambekType, LatticeOrd};
 
 /// Given a set of partially-parsed annotated terms, suggest atoms that could
 /// extend the parse by filling a pending `LeftArrow` argument slot.

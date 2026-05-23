@@ -1,0 +1,12 @@
+[package]
+name = "montague-mont"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = ".mont DSL parser and resolver for Montague"
+
+[dependencies]
+montague-core = { workspace = true }
+thiserror = { workspace = true }
