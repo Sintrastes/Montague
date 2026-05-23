@@ -16,3 +16,8 @@ thiserror = { workspace = true }
 # negation-as-failure, and CLP for future integration tests.
 scryer-prolog = { workspace = true }
 proptest = { workspace = true }
+criterion = { workspace = true }
+
+[[bench]]
+name = "chart_vs_dfs"
+harness = false
