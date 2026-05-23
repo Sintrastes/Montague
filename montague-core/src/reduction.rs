@@ -207,6 +207,11 @@ where
         self.rules.len()
     }
 
+    /// Borrow the internal rule list (for chart-fill iteration).
+    pub fn rules_ref(&self) -> &[Box<dyn ReductionRule<A, T>>] {
+        &self.rules
+    }
+
     /// Iterate over rule names — useful for debugging which rules are loaded.
     pub fn rule_names(&self) -> impl Iterator<Item = &'static str> + '_ {
         self.rules.iter().map(|r| r.name())

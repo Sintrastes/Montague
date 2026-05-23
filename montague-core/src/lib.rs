@@ -10,14 +10,18 @@
 //! rules in [`reduction`]; identity & namespacing in [`registry`].
 
 pub mod autocomplete;
+pub mod chart;
 pub mod display;
 pub mod reduction;
+#[cfg(test)]
+pub(crate) mod reference;
 pub mod registry;
 pub mod sem;
 pub mod semantics;
 pub mod subtyping;
 pub mod types;
 
+pub use chart::{Chart, ChartPostpass, Derivation, ExtractionPostpass, ScopingPostpass};
 pub use reduction::{
     LeftAbsorption, ReductionCtx, ReductionEngine, ReductionRule, RightAbsorption,
     RuleApplicability, TypeShape,
