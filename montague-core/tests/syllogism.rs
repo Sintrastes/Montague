@@ -12,7 +12,9 @@
 // Test-local type aliases (MTerm/MLT/MAT) disambiguate from scryer_prolog::Term.
 #![allow(clippy::upper_case_acronyms)]
 
-use montague_core::{reduce, AnnotatedTerm, LambekType, LatticeOrd, Term};
+use montague_core::{
+    reduce, AnnotatedTerm, LambekType, ReductionCtx, ReductionEngine, SubtypeLattice, Term,
+};
 use scryer_prolog::{LeafAnswer, MachineBuilder};
 
 // Disambiguate from scryer_prolog::Term
@@ -24,7 +26,7 @@ type MAT<A, T> = AnnotatedTerm<A, T>;
 // Base types
 // ---------------------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum BT {
     Sentence,
     Noun,
@@ -32,20 +34,18 @@ enum BT {
     Person,
 }
 
-impl LatticeOrd for BT {
-    fn leq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (BT::Person, BT::Noun) => true,
-            (a, b) => a == b,
-        }
-    }
+/// Build the lattice used by the syllogism: Person :< Noun.
+fn syllogism_lattice() -> SubtypeLattice<BT> {
+    let mut lat = SubtypeLattice::new();
+    lat.add_subtype(BT::Person, BT::Noun);
+    lat
 }
 
 // ---------------------------------------------------------------------------
 // Atoms
 // ---------------------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum BA {
     Socrates,
     Man,
@@ -164,13 +164,15 @@ fn annotate(input: &str) -> Vec<Vec<MAT<BA, BT>>> {
 // ---------------------------------------------------------------------------
 
 fn parse(input: &str) -> Vec<MAT<BA, BT>> {
-    // A stub Semantics whose only job is to call `interp = identity`.
     let sem =
         montague_core::Semantics::new(|_: &BA| vec![], |_: &str| vec![], |at: MAT<BA, BT>| at);
+    let lat = syllogism_lattice();
+    let ctx = ReductionCtx::new(&lat);
+    let engine = ReductionEngine::standard();
 
     let mut results: Vec<MAT<BA, BT>> = Vec::new();
     for seq in annotate(input) {
-        for r in reduce(&sem, seq) {
+        for r in reduce(&engine, &ctx, &sem, seq) {
             if r.ty == basic(BT::Sentence) && !results.iter().any(|x| x.term == r.term) {
                 results.push(r);
             }
