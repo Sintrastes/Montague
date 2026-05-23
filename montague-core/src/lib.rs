@@ -13,6 +13,7 @@ pub mod autocomplete;
 pub mod display;
 pub mod reduction;
 pub mod registry;
+pub mod sem;
 pub mod semantics;
 pub mod subtyping;
 pub mod types;
@@ -20,6 +21,11 @@ pub mod types;
 pub use reduction::{
     LeftAbsorption, ReductionCtx, ReductionEngine, ReductionRule, RightAbsorption,
     RuleApplicability, TypeShape,
+};
+pub use registry::{ConstId, PredId};
+pub use sem::{
+    alpha_eq, alpha_rename, beta_normalize, free_vars, Backend, BackendCtx, BetaNormalize,
+    DirectInterp, OpSet, Pass, PassCtx, SemTerm, VarEnv, VarId,
 };
 pub use semantics::Semantics;
 pub use subtyping::{SubtypeLattice, Variance};

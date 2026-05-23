@@ -42,11 +42,11 @@ use thiserror::Error;
 /// Backed by a `u32` index into the [`Registry`]'s table. Two `QName`s
 /// are equal iff they refer to the same registered entry.
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd, Debug)]
-pub struct QName(u32);
+pub struct QName(pub u32);
 
 /// Interned namespace identifier.
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd, Debug)]
-pub struct NamespaceId(u32);
+pub struct NamespaceId(pub u32);
 
 /// Discriminates the structural role of a registered name.
 ///
@@ -61,6 +61,8 @@ pub enum IdKind {
     Binder,
     /// Predicate symbol (`man`, `likes`, …).
     Pred,
+    /// Individual constant (`socrates`, `berlin`, …).
+    Const,
     /// `LambekType::Custom` tag (pregroup adjoint, multimodal slash, …).
     SyntacticConnective,
     /// Reduction-rule identifier (so diagnostics can name which rule fired).
@@ -156,6 +158,10 @@ qname_newtype! {
 qname_newtype! {
     /// Identifier for a predicate symbol (`SemTerm::Pred.head`).
     PredId
+}
+qname_newtype! {
+    /// Identifier for an individual constant (`SemTerm::Const`).
+    ConstId
 }
 qname_newtype! {
     /// Identifier for a `LambekType::Custom` tag.
@@ -313,6 +319,26 @@ impl Registry {
         }
     }
 
+    /// Begin building an individual constant (`SemTerm::Const`).
+    pub fn const_(
+        &mut self,
+        ns: NamespaceId,
+        local: impl Into<Cow<'static, str>>,
+    ) -> ConstBuilder<'_> {
+        ConstBuilder {
+            inner: OpBuilder {
+                reg: self,
+                ns,
+                local: local.into(),
+                kind: IdKind::Const,
+                arity: Some(Arity::Fixed(0)),
+                pretty: None,
+                owner_override: None,
+                with_restrictor: false,
+            },
+        }
+    }
+
     /// Begin building a `LambekType::Custom` connective tag.
     pub fn syntactic_connective(
         &mut self,
@@ -370,6 +396,16 @@ impl Registry {
         let q = self.lookup_qname(ns, local)?;
         if self.qnames[q.0 as usize].kind == IdKind::Pred {
             Some(PredId(q))
+        } else {
+            None
+        }
+    }
+
+    /// Look up a [`ConstId`] by namespace + local name.
+    pub fn lookup_const(&self, ns: NamespaceId, local: &str) -> Option<ConstId> {
+        let q = self.lookup_qname(ns, local)?;
+        if self.qnames[q.0 as usize].kind == IdKind::Const {
+            Some(ConstId(q))
         } else {
             None
         }
@@ -638,6 +674,27 @@ impl<'r> PredBuilder<'r> {
 }
 
 #[must_use = "builder does nothing until .register() is called"]
+pub struct ConstBuilder<'r> {
+    inner: OpBuilder<'r>,
+}
+
+impl<'r> ConstBuilder<'r> {
+    pub fn pretty(mut self, s: impl Into<Cow<'static, str>>) -> Self {
+        self.inner = self.inner.pretty(s);
+        self
+    }
+
+    pub fn owner(mut self, info: OwnerInfo) -> Self {
+        self.inner = self.inner.owner(info);
+        self
+    }
+
+    pub fn register(self) -> Result<ConstId, RegisterError> {
+        self.inner.register_inner().map(ConstId)
+    }
+}
+
+#[must_use = "builder does nothing until .register() is called"]
 pub struct SyntacticBuilder<'r> {
     inner: OpBuilder<'r>,
 }
@@ -832,6 +889,18 @@ mod tests {
         assert_eq!(reg.lookup_op(fol, "forall"), Some(forall));
         // Predicates/customs/rules don't.
         assert_eq!(reg.lookup_pred(fol, "forall"), None);
+    }
+
+    #[test]
+    fn const_roundtrip_and_kind() {
+        let mut reg = Registry::empty();
+        let std_ns = ns(&mut reg, "montague.standard", None);
+        let socrates = reg.const_(std_ns, "socrates").register().unwrap();
+        assert_eq!(reg.kind_of(socrates.qname()), IdKind::Const);
+        assert_eq!(reg.lookup_const(std_ns, "socrates"), Some(socrates));
+        // lookup_pred and lookup_op should reject consts.
+        assert_eq!(reg.lookup_pred(std_ns, "socrates"), None);
+        assert_eq!(reg.lookup_op(std_ns, "socrates"), None);
     }
 
     #[test]
