@@ -1,7 +1,13 @@
 //! `.mont` DSL parser and name resolver.
 //!
-//! Two-phase pipeline: [`parse`] produces a purely-syntactic AST,
-//! [`resolve`] takes that AST plus a `Registry` and produces a typed
-//! `Lexicon` with populated `SubtypeLattice`.
+//! Two-phase pipeline:
+//! - [`parser::parse`] produces a purely-syntactic AST ([`ast::MontFile`]).
+//! - [`resolver::resolve`] takes the AST plus a [`Registry`] and produces a
+//!   typed lexicon with populated subtype lattice.
 //!
-//! Populated in milestone M6 (chumsky-based).
+//! [`Registry`]: montague_core::registry::Registry
+
+pub mod ast;
+pub mod error;
+pub mod parser;
+pub mod resolver;
