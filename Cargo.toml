@@ -30,3 +30,6 @@ montague-derive = { path = "montague-derive", version = "0.2.0" }
 # External crates.
 thiserror = "1.0"
 scryer-prolog = "0.10"
+
+# Test dependencies (dev-dependencies in member crates).
+proptest = "1.5"

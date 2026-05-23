@@ -1,5 +1,6 @@
 pub mod autocomplete;
 pub mod display;
+pub mod registry;
 pub mod semantics;
 pub mod types;
 
