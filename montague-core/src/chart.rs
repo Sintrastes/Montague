@@ -327,7 +327,6 @@ impl Default for ConnectiveSet {
 }
 
 impl ConnectiveSet {
-
     pub fn with(mut self, s: TypeShape) -> Self {
         self.shapes.push(s);
         self

@@ -45,7 +45,10 @@ use thiserror::Error;
 pub struct QName(pub u32);
 
 /// Interned namespace identifier.
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd, Debug)]
+///
+/// `Default` returns `NamespaceId(0)` which is an invalid sentinel — it must
+/// be overwritten by `register()` before use.
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd, Debug, Default)]
 pub struct NamespaceId(pub u32);
 
 /// Discriminates the structural role of a registered name.

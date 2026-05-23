@@ -1,0 +1,15 @@
+[package]
+name = "montague-standard"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Standard (starter) lexicon for Montague — syllogism atoms and productions"
+
+[dependencies]
+montague-core = { workspace = true }
+montague-fol = { workspace = true }
+
+[dev-dependencies]
+scryer-prolog = { workspace = true }

@@ -9,3 +9,4 @@ description = "First-order logic profile (and, or, not, implies, forall, exists,
 
 [dependencies]
 montague-core = { workspace = true }
+montague-derive = { workspace = true }

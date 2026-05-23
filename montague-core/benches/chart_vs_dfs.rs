@@ -6,8 +6,9 @@
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use montague_core::{
-    annotate, reduce,
+    annotate,
     chart::Chart,
+    reduce,
     reduction::{ReductionCtx, ReductionEngine},
     subtyping::SubtypeLattice,
     types::{AnnotatedTerm, LambekType, Term},
@@ -23,7 +24,12 @@ type Sem = Semantics<&'static str, &'static str, AT>;
 // ---------------------------------------------------------------------------
 
 /// Build a tiny lexicon: N and N\S.
-fn fixtures() -> (Sem, ReductionEngine<&'static str, &'static str>, SubtypeLattice<&'static str>, LambekType<&'static str>) {
+fn fixtures() -> (
+    Sem,
+    ReductionEngine<&'static str, &'static str>,
+    SubtypeLattice<&'static str>,
+    LambekType<&'static str>,
+) {
     let sem = Semantics::new(
         |a: &&str| match *a {
             "n" => vec![LambekType::Basic("N")],

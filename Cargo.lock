@@ -1581,12 +1581,18 @@ dependencies = [
 [[package]]
 name = "montague-derive"
 version = "0.2.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+]
 
 [[package]]
 name = "montague-fol"
 version = "0.2.0"
 dependencies = [
  "montague-core",
+ "montague-derive",
 ]
 
 [[package]]
@@ -1611,6 +1617,15 @@ dependencies = [
  "montague-core",
  "scryer-prolog",
  "thiserror",
+]
+
+[[package]]
+name = "montague-standard"
+version = "0.2.0"
+dependencies = [
+ "montague-core",
+ "montague-fol",
+ "scryer-prolog",
 ]
 
 [[package]]
