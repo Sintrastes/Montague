@@ -21,10 +21,12 @@ pub use montague_fol::Fol;
 pub use montague_standard::Standard;
 
 pub use montague_pretty::{
-    display_lambek_as_sexp, display_semterm_as_prolog, display_semterm_as_sexp, SExpBackend,
+    display_lambek_as_sexp, display_semterm_as_prolog, display_semterm_as_sexp,
+    display_term_as_sexp, SExpBackend,
 };
 pub use montague_prolog::{
-    lower_to_clause, lower_to_clauses, PrologBackend, PrologClause, PrologTerm,
+    lower_term_to_prolog, lower_to_clause, lower_to_clauses, term_to_prolog_arg, PrologBackend,
+    PrologClause, PrologTerm,
 };
 
 pub use crate::engine::Engine;

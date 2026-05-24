@@ -16,7 +16,8 @@ use montague::core::{
     Semantics,
 };
 use montague::mont::{parser, resolver};
-use montague::pretty::{display_lambek_as_sexp, tree};
+use montague::pretty::{display_lambek_as_sexp, display_term_as_sexp, tree};
+use montague::prolog::lower_term_to_prolog;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -66,8 +67,9 @@ fn cmd_parse(args: &[String]) {
 }
 
 fn cmd_lower(args: &[String]) {
-    let file = require_arg(args, 2, "mont lower <file> <backend>");
-    let backend_name = require_arg(args, 3, "mont lower <file> <backend>");
+    let file = require_arg(args, 2, "montague lower <file> <backend> [sentence]");
+    let backend_name = require_arg(args, 3, "montague lower <file> <backend> [sentence]");
+    let sentence: Option<String> = args.get(4..).map(|w| w.join(" ")).filter(|s| !s.is_empty());
 
     let src = read_file(file);
     let (ast, parse_errs) = parser::parse(&src);
@@ -91,33 +93,81 @@ fn cmd_lower(args: &[String]) {
         }
     };
 
-    match backend_name {
-        "sexp" => {
-            for a in &lex.atoms {
-                let ty_sexp = display_lambek_as_sexp(&a.type_expr, None);
-                if let Some(ref doc) = a.doc {
-                    println!(";; | {doc}");
-                }
-                println!("({} : {ty_sexp})", a.entity);
-            }
-            if !lex.productions.is_empty() {
-                println!();
-                for p in &lex.productions {
-                    println!("(--> (\"{}\") {})", p.words.join("\" \""), p.entity);
-                }
-            }
-        }
-        "prolog" => {
-            for a in &lex.atoms {
-                println!("% atom {} : {:?}", a.entity, a.type_expr);
-            }
-            for p in &lex.productions {
-                println!("% production {} --> {}", p.words.join(", "), p.entity);
-            }
-        }
-        _ => {
-            eprintln!("mont: unknown backend `{backend_name}`. Use `prolog` or `sexp`.");
+    // If a sentence was provided, lower the parsed sentence instead of the lexicon.
+    if let Some(ref sent) = sentence {
+        let sem: Semantics<String, String, core::AnnotatedTerm<String, String>> =
+            resolver::build_semantics(&lex);
+        let engine = ReductionEngine::standard();
+        let ctx = ReductionCtx::new(&lex.lattice);
+        let parses = core::get_all_parses(&engine, &ctx, &sem, sent);
+
+        if parses.is_empty() {
+            eprintln!("No parse found for: {sent:?}");
             process::exit(1);
+        }
+
+        for (i, at) in parses.iter().enumerate() {
+            if i > 0 {
+                println!();
+            }
+            match backend_name {
+                "prolog" => {
+                    if let Some(clause) = lower_term_to_prolog(&at.term) {
+                        println!("{clause}");
+                    }
+                }
+                "sexp" => {
+                    println!("{}", display_term_as_sexp(&at.term));
+                }
+                _ => {
+                    eprintln!("montague: unknown backend `{backend_name}`");
+                    process::exit(1);
+                }
+            }
+        }
+        return;
+    }
+
+    // Lexicon mode (no sentence).
+    match backend_name {
+        "sexp" => lower_lexicon_sexp(&lex),
+        "prolog" => lower_lexicon_prolog(&lex),
+        _ => {
+            eprintln!("montague: unknown backend `{backend_name}`. Use `prolog` or `sexp`.");
+            process::exit(1);
+        }
+    }
+}
+
+/// Lower a lexicon to S-expression format.
+fn lower_lexicon_sexp(lex: &resolver::ResolvedLexicon) {
+    for a in &lex.atoms {
+        let ty_sexp = display_lambek_as_sexp(&a.type_expr, None);
+        if let Some(ref doc) = a.doc {
+            println!(";; | {doc}");
+        }
+        println!("(: {} {ty_sexp})", a.entity);
+    }
+    if !lex.productions.is_empty() {
+        println!();
+        for p in &lex.productions {
+            if p.words.len() == 1 {
+                println!("(--> \"{}\" {})", p.words[0], p.entity);
+            } else {
+                let words: Vec<String> = p.words.iter().map(|w| format!("\"{w}\"")).collect();
+                println!("(--> ({}) {})", words.join(" "), p.entity);
+            }
+        }
+    }
+}
+
+/// Lower a lexicon to Prolog facts (typeOf/2 only for Basic-typed atoms).
+fn lower_lexicon_prolog(lex: &resolver::ResolvedLexicon) {
+    for a in &lex.atoms {
+        if let montague::core::LambekType::Basic(ref t) = a.type_expr {
+            // t is a String — use it directly as the type name.
+            let type_name = t.to_lowercase();
+            println!("typeOf({}, {}).", a.entity, type_name);
         }
     }
 }

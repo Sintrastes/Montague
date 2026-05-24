@@ -234,6 +234,45 @@ pub fn lower_to_clauses(term: &SemTerm, reg: Option<&Registry>) -> Vec<PrologCla
 }
 
 // ---------------------------------------------------------------------------
+// Term-level lowering (sentence mode)
+// ---------------------------------------------------------------------------
+
+use montague_core::types::Term;
+
+/// Lower a `Term<String>` to a Prolog clause string.
+///
+/// Arguments are reversed for sentence order: the last-absorbed argument
+/// (subject via RightArrow) appears first, earlier arguments (objects via
+/// LeftArrow) appear after.
+pub fn lower_term_to_prolog(term: &Term<String>) -> Option<String> {
+    match term {
+        Term::App(f, args) => {
+            let fun_name = match f.as_ref() {
+                Term::Atom(name) => name.clone(),
+                _ => return None,
+            };
+            let arg_strs: Vec<String> = args.iter().rev().filter_map(term_to_prolog_arg).collect();
+            if arg_strs.len() != args.len() {
+                return None;
+            }
+            Some(format!("{}({}).", fun_name, arg_strs.join(", ")))
+        }
+        Term::Atom(name) => Some(name.clone()),
+        _ => None,
+    }
+}
+
+/// Convert a sub-term to a Prolog argument string.
+pub fn term_to_prolog_arg(term: &Term<String>) -> Option<String> {
+    match term {
+        Term::Atom(name) => Some(name.clone()),
+        Term::App(_, _) => lower_term_to_prolog(term).map(|s| s.trim_end_matches('.').to_string()),
+        Term::Var(_) => Some("_".to_string()),
+        _ => None,
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Backend impl
 // ---------------------------------------------------------------------------
 

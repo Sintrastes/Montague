@@ -104,6 +104,27 @@ fn write_sexp(
 }
 
 // ---------------------------------------------------------------------------
+// Term → S-expression (sentence mode)
+// ---------------------------------------------------------------------------
+
+use montague_core::types::Term;
+
+/// Display a `Term<String>` as an S-expression. App arguments are reversed
+/// for sentence order: last-absorbed (subject) appears first.
+pub fn display_term_as_sexp(term: &Term<String>) -> String {
+    match term {
+        Term::Atom(name) => name.clone(),
+        Term::Var(s) => s.clone(),
+        Term::Lambda(s, body) => format!("(λ {s} {})", display_term_as_sexp(body)),
+        Term::App(f, args) => {
+            let mut parts = vec![display_term_as_sexp(f)];
+            parts.extend(args.iter().rev().map(display_term_as_sexp));
+            format!("({})", parts.join(" "))
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // SemTerm → Prolog term
 // ---------------------------------------------------------------------------
 
