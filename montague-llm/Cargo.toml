@@ -1,0 +1,21 @@
+[package]
+name = "montague-llm"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "LLM backends for Montague — mistralrs (local GGUF) and Anthropic-compatible API"
+
+[dependencies]
+ureq = "2"
+hf-hub = "0.4"
+tokio = { version = "1", features = ["rt"], optional = true }
+
+[features]
+default = []
+mistralrs = ["dep:mistralrs", "dep:tokio"]
+
+[dependencies.mistralrs]
+version = "0.8"
+optional = true
