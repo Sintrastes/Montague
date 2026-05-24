@@ -1,0 +1,48 @@
+-- Weather expressions and expletive subjects.
+-- "It is raining."  "It is cold."  "It rained."  "It is two thirty."
+--
+-- Test with:
+--   mont tree examples/weather.mont "It is raining."
+--   mont tree examples/weather.mont "It is cold."
+--   mont tree examples/weather.mont "It rained."
+
+Type =
+    Sentence
+  | Adjective
+  | Expletive
+  | Time.
+
+-- | The dummy subject "it" in weather expressions.
+it_subj: Expletive.
+
+-- | Copula "is" — absorbs Adjective from right, then Expletive from left.
+is_cop: (Expletive \ Sentence) / Adjective.
+
+-- | Weather predicates that need the dummy subject.
+rained: Expletive \ Sentence.
+snowed: Expletive \ Sentence.
+
+-- | Adjectival predicates — "raining", "cold", "warm".
+raining: Adjective.
+cold: Adjective.
+warm: Adjective.
+
+-- | A specific time-of-day expression.
+two_thirty: Time.
+
+-- | Copula for attributing a time. "It is two thirty."
+--   Note: "two thirty" must be written as a single token "two_thirty"
+--   until multi-word surface forms are supported.
+is_at: (Expletive \ Sentence) / Time.
+
+-- Surface form -> entity.
+it --> it_subj.
+is --> is_cop.
+is --> is_at.
+rained --> rained.
+snowed --> snowed.
+raining --> raining.
+cold --> cold.
+warm --> warm.
+two_thirty --> two_thirty.
+is_at --> is_at.

@@ -14,3 +14,4 @@ montague-fol = { workspace = true }
 montague-mont = { workspace = true }
 montague-pretty = { workspace = true }
 montague-prolog = { workspace = true }
+montague-standard = { workspace = true }

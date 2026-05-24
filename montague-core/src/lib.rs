@@ -47,7 +47,7 @@ where
 {
     let words: Vec<String> = input
         .chars()
-        .filter(|c| !matches!(c, ',' | ';'))
+        .filter(|c| !matches!(c, ',' | ';' | '.' | '!' | '?'))
         .collect::<String>()
         .split_whitespace()
         .map(|w| w.to_lowercase())

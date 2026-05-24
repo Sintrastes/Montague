@@ -8,7 +8,7 @@ authors.workspace = true
 description = "Command-line interface for Montague — parse, lower, query .mont schemas"
 
 [[bin]]
-name = "mont"
+name = "montague"
 path = "src/main.rs"
 
 [dependencies]

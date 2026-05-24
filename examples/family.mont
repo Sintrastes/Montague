@@ -1,0 +1,49 @@
+-- Family relations — demonstrates copulas, determiners, and prepositions.
+-- "bob is the father of alice."  "alice likes bob."
+--
+-- Test with:
+--   mont parse examples/family.mont
+--   mont lower examples/family.mont sexp
+--   mont tree examples/family.mont "bob is the father of alice"
+
+Type =
+    Sentence
+  | Noun
+  | Person.
+
+-- Subtypes.
+Person :< Noun.
+
+-- | The father.
+bob: Person.
+-- | The mother.
+alice: Person.
+-- | The child.
+carol: Person.
+
+-- | Common noun.
+father: Noun.
+mother: Noun.
+
+-- | Transitive verb: (N\S)/N — absorbs object from right, subject from left.
+likes: (Noun \ Sentence) / Noun.
+
+-- | Copula: "bob is alice" or "bob is a father". (N\S)/N.
+is_cop: (Noun \ Sentence) / Noun.
+
+-- | Definite determiner: "the father" — turns N into N (identity function on type).
+the_det: Noun / Noun.
+
+-- | Preposition "of": (N\N)/Person — absorbs Person from right, Noun from left.
+of_prep: (Noun \ Noun) / Person.
+
+-- Surface productions.
+bob --> bob.
+alice --> alice.
+carol --> carol.
+father --> father.
+mother --> mother.
+likes, loves --> likes.
+is --> is_cop.
+the --> the_det.
+of --> of_prep.

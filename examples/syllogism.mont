@@ -1,0 +1,48 @@
+-- The classical Aristotelian syllogism in a Montague lexicon.
+-- All men are mortal. Socrates is a man. Therefore Socrates is mortal.
+--
+-- Test with:
+--   mont tree examples/syllogism.mont "Socrates is mortal"
+--   mont tree examples/syllogism.mont "Socrates is a man"
+--   mont tree examples/syllogism.mont "all men are mortal"
+
+Type =
+    Noun
+  | Sentence
+  | Adjective
+  | Person.
+
+-- Subtype hierarchy.
+Person :< Noun.
+
+-- | The philosopher.
+socrates: Person.
+
+-- | Common noun for human beings.
+man_noun: Noun.
+
+-- | The property of being subject to death.
+mortal: Adjective.
+
+-- | Article "a" — converts a noun into an adjectival predicate.
+--   "a man" → App(a_art, man) : Adjective
+a_art: Adjective / Noun.
+
+-- | Copula "is" / "are" — absorbs Adjective from right, then Noun from left.
+--   "is mortal" : Noun \ Sentence.  "Socrates is mortal" : Sentence.
+is_cop: (Noun \ Sentence) / Adjective.
+are_cop: (Noun \ Sentence) / Adjective.
+
+-- | Universal quantifier "all" / "every".
+--   Absorbs Noun from right → S/(N\S). Then absorbs N\S from right → S.
+--   "all men" : S/(N\S).  "all men are mortal" : S.
+all_q: (Sentence / (Noun \ Sentence)) / Noun.
+every_q: (Sentence / (Noun \ Sentence)) / Noun.
+
+-- Surface word → entity mappings.
+socrates --> socrates.
+man, men --> man_noun.
+mortal --> mortal.
+a --> a_art.
+is, are --> is_cop.
+all, every --> all_q.

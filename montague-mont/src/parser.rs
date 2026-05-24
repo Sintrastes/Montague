@@ -199,10 +199,13 @@ impl<'a> Scanner<'a> {
                 })
             }
             _c if _c.is_alphabetic() => {
-                while self.pos < self.src.len()
-                    && (self.src.as_bytes()[self.pos] as char).is_alphanumeric()
-                {
-                    self.pos += 1;
+                while self.pos < self.src.len() {
+                    let ch = self.src.as_bytes()[self.pos] as char;
+                    if ch.is_alphanumeric() || ch == '_' {
+                        self.pos += 1;
+                    } else {
+                        break;
+                    }
                 }
                 let s = self.src[start..self.pos].to_string();
                 let tok = match s.as_str() {
@@ -328,32 +331,42 @@ impl<'a> Parser<'a> {
     }
 
     fn type_expr(&mut self) -> Option<Spanned<TypeExpr>> {
-        if self.eat(Token::LParen) {
-            let inner = self.type_expr();
+        // Parse primary (atom or parenthesized expr)
+        let mut left = if self.eat(Token::LParen) {
+            let inner = self.type_expr()?;
             self.eat(Token::RParen);
-            return inner;
-        }
-        let left = self.type_atom()?;
-        let op = match self.peek() {
-            Some(Token::Slash) => Some("slash"),
-            Some(Token::Backslash) | Some(Token::RArrow) => Some("backslash"),
-            Some(Token::Pipe) => Some("pipe"),
-            _ => None,
-        };
-        if let Some(op_name) = op {
-            self.pos += 1;
-            let right = self.type_expr()?;
-            let span = Span::new(left.span.start, right.span.end);
-            let expr = match op_name {
-                "slash" => TypeExpr::LeftArrow(Box::new(left), Box::new(right)),
-                "backslash" => TypeExpr::RightArrow(Box::new(left), Box::new(right)),
-                "pipe" => TypeExpr::Union(Box::new(left), Box::new(right)),
-                _ => unreachable!(),
-            };
-            Some(Spanned::new(expr, span))
+            inner
         } else {
-            Some(left)
+            self.type_atom()?
+        };
+
+        // Now check for operators (left-associative chain)
+        loop {
+            let op = match self.peek() {
+                Some(Token::Slash) => Some("slash"),
+                Some(Token::Backslash) | Some(Token::RArrow) => Some("backslash"),
+                Some(Token::Pipe) => Some("pipe"),
+                _ => None,
+            };
+            match op {
+                Some(op_name) => {
+                    self.pos += 1;
+                    let right = self.type_expr()?;
+                    let span = Span::new(left.span.start, right.span.end);
+                    left = Spanned::new(
+                        match op_name {
+                            "slash" => TypeExpr::LeftArrow(Box::new(left), Box::new(right)),
+                            "backslash" => TypeExpr::RightArrow(Box::new(left), Box::new(right)),
+                            "pipe" => TypeExpr::Union(Box::new(left), Box::new(right)),
+                            _ => unreachable!(),
+                        },
+                        span,
+                    );
+                }
+                None => break,
+            }
         }
+        Some(left)
     }
 
     // declarations

@@ -3,6 +3,8 @@
 //! Provides S-expression and Prolog-term renderers for both [`SemTerm`] and
 //! [`LambekType`], plus a [`Backend`] impl for direct lowering.
 
+pub mod tree;
+
 use std::fmt::Write;
 
 use montague_core::{

@@ -1,7 +1,44 @@
-like, love  --> Like.
-i           --> I.
-killed      --> Killed.
-the         --> The.
-man, person --> Man. 
-with        --> With.
-spoon       --> Spoon.
+-- example.mont — a small lexicon for everyday predication.
+-- Classic Montague-style with subtyping.
+--
+-- Test with:
+--   mont parse examples/example.mont
+--   mont lower examples/example.mont sexp
+
+Type =
+    Noun
+  | Sentence
+  | Person
+  | Adjective
+  | Determiner
+  | Instrument
+  | VerbPhrase.
+
+-- Subtypes.
+Person :< Noun.
+Instrument :< Noun.
+
+-- Atoms (typed entities).
+i: Person.
+-- | The act of taking a life.
+killed: (Noun \ VerbPhrase) / Noun.
+-- | Definite article.
+the: Determiner.
+-- | Common noun for adult male humans.
+man: Noun.
+person: Noun.
+-- | Instrumental preposition.
+with: (Noun \ Noun) / Instrument.
+-- | A common eating utensil.
+spoon: Instrument.
+-- | The entity for "like" and "love".
+like_entity: VerbPhrase / Noun.
+
+-- Productions (surface forms → entities).
+like, love --> like_entity.
+i --> i.
+killed --> killed.
+the --> the.
+man, person --> man.
+with --> with.
+spoon --> spoon.
