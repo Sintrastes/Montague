@@ -8,6 +8,7 @@
 
 use std::env;
 use std::fs;
+use std::io::{self, BufRead, Write};
 use std::process;
 
 use montague::core::{
@@ -18,6 +19,7 @@ use montague::core::{
 use montague::mont::{parser, resolver};
 use montague::pretty::{display_lambek_as_sexp, display_term_as_sexp, tree};
 use montague::prolog::lower_term_to_prolog;
+use scryer_prolog::MachineBuilder;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -28,6 +30,7 @@ fn main() {
 
     match args[1].as_str() {
         "parse" => cmd_parse(&args),
+        "ask" => cmd_ask(&args),
         "lower" => cmd_lower(&args),
         "tree" => cmd_tree(&args),
         "help" | "--help" | "-h" => print_usage(),
@@ -44,10 +47,11 @@ fn print_usage() {
         "mont — Montague DSL tool\n\
          \n\
          USAGE:\n\
-           mont parse <file>             Parse a .mont file, print the AST\n\
-           mont lower <file> <backend>   Parse, resolve, and lower: `prolog` or `sexp`\n\
-           mont tree <file> <sentence>   Parse a sentence, print the parse tree\n\
-           mont help                     Print this message"
+           montague ask   <file>             Interactive Q&A: assertions and queries\n\
+           montague parse <file>             Parse a .mont file, print the AST\n\
+           montague lower <file> <backend>   Parse, resolve, and lower the lexicon\n\
+           montague tree  <file> <sentence>  Parse a sentence, print the parse tree\n\
+           montague help                     Print this message"
     );
 }
 
@@ -235,6 +239,119 @@ fn cmd_tree(args: &[String]) {
             atom_types.get(name).cloned()
         });
         println!("{}", tree::render_typed_tree(&typed_tree));
+    }
+}
+
+fn cmd_ask(args: &[String]) {
+    let file = require_arg(args, 2, "montague ask <file>");
+
+    // 1. Load lexicon
+    let src = read_file(file);
+    let (ast, parse_errs) = parser::parse(&src);
+    if !parse_errs.is_empty() {
+        for e in &parse_errs {
+            eprintln!("parse error: {e}");
+        }
+        process::exit(1);
+    }
+    let reg = core::registry::Registry::empty();
+    let lex = match resolver::resolve(&ast, &reg) {
+        Ok(lex) => lex,
+        Err(errs) => {
+            for e in &errs {
+                eprintln!("resolve error: {e}");
+            }
+            process::exit(1);
+        }
+    };
+    let sem: Semantics<String, String, core::AnnotatedTerm<String, String>> =
+        resolver::build_semantics(&lex);
+    let engine = ReductionEngine::standard();
+    let ctx = ReductionCtx::new(&lex.lattice);
+
+    // 2. Initialize Scryer Prolog
+    let mut machine = MachineBuilder::default().build();
+    let mut clause_count = 0u32;
+
+    eprintln!("Montague Q&A — type assertions or questions. :q to quit.\n");
+
+    // 3. REPL
+    let stdin = io::stdin();
+    let mut stdout = io::stdout();
+    loop {
+        print!("montague> ");
+        stdout.flush().unwrap();
+        let mut input = String::new();
+        if stdin.lock().read_line(&mut input).is_err() {
+            break;
+        }
+        let input = input.trim().to_string();
+        if input.is_empty() {
+            continue;
+        }
+        if input == ":q" || input == ":quit" {
+            eprintln!("bye.");
+            break;
+        }
+
+        // Detect question: trailing ? or leading wh-word
+        let is_question = input.ends_with('?')
+            || input.starts_with("who ")
+            || input.starts_with("what ")
+            || input.starts_with("is ")
+            || input.starts_with("does ");
+        let clean_input = input.trim_end_matches('?').trim().to_string();
+
+        let parses = core::get_all_parses(&engine, &ctx, &sem, &clean_input);
+        if parses.is_empty() {
+            eprintln!("  No parse found.");
+            continue;
+        }
+
+        // Take the first parse
+        let at = &parses[0];
+
+        if is_question {
+            // Question: emit as Prolog query and run.
+            let query = lower_term_to_prolog(&at.term)
+                .map(|s| s.trim_end_matches('.').to_string())
+                .unwrap_or_else(|| format!("{:?}", at.term));
+            eprintln!("  query: {query}?");
+
+            let query_str = format!("{query}.");
+            let answers: Result<Vec<scryer_prolog::LeafAnswer>, _> =
+                machine.run_query(&query_str).collect();
+            match answers {
+                Ok(results) => {
+                    if results.is_empty() {
+                        eprintln!("  no.");
+                    } else if results == vec![scryer_prolog::LeafAnswer::True] {
+                        eprintln!("  yes.");
+                    } else {
+                        for a in &results {
+                            eprintln!("  {a:?}");
+                        }
+                    }
+                }
+                Err(e) => {
+                    eprintln!("  query error: {e:?}");
+                }
+            }
+        } else {
+            // Assertion: lower to Prolog and load.
+            if let Some(clause) = lower_term_to_prolog(&at.term) {
+                let module = format!("clause_{clause_count}");
+                machine.load_module_string(&module, &clause);
+                clause_count += 1;
+                eprintln!("  asserted: {clause}");
+            } else {
+                eprintln!("  (could not lower to Prolog)");
+            }
+        }
+
+        if parses.len() > 1 {
+            eprintln!("  ({} parses total)", parses.len());
+        }
     }
 }
 

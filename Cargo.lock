@@ -1567,6 +1567,7 @@ name = "montague-cli"
 version = "0.2.0"
 dependencies = [
  "montague",
+ "scryer-prolog",
 ]
 
 [[package]]

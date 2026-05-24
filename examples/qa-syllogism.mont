@@ -1,0 +1,44 @@
+-- Q&A syllogism — supports assertions and questions for Prolog inference.
+-- Test with:
+--   montague ask examples/qa-syllogism.mont
+--   > Socrates is a man.
+--   > all men are mortal.
+--   > Socrates is mortal?
+
+Type =
+    Sentence
+  | Question
+  | Noun
+  | Adjective
+  | Person.
+
+Person :< Noun.
+
+-- | The philosopher.
+socrates: Person.
+
+-- | Common noun.
+man_noun: Noun.
+
+-- | Adjective / predicate.
+mortal: Adjective.
+
+-- | Article "a".
+a_art: Adjective / Noun.
+
+-- | Copula.
+is_cop: (Noun \ Sentence) / Adjective.
+
+-- | Quantifier.
+all_q: (Sentence / (Noun \ Sentence)) / Noun.
+
+-- | Question operator: S → Q for yes/no questions.
+ask_op: Question / Sentence.
+
+-- Productions.
+socrates --> socrates.
+man, men --> man_noun.
+mortal --> mortal.
+a --> a_art.
+is, are --> is_cop.
+all, every --> all_q.

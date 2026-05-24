@@ -244,20 +244,91 @@ use montague_core::types::Term;
 /// Arguments are reversed for sentence order: the last-absorbed argument
 /// (subject via RightArrow) appears first, earlier arguments (objects via
 /// LeftArrow) appear after.
+///
+/// Copula stripping: `App(is_cop, [pred, subj])` → `pred(subj).` and
+/// `App(is_cop, [App(a_art, [noun]), subj])` → `noun(subj).`
+///
+/// Quantifier: `App(all_q, [noun, vp])` → `pred(X) :- noun(X).`
 pub fn lower_term_to_prolog(term: &Term<String>) -> Option<String> {
+    // Copula detection: is_cop(subject, predicate...) → predicate(subject).
+    if let Term::App(f, args) = term {
+        let fname = match f.as_ref() {
+            Term::Atom(n) => n.clone(),
+            _ => String::new(),
+        };
+
+        // Copula stripping for assertions and queries.
+        if (fname == "is_cop" || fname == "are_cop") && args.len() >= 2 {
+            let pred = strip_article(&args[0]);
+            // Reverse: args are [pred, subj] → emit pred(subj).
+            let subj = term_to_prolog_arg(&args[1])?;
+            let pred_name = term_to_prolog_arg(&pred)?;
+            return Some(format!("{pred_name}({subj})."));
+        }
+
+        // Quantifier: all_q / every_q
+        if (fname == "all_q" || fname == "every_q") && args.len() == 2 {
+            let noun = term_to_prolog_arg(&args[0])?;
+            let pred = extract_predicate(&args[1])?;
+            return Some(format!("{pred}(X) :- {noun}(X)."));
+        }
+
+        // Default: generic App → function(args).
+        let arg_strs: Vec<String> = args.iter().rev().filter_map(term_to_prolog_arg).collect();
+        if arg_strs.len() != args.len() {
+            return None;
+        }
+        return Some(format!("{fname}({}).", arg_strs.join(", ")));
+    }
+
+    if let Term::Atom(name) = term {
+        return Some(name.clone());
+    }
+    None
+}
+
+/// Strip the article `a_art` wrapper: `App(a_art, [noun])` → just the `noun`.
+fn strip_article(term: &Term<String>) -> Term<String> {
     match term {
         Term::App(f, args) => {
-            let fun_name = match f.as_ref() {
-                Term::Atom(name) => name.clone(),
+            let fname = match f.as_ref() {
+                Term::Atom(n) => n,
+                _ => return term.clone(),
+            };
+            if fname == "a_art" && !args.is_empty() {
+                args[0].clone()
+            } else {
+                term.clone()
+            }
+        }
+        _ => term.clone(),
+    }
+}
+
+/// Extract the semantic predicate from a VP compound like `App(is_cop, [mortal])` →
+/// `"mortal"`. Skips copulas and returns the innermost non-copula atom.
+fn extract_predicate(term: &Term<String>) -> Option<String> {
+    match term {
+        Term::Atom(name) => {
+            if name == "is_cop" || name == "are_cop" {
+                None // copula alone has no predicate
+            } else {
+                Some(name.clone())
+            }
+        }
+        Term::App(f, args) => {
+            let f_name = match f.as_ref() {
+                Term::Atom(n) => n.clone(),
                 _ => return None,
             };
-            let arg_strs: Vec<String> = args.iter().rev().filter_map(term_to_prolog_arg).collect();
-            if arg_strs.len() != args.len() {
-                return None;
+            // If the function is a copula, the predicate is in the args.
+            if f_name == "is_cop" || f_name == "are_cop" {
+                args.last().and_then(extract_predicate)
+            } else {
+                // Otherwise, the predicate is the function itself.
+                Some(f_name)
             }
-            Some(format!("{}({}).", fun_name, arg_strs.join(", ")))
         }
-        Term::Atom(name) => Some(name.clone()),
         _ => None,
     }
 }
