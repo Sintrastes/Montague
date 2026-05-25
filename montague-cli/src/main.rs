@@ -492,13 +492,12 @@ fn cmd_ask(args: &[String]) {
             let tokenized = tokenize_multiword(&clean_input, &lex.productions);
 
             let mut parses = core::get_all_parses_chart(&engine, &ctx, &sem, &tokenized);
-            // Prefer Question-typed parses when input is a question (resolves
-            // who_q vs who_rel ambiguity — who_q produces Question type).
-            if is_question {
-                parses.sort_by_key(|p| {
-                    if format!("{:?}", p.ty).contains("Question") { 0 } else { 1 }
-                });
-            }
+            // Keep only Sentence / Question derivations — discard partial
+            // parses like who_rel (N\N) that don't form complete utterances.
+            parses.retain(|p| {
+                let dbg = format!("{:?}", p.ty);
+                dbg.contains("Sentence") || dbg.contains("Question") || dbg == r#"Basic("S")"#
+            });
 
             if parses.is_empty() {
                 // Failed parse — try LLM recovery (up to 3 attempts)
