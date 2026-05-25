@@ -10,12 +10,12 @@
 
 <p align="center">
   <a href="https://www.haskell.org/">
-    <img src="https://img.shields.io/badge/Language-Haskell-blue">
+    <img src="https://img.shields.io/badge/Language-Rust-orange">
   </a>
   <a href="https://github.com/Sintrastes/Montague/actions/workflows/build.yml">
     <img src="https://github.com/Sintrastes/Montague/actions/workflows/build.yml/badge.svg">
   </a>
-  <img src="https://img.shields.io/badge/Hackage-TODO-red">
+  <img src="https://img.shields.io/badge/crates.io-0.3-red">
   <img src="https://img.shields.io/badge/License-AGPL v3.0-blue">
 </p>
 
@@ -115,5 +115,3 @@ beginners/novices are welcome.
   * Needs support for associativity.
   * The examples are all in English. Add some more examples in other languages. Particularly 
     interesting to me is the encoding of case-heavy languages like Polish. This may require some more advanced type system features in order to implement.
-
-   
