@@ -79,6 +79,74 @@ where
     cartesian_product(per_word)
 }
 
+/// Like [`annotate`] but returns per-word ambiguous term lists without the
+/// cartesian product — the format [`Chart::from_tokens`] expects.
+pub fn annotate_words<A, T, X>(sem: &Semantics<A, T, X>, input: &str) -> Vec<Vec<AT<A, T>>>
+where
+    A: Clone,
+    T: Clone,
+{
+    let words: Vec<String> = input
+        .chars()
+        .filter(|c| !matches!(c, ',' | ';' | '.' | '!' | '?'))
+        .collect::<String>()
+        .split_whitespace()
+        .map(|w| w.to_lowercase())
+        .collect();
+
+    words
+        .iter()
+        .map(|w| {
+            let terms = (sem.parse_term)(w);
+            terms
+                .into_iter()
+                .flat_map(|term| {
+                    let types = match &term {
+                        Term::Atom(a) => (sem.type_of_atom)(a),
+                        _ => vec![],
+                    };
+                    types.into_iter().map(move |ty| AT {
+                        term: term.clone(),
+                        ty,
+                    })
+                })
+                .collect()
+        })
+        .collect()
+}
+
+/// CYK-chart based alternative to [`get_all_parses`].  Uses the chart parser
+/// instead of DFS reduction, which enables composition and coordination rules
+/// (Steps 3–4) that the linear DFS cannot handle.
+pub fn get_all_parses_chart<A, T, X>(
+    engine: &ReductionEngine<A, T>,
+    ctx: &ReductionCtx<'_, T>,
+    sem: &Semantics<A, T, X>,
+    input: &str,
+) -> Vec<X>
+where
+    A: Clone + Eq + Hash + 'static,
+    T: Hash + Eq + Clone + 'static,
+    X: Clone + PartialEq,
+{
+    let tokens = annotate_words(sem, input);
+    let mut chart = Chart::from_tokens(tokens);
+    chart.fill(engine, ctx);
+    let parses = chart.all_parses();
+    let mut results: Vec<X> = Vec::new();
+    for d in &parses {
+        let at = AT {
+            term: d.term.clone(),
+            ty: d.ty.clone(),
+        };
+        let x = (sem.interp)(at);
+        if !results.contains(&x) {
+            results.push(x);
+        }
+    }
+    results
+}
+
 /// Generate all 3-way splits `(prefix, [i, i+1], suffix)` of `xs` for every
 /// adjacent pair.
 fn view_substrings<T: Clone>(xs: &[T]) -> Vec<(Vec<T>, [T; 2], Vec<T>)> {

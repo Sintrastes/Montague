@@ -85,6 +85,17 @@ impl<T: Hash + Eq + Clone> LambekType<T> {
         other.leq(self, lat)
     }
 
+    /// Recursive depth of the type tree (atoms = 0; functions = 1 + max(child)).
+    pub fn depth(&self) -> usize {
+        use LambekType::*;
+        match self {
+            Basic(_) => 0,
+            LeftArrow(a, b) | RightArrow(a, b) | Extract(a, b) | Scoped(a, b)
+            | Conj(a, b) | Disj(a, b) => 1 + a.depth().max(b.depth()),
+            Custom { args, .. } => 1 + args.iter().map(|a| a.depth()).max().unwrap_or(0),
+        }
+    }
+
     /// Apply a [`LambekFold`] visitor bottom-up. Each constructor maps to
     /// one trait method; new visitors implement the trait once and work
     /// across every variant.

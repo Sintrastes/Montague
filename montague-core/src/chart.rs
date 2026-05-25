@@ -17,6 +17,10 @@ use crate::reduction::{ReductionCtx, ReductionEngine, RuleApplicability, TypeSha
 use crate::subtyping::SubtypeLattice;
 use crate::types::{AnnotatedTerm, LambekType, Term};
 
+/// Maximum category depth allowed in the chart.  Composition rules can build
+/// unboundedly deep categories; this guard keeps the chart finite.
+const MAX_DEPTH: usize = 5;
+
 // ---------------------------------------------------------------------------
 // Derivation store
 // ---------------------------------------------------------------------------
@@ -225,7 +229,7 @@ where
                         .get(&at.ty)
                         .map(|ids| ids.iter().any(|id| cell.get(*id).term == at.term))
                         .unwrap_or(false);
-                    if !already {
+                    if !already && at.ty.depth() <= MAX_DEPTH {
                         cell.insert(Derivation {
                             term: at.term.clone(),
                             ty: at.ty.clone(),
@@ -269,6 +273,15 @@ where
             }
         }
         out
+    }
+
+    /// Return all derivations that span the full input `(0, n)`, regardless of
+    /// type.  Used when the goal type isn't known (e.g. Sentence vs Question).
+    pub fn all_parses(&self) -> Vec<&Derivation<A, T>> {
+        match self.cell_try(0, self.n) {
+            Some(c) => c.by_type.values().flat_map(|ids| ids.iter().map(|id| c.get(*id))).collect(),
+            None => vec![],
+        }
     }
 
     // -- internal helpers ------------------------------------------------

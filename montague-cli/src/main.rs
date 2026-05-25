@@ -126,7 +126,7 @@ fn cmd_lower(args: &[String]) {
             resolver::build_semantics(&lex);
         let engine = ReductionEngine::standard();
         let ctx = ReductionCtx::new(&lex.lattice);
-        let parses = core::get_all_parses(&engine, &ctx, &sem, sent);
+        let parses = core::get_all_parses_chart(&engine, &ctx, &sem, sent);
 
         if parses.is_empty() {
             eprintln!("No parse found for: {sent:?}");
@@ -235,7 +235,7 @@ fn cmd_tree(args: &[String]) {
     let engine = ReductionEngine::standard();
     let ctx = ReductionCtx::new(&lex.lattice);
 
-    let parses = core::get_all_parses(&engine, &ctx, &sem, &sentence);
+    let parses = core::get_all_parses_chart(&engine, &ctx, &sem, &sentence);
 
     if parses.is_empty() {
         eprintln!("No parse found for: {sentence:?}");
@@ -469,7 +469,7 @@ fn cmd_ask(args: &[String]) {
             let clean_input = sent.trim_end_matches('?').trim().to_string();
             let tokenized = tokenize_multiword(&clean_input, &lex.productions);
 
-            let parses = core::get_all_parses(&engine, &ctx, &sem, &tokenized);
+            let parses = core::get_all_parses_chart(&engine, &ctx, &sem, &tokenized);
 
             if parses.is_empty() {
                 // Failed parse — try LLM recovery (up to 3 attempts)
@@ -515,7 +515,7 @@ fn cmd_ask(args: &[String]) {
                                 sem = resolver::build_semantics(&lex);
                                 ctx = ReductionCtx::new(&lex.lattice);
                                 let retokenized = tokenize_multiword(&clean_input, &lex.productions);
-                                let retry_parses = core::get_all_parses(&engine, &ctx, &sem, &retokenized);
+                                let retry_parses = core::get_all_parses_chart(&engine, &ctx, &sem, &retokenized);
 
                                 if !retry_parses.is_empty() {
                                     eprintln!("  Re-parse succeeded with LLM suggestions.");
