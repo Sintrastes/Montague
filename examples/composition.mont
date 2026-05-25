@@ -1,0 +1,36 @@
+-- Composition demo: shows what harmonic composition (>B, <B) enables.
+--
+-- Without --compose: "quickly eats fish" does NOT parse because
+--   quickly_pre: VP/VP and eats: VP/NP don't combine via application alone.
+-- With    --compose: forward composition VP/VP + VP/NP → VP/NP fires,
+--   so "quickly eats" becomes a transitive VP that can take an object.
+--
+-- Test with:
+--   montague ask examples/composition.mont          (rejects quickly eats fish)
+--   montague ask examples/composition.mont --compose (accepts quickly eats fish)
+
+Type = S | NP | VP.
+
+-- Proper nouns
+alice: NP.
+fish: NP.
+
+-- Transitive verb: eats : (NP \ S) / NP (needs object on right, becomes VP)
+-- Using (NP \ S) directly as VP to avoid subtype syntax limitation.
+eats: (NP \ S) / NP.
+
+-- Post-verbal adverb: VP \ VP (needs VP on left, produces VP)
+--   "eats quickly" → quickly_post(eats) : VP via left-app. Works without --compose.
+quickly_post: (NP \ S) \ (NP \ S).
+
+-- Pre-verbal adverb: VP / VP (needs VP on right, produces VP)
+--   "quickly eats" → quickly_pre + eats cannot combine via app alone
+--   (VP/VP + (NP\S)/NP — no matching slash). Needs >B composition.
+quickly_pre: (NP \ S) / (NP \ S).
+
+-- Productions
+alice --> alice.
+fish --> fish.
+eat, eats --> eats.
+quickly --> quickly_post.
+quickly --> quickly_pre.

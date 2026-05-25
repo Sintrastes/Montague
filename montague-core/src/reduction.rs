@@ -191,6 +191,15 @@ where
             .with_rule(RightAbsorption)
     }
 
+    /// Standard rules plus harmonic composition (>B, <B).  Composition can
+    /// overgenerate without additional restrictions; use only when needed
+    /// (e.g. relative clause extraction, Step 3+).
+    pub fn with_composition() -> Self {
+        Self::standard()
+            .with_rule(ForwardComposition)
+            .with_rule(BackwardComposition)
+    }
+
     /// Append a rule. Returns `self` for chaining.
     pub fn with_rule(mut self, rule: impl ReductionRule<A, T> + 'static) -> Self {
         self.rules.push(Box::new(rule));
@@ -325,6 +334,102 @@ where
 }
 
 // ---------------------------------------------------------------------------
+// Composition rules (Step 3)
+// ---------------------------------------------------------------------------
+
+/// Forward harmonic composition: `X/Y` + `Y/Z` → `X/Z`.
+///
+/// Semantics: λx. f(g(x))
+pub struct ForwardComposition;
+
+impl<A, T> ReductionRule<A, T> for ForwardComposition
+where
+    A: Clone,
+    T: Hash + Eq + Clone,
+{
+    fn name(&self) -> &'static str {
+        "forward-composition"
+    }
+
+    fn applicability(&self) -> RuleApplicability {
+        RuleApplicability::Both {
+            left: TypeShape::LeftArrow,
+            right: TypeShape::LeftArrow,
+        }
+    }
+
+    fn try_apply(
+        &self,
+        ctx: &ReductionCtx<'_, T>,
+        left: &AnnotatedTerm<A, T>,
+        right: &AnnotatedTerm<A, T>,
+    ) -> Vec<AnnotatedTerm<A, T>> {
+        let LambekType::LeftArrow(x, y) = &left.ty else { return vec![] };
+        let LambekType::LeftArrow(y_prime, z) = &right.ty else { return vec![] };
+        // The output of the right function must fit the input of the left.
+        if !y_prime.leq(y, ctx.lattice) {
+            return vec![];
+        }
+        // λv. left(right(v))
+        let v = Term::Var("Vc".into());
+        let inner = Term::App(Box::new(right.term.clone()), vec![v]);
+        let body = Term::App(Box::new(left.term.clone()), vec![inner]);
+        let sem = Term::Lambda("Vc".into(), Box::new(body));
+        vec![AnnotatedTerm {
+            term: sem,
+            ty: LambekType::LeftArrow(x.clone(), z.clone()),
+        }]
+    }
+}
+
+/// Backward harmonic composition: `Y\Z` + `X\Y` → `X\Z`.
+///
+/// Semantics: λx. f(g(x))
+pub struct BackwardComposition;
+
+impl<A, T> ReductionRule<A, T> for BackwardComposition
+where
+    A: Clone,
+    T: Hash + Eq + Clone,
+{
+    fn name(&self) -> &'static str {
+        "backward-composition"
+    }
+
+    fn applicability(&self) -> RuleApplicability {
+        RuleApplicability::Both {
+            left: TypeShape::RightArrow,
+            right: TypeShape::RightArrow,
+        }
+    }
+
+    fn try_apply(
+        &self,
+        ctx: &ReductionCtx<'_, T>,
+        left: &AnnotatedTerm<A, T>,
+        right: &AnnotatedTerm<A, T>,
+    ) -> Vec<AnnotatedTerm<A, T>> {
+        // left: Y\Z = RightArrow(Z, Y) — consumes Z, produces Y
+        let LambekType::RightArrow(z, y) = &left.ty else { return vec![] };
+        // right: X\Y' = RightArrow(Y', X) — consumes Y', produces X
+        let LambekType::RightArrow(y_prime, x) = &right.ty else { return vec![] };
+        // The output of the left function must fit the input of the right.
+        if !y.leq(y_prime, ctx.lattice) {
+            return vec![];
+        }
+        // λv. right(left(v))
+        let v = Term::Var("Vc".into());
+        let inner = Term::App(Box::new(left.term.clone()), vec![v]);
+        let body = Term::App(Box::new(right.term.clone()), vec![inner]);
+        let sem = Term::Lambda("Vc".into(), Box::new(body));
+        vec![AnnotatedTerm {
+            term: sem,
+            ty: LambekType::RightArrow(z.clone(), x.clone()),
+        }]
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -392,6 +497,86 @@ mod tests {
         let names: Vec<&str> = eng.rule_names().collect();
         assert!(names.contains(&"left-absorption"));
         assert!(names.contains(&"right-absorption"));
+    }
+
+    #[test]
+    fn engine_standard_with_composition_has_four_rules() {
+        let eng: ReductionEngine<i32, BT> = ReductionEngine::with_composition();
+        assert_eq!(eng.rule_count(), 4);
+        let names: Vec<&str> = eng.rule_names().collect();
+        assert!(names.contains(&"forward-composition"));
+        assert!(names.contains(&"backward-composition"));
+    }
+
+    /// Forward composition: VP/VP + VP/NP → VP/NP.
+    /// "quickly eats" where quickly: X/Y, eats: Y/Z → quickly∘eats : X/Z.
+    #[test]
+    fn forward_composition_fires() {
+        let lat = SubtypeLattice::new();
+        let ctx = ReductionCtx::new(&lat);
+        // quickly: VP/VP = (NP\S)/(NP\S) = LeftArrow(RightArrow(N,S), RightArrow(N,S))
+        let vp = || LambekType::RightArrow(Box::new(basic(BT::N)), Box::new(basic(BT::S)));
+        let tvp = || LambekType::LeftArrow(Box::new(vp()), Box::new(basic(BT::N)));
+
+        let quickly = AnnotatedTerm {
+            term: Term::Atom("quickly".to_string()),
+            ty: LambekType::LeftArrow(Box::new(vp()), Box::new(vp())), // VP/VP
+        };
+        let eats = AnnotatedTerm {
+            term: Term::Atom("eats".to_string()),
+            ty: LambekType::LeftArrow(Box::new(vp()), Box::new(basic(BT::N))), // VP/NP
+        };
+        let rule = ForwardComposition;
+        let results = rule.try_apply(&ctx, &quickly, &eats);
+        assert_eq!(results.len(), 1, "forward composition should fire once");
+        // Result type: X/Z = VP/NP
+        assert_eq!(results[0].ty, tvp());
+    }
+
+    /// Forward composition blocked when Y' ≰ Y (subtype mismatch).
+    #[test]
+    fn forward_composition_blocked_by_subtype() {
+        let lat = SubtypeLattice::new();
+        let ctx = ReductionCtx::new(&lat);
+        let vp = || LambekType::RightArrow(Box::new(basic(BT::N)), Box::new(basic(BT::S)));
+        // quickly: VP/NP (wrong type — eats is also VP/NP, the Y's don't match)
+        let quickly = AnnotatedTerm {
+            term: Term::Atom("q".to_string()),
+            ty: LambekType::LeftArrow(Box::new(vp()), Box::new(basic(BT::N))), // VP/NP
+        };
+        // eats: VP/NP as well, but Y' = NP and Y = N — different!
+        let eats = AnnotatedTerm {
+            term: Term::Atom("e".to_string()),
+            ty: LambekType::LeftArrow(Box::new(vp()), Box::new(basic(BT::S))), // VP/S
+        };
+        let rule = ForwardComposition;
+        let results = rule.try_apply(&ctx, &quickly, &eats);
+        // Y' = S, Y = N — no subtype relation, composition blocked.
+        assert!(results.is_empty());
+    }
+
+    /// Backward composition: VP\VP + VP\VP → VP\VP (chained adverbs).
+    #[test]
+    fn backward_composition_fires() {
+        let lat = SubtypeLattice::new();
+        let ctx = ReductionCtx::new(&lat);
+        let vp = || LambekType::RightArrow(Box::new(basic(BT::N)), Box::new(basic(BT::S)));
+        // slowly: VP\VP
+        let slowly = AnnotatedTerm {
+            term: Term::Atom("slowly".to_string()),
+            ty: LambekType::RightArrow(Box::new(vp()), Box::new(vp())), // VP\VP
+        };
+        // quickly: VP\VP
+        let quickly = AnnotatedTerm {
+            term: Term::Atom("quickly".to_string()),
+            ty: LambekType::RightArrow(Box::new(vp()), Box::new(vp())), // VP\VP
+        };
+        let rule = BackwardComposition;
+        let results = rule.try_apply(&ctx, &slowly, &quickly);
+        assert_eq!(results.len(), 1, "backward composition should fire");
+        // Result: VP\VP (slowly ∘ quickly : VP\VP) = RightArrow(VP, VP)
+        let expected = LambekType::RightArrow(Box::new(vp()), Box::new(vp()));
+        assert_eq!(results[0].ty, expected);
     }
 
     #[test]

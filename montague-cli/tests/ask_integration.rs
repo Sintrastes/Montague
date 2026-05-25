@@ -479,6 +479,54 @@ fn conjunction_wh_as_well_as() {
 }
 
 // ---------------------------------------------------------------------------
+// Composition tests (composition.mont + --compose flag)
+// ---------------------------------------------------------------------------
+
+/// With --compose: pre-verbal adverb + transitive verb composes.
+/// "alice quickly eats fish" parses.
+#[test]
+fn composition_enables_preverbal_adverb() {
+    let output = run_ask_session(
+        "../examples/composition.mont",
+        &["--compose"],
+        &["alice quickly eats fish."],
+    );
+    assert!(
+        !output.contains("no parse"),
+        "'alice quickly eats fish' should parse with --compose, got:\n{output}"
+    );
+}
+
+/// Without --compose: the same sentence may or may not parse via
+/// application alone. Either way, --compose must not break anything.
+#[test]
+fn composition_flag_does_not_break_simple_sentence() {
+    let output = run_ask_session(
+        "../examples/composition.mont",
+        &["--compose"],
+        &["alice eats fish."],
+    );
+    assert!(
+        output.contains("fish") && output.contains("alice"),
+        "simple sentence should still work with --compose:\n{output}"
+    );
+}
+
+/// Post-verbal adverb works with or without --compose (uses left-app).
+#[test]
+fn composition_post_verbal_adverb() {
+    let output = run_ask_session(
+        "../examples/composition.mont",
+        &["--compose"],
+        &["alice eats quickly."],
+    );
+    assert!(
+        output.contains("quickly_post") || output.contains("quickly"),
+        "post-verbal adverb should parse with --compose:\n{output}"
+    );
+}
+
+// ---------------------------------------------------------------------------
 // Selectional restriction tests (sorts.mont)
 // ---------------------------------------------------------------------------
 

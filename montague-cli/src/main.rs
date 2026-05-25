@@ -273,6 +273,7 @@ struct AskFlags {
     debug: bool,
     auto_accept: bool,
     transparent: bool,
+    compose: bool,
 }
 
 fn parse_ask_flags(args: &[String]) -> AskFlags {
@@ -283,6 +284,7 @@ fn parse_ask_flags(args: &[String]) -> AskFlags {
         debug: false,
         auto_accept: false,
         transparent: false,
+        compose: false,
     };
 
     // Scan all args: flags can appear before or after the file. The last
@@ -295,6 +297,7 @@ fn parse_ask_flags(args: &[String]) -> AskFlags {
             "--debug" => flags.debug = true,
             "--auto-accept" => flags.auto_accept = true,
             "--transparent" => flags.transparent = true,
+            "--compose" => flags.compose = true,
             "--backend" => {
                 i += 1;
                 if i < args.len() {
@@ -345,7 +348,11 @@ fn cmd_ask(args: &[String]) {
     };
     let mut sem: Semantics<String, String, core::AnnotatedTerm<String, String>> =
         resolver::build_semantics(&lex);
-    let engine = ReductionEngine::standard();
+    let engine = if flags.compose {
+        ReductionEngine::with_composition()
+    } else {
+        ReductionEngine::standard()
+    };
     let mut ctx = ReductionCtx::new(&lex.lattice);
 
     // 2. Initialize Scryer Prolog with a session knowledge base.
