@@ -1,0 +1,48 @@
+-- Selectional restriction via subtype hierarchy.
+-- Demonstrates that "the idea sleeps" is rejected while "the cat sleeps" parses,
+-- using only the standard Type and :< declarations — no special machinery.
+
+Type = Sentence | Noun | Animate | Inanimate | Person | Adjective.
+
+-- Subtype hierarchy: Person < Animate < Noun, Inanimate < Noun.
+Animate :< Noun.
+Inanimate :< Noun.
+Person :< Animate.
+
+-- Proper names
+socrates: Person.
+
+-- Animate nouns
+cat: Animate.
+dog: Animate.
+
+-- Inanimate nouns
+idea: Inanimate.
+rock: Inanimate.
+
+-- Adjective for copula predication
+mortal: Adjective.
+
+-- Copula
+is_cop: (Noun \ Sentence) / Adjective.
+
+-- Intransitive verb: only accepts Animate subjects.
+-- (In .mont, `A \ B` = RightArrow(A,B) = `B \ A` in std notation,
+--  so `Animate \ Sentence` = takes Animate from LEFT, produces Sentence.)
+sleeps: Animate \ Sentence.
+
+-- Intersective adjectives (Noun-modifying)
+green_adj: Noun / Noun.
+colorless_adj: Noun / Noun.
+
+-- Productions
+socrates --> socrates.
+cat --> cat.
+dog --> dog.
+idea --> idea.
+rock --> rock.
+mortal --> mortal.
+is, are --> is_cop.
+sleep, sleeps --> sleeps.
+green --> green_adj.
+colorless --> colorless_adj.

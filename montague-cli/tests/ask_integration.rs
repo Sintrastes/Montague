@@ -478,6 +478,61 @@ fn conjunction_wh_as_well_as() {
     );
 }
 
+// ---------------------------------------------------------------------------
+// Selectional restriction tests (sorts.mont)
+// ---------------------------------------------------------------------------
+
+/// "cat sleeps" → parses (Animate matches Animate-requiring verb).
+#[test]
+fn sort_cat_sleeps() {
+    let output = ask_example("sorts.mont", &["cat sleeps."]);
+    assert!(
+        output.contains("sleeps(cat)"),
+        "expected sleeps(cat) assertion:\n{output}"
+    );
+}
+
+/// "idea sleeps" → rejected (Inanimate does not match Animate).
+#[test]
+fn sort_idea_sleeps_rejected() {
+    let output = ask_example("sorts.mont", &["idea sleeps."]);
+    assert!(
+        output.contains("no parse"),
+        "expected rejection of 'idea sleeps':\n{output}"
+    );
+}
+
+/// "Socrates sleeps" → parses (Person :< Animate via lattice).
+#[test]
+fn sort_socrates_sleeps() {
+    let output = ask_example("sorts.mont", &["Socrates sleeps."]);
+    assert!(
+        output.contains("sleeps(socrates)"),
+        "expected sleeps(socrates) assertion:\n{output}"
+    );
+}
+
+/// "colorless green ideas sleep" → rejected (adjective-modified
+/// Inanimate noun cannot satisfy Animate-requiring verb).
+#[test]
+fn sort_colorless_green_ideas_sleep_rejected() {
+    let output = ask_example("sorts.mont", &["colorless green ideas sleep."]);
+    assert!(
+        output.contains("no parse"),
+        "expected rejection of Chomsky's famous example:\n{output}"
+    );
+}
+
+/// "Socrates is mortal" still works on sorts.mont (copula predication).
+#[test]
+fn sort_copula_predication() {
+    let output = ask_example("sorts.mont", &["Socrates is mortal."]);
+    assert!(
+        output.contains("mortal(socrates)"),
+        "expected mortal(socrates) assertion:\n{output}"
+    );
+}
+
 /// Quit command exits cleanly with "bye.".
 #[test]
 fn quit_exits_cleanly() {
