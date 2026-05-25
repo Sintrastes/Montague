@@ -139,8 +139,10 @@ fn cmd_lower(args: &[String]) {
             }
             match backend_name {
                 "prolog" => {
-                    if let Some(clause) = lower_term_to_prolog(&at.term) {
-                        println!("{clause}");
+                    if let Some(clauses) = lower_term_to_prolog(&at.term) {
+                        for clause in &clauses {
+                            println!("{clause}");
+                        }
                     }
                 }
                 "sexp" => {
@@ -518,7 +520,12 @@ fn cmd_ask(args: &[String]) {
                                     let at = &retry_parses[0];
                                     if is_question {
                                         let query = lower_term_to_prolog(&at.term)
-                                            .map(|s| s.trim_end_matches('.').to_string())
+                                            .map(|clauses| {
+                                                clauses.iter()
+                                                    .map(|s| s.trim_end_matches('.').to_string())
+                                                    .collect::<Vec<_>>()
+                                                    .join(", ")
+                                            })
                                             .unwrap_or_else(|| format!("{:?}", at.term));
                                         eprintln!("  query: {query}?");
                                         let query_str = format!("{query}.");
@@ -563,9 +570,11 @@ fn cmd_ask(args: &[String]) {
                                             }
                                         }
                                     } else {
-                                        if let Some(clause) = lower_term_to_prolog(&at.term) {
-                                            assert_clause(&mut machine, &clause, &mut dynamic_preds);
-                                            eprintln!("  asserted: {clause}");
+                                        if let Some(clauses) = lower_term_to_prolog(&at.term) {
+                                            for clause in &clauses {
+                                                assert_clause(&mut machine, clause, &mut dynamic_preds);
+                                                eprintln!("  asserted: {clause}");
+                                            }
                                         }
                                     }
                                     parsed = true;
@@ -669,7 +678,12 @@ fn cmd_ask(args: &[String]) {
             if is_question {
                 // Query
                 let query = lower_term_to_prolog(&at.term)
-                    .map(|s| s.trim_end_matches('.').to_string())
+                    .map(|clauses| {
+                        clauses.iter()
+                            .map(|s| s.trim_end_matches('.').to_string())
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    })
                     .unwrap_or_else(|| format!("{:?}", at.term));
                 eprintln!("  query: {query}?");
 
@@ -730,9 +744,11 @@ fn cmd_ask(args: &[String]) {
                 }
             } else {
                 // Assertion
-                if let Some(clause) = lower_term_to_prolog(&at.term) {
-                    assert_clause(&mut machine, &clause, &mut dynamic_preds);
-                    eprintln!("  asserted: {clause}");
+                if let Some(clauses) = lower_term_to_prolog(&at.term) {
+                    for clause in &clauses {
+                        assert_clause(&mut machine, clause, &mut dynamic_preds);
+                        eprintln!("  asserted: {clause}");
+                    }
                 } else {
                     eprintln!("  (could not lower to Prolog)");
                 }

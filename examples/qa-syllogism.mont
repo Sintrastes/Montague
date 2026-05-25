@@ -45,6 +45,14 @@ is_q: (Question / Adjective) / Noun.
 --   "Who is mortal?" → who_q takes "is mortal" : N\S → Question.
 who_q: Question / (Noun \ Sentence).
 
+-- | Conjunction: conjoins two Adjectives (or article-wrapped Nouns).
+--   "a man and mortal" → and(man_noun, mortal).
+and: (Adjective \ Adjective) / Adjective.
+
+-- | Focus particle for "both...and" construction.
+--   "both a man and mortal" → both takes determiner, passes through.
+both: (Adjective / Noun) / (Adjective / Noun).
+
 -- Productions.
 socrates --> socrates.
 man, men --> man_noun.
@@ -54,3 +62,5 @@ is, are --> is_cop.
 is, are --> is_q.
 all, every --> all_q.
 who --> who_q.
+and --> and.
+both --> both.

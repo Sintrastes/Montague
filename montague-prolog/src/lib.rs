@@ -239,7 +239,11 @@ pub fn lower_to_clauses(term: &SemTerm, reg: Option<&Registry>) -> Vec<PrologCla
 
 use montague_core::types::Term;
 
-/// Lower a `Term<String>` to a Prolog clause string.
+/// Lower a `Term<String>` to one or more Prolog clause strings.
+///
+/// Returns a vector where each element is a Prolog clause (fact, rule, or
+/// query goal).  For simple predication this produces a single clause; for
+/// conjunction (`and`) it produces one clause per conjunct.
 ///
 /// Arguments are reversed for sentence order: the last-absorbed argument
 /// (subject via RightArrow) appears first, earlier arguments (objects via
@@ -248,8 +252,11 @@ use montague_core::types::Term;
 /// Copula stripping: `App(is_cop, [pred, subj])` → `pred(subj).` and
 /// `App(is_cop, [App(a_art, [noun]), subj])` → `noun(subj).`
 ///
+/// Conjunction: `App(is_cop, [App(and, [p1, p2]), subj])` →
+///   `[p1(subj)., p2(subj).]`
+///
 /// Quantifier: `App(all_q, [noun, vp])` → `pred(X) :- noun(X).`
-pub fn lower_term_to_prolog(term: &Term<String>) -> Option<String> {
+pub fn lower_term_to_prolog(term: &Term<String>) -> Option<Vec<String>> {
     // Copula detection: is_cop(subject, predicate...) → predicate(subject).
     if let Term::App(f, args) = term {
         let fname = match f.as_ref() {
@@ -260,10 +267,25 @@ pub fn lower_term_to_prolog(term: &Term<String>) -> Option<String> {
         // Copula stripping for assertions and queries.
         if (fname == "is_cop" || fname == "are_cop") && args.len() >= 2 {
             let pred = strip_article(&args[0]);
-            // Reverse: args are [pred, subj] → emit pred(subj).
             let subj = term_to_prolog_arg(&args[1])?;
+
+            // Conjunction: and(pred1, pred2) → two clauses sharing the subject.
+            if let Some(conjuncts) = extract_conjuncts(&pred) {
+                let clauses: Vec<String> = conjuncts
+                    .iter()
+                    .filter_map(|c| {
+                        let stripped = strip_article(c);
+                        let name = term_to_prolog_arg(&stripped)?;
+                        Some(format!("{name}({subj})."))
+                    })
+                    .collect();
+                if !clauses.is_empty() {
+                    return Some(clauses);
+                }
+            }
+
             let pred_name = term_to_prolog_arg(&pred)?;
-            return Some(format!("{pred_name}({subj})."));
+            return Some(vec![format!("{pred_name}({subj}).")]);
         }
 
         // Inverted copula (polar question): is_q(subj, pred) → pred(subj).
@@ -271,21 +293,37 @@ pub fn lower_term_to_prolog(term: &Term<String>) -> Option<String> {
         if fname == "is_q" && args.len() == 2 {
             let subj = term_to_prolog_arg(&args[0])?;
             let pred = strip_article(&args[1]);
+
+            // Conjunction in polar question: "Is Socrates a man and mortal?"
+            if let Some(conjuncts) = extract_conjuncts(&pred) {
+                let clauses: Vec<String> = conjuncts
+                    .iter()
+                    .filter_map(|c| {
+                        let stripped = strip_article(c);
+                        let name = term_to_prolog_arg(&stripped)?;
+                        Some(format!("{name}({subj})."))
+                    })
+                    .collect();
+                if !clauses.is_empty() {
+                    return Some(clauses);
+                }
+            }
+
             let pred_name = term_to_prolog_arg(&pred)?;
-            return Some(format!("{pred_name}({subj})."));
+            return Some(vec![format!("{pred_name}({subj}).")]);
         }
 
         // Wh-pronoun: who_q(vp) → lower the VP with a free variable X.
         // The VP is typically a copula compound like is_cop(mortal) or a verb.
         if fname == "who_q" && args.len() == 1 {
-            return lower_vp_to_query(&args[0]);
+            return lower_vp_to_query(&args[0]).map(|s| vec![s]);
         }
 
         // Quantifier: all_q / every_q
         if (fname == "all_q" || fname == "every_q") && args.len() == 2 {
             let noun = term_to_prolog_arg(&args[0])?;
             let pred = extract_predicate(&args[1])?;
-            return Some(format!("{pred}(X) :- {noun}(X)."));
+            return Some(vec![format!("{pred}(X) :- {noun}(X).")]);
         }
 
         // Default: generic App → function(args).
@@ -293,13 +331,33 @@ pub fn lower_term_to_prolog(term: &Term<String>) -> Option<String> {
         if arg_strs.len() != args.len() {
             return None;
         }
-        return Some(format!("{fname}({}).", arg_strs.join(", ")));
+        return Some(vec![format!("{fname}({}).", arg_strs.join(", "))]);
     }
 
     if let Term::Atom(name) = term {
-        return Some(name.clone());
+        return Some(vec![name.clone()]);
     }
     None
+}
+
+/// If `term` is an `and`-conjunction `App(and, [c1, c2])`, return the two
+/// conjuncts.  The first conjunct in the predicate position (closest to the
+/// copula) is `args[0]`; the second (article-wrapped noun) is `args[1]`.
+fn extract_conjuncts(term: &Term<String>) -> Option<Vec<Term<String>>> {
+    match term {
+        Term::App(f, args) => {
+            let fname = match f.as_ref() {
+                Term::Atom(n) => n,
+                _ => return None,
+            };
+            if fname == "and" && args.len() >= 2 {
+                Some(args.iter().cloned().collect())
+            } else {
+                None
+            }
+        }
+        _ => None,
+    }
 }
 
 /// Lower a VP (Verb Phrase, type `Noun \ Sentence`) to a Prolog query with
@@ -309,6 +367,7 @@ pub fn lower_term_to_prolog(term: &Term<String>) -> Option<String> {
 /// Handles:
 /// - `is_cop(pred)`  → `pred(X).`
 /// - `is_cop(App(a_art, [noun]))` → `noun(X).`
+/// - Conjunction: `is_cop(App(and, [p1, p2]))` → `p1(X), p2(X).`
 fn lower_vp_to_query(term: &Term<String>) -> Option<String> {
     match term {
         Term::App(f, args) => {
@@ -319,6 +378,22 @@ fn lower_vp_to_query(term: &Term<String>) -> Option<String> {
             // Copula VP: is_cop(predicate) → predicate(X).
             if (fname == "is_cop" || fname == "are_cop") && !args.is_empty() {
                 let pred = strip_article(&args[0]);
+
+                // Conjunction inside VP: "who is a man and mortal?" → mortal(X), man_noun(X).
+                if let Some(conjuncts) = extract_conjuncts(&pred) {
+                    let goals: Vec<String> = conjuncts
+                        .iter()
+                        .filter_map(|c| {
+                            let stripped = strip_article(c);
+                            let name = term_to_prolog_arg(&stripped)?;
+                            Some(format!("{name}(X)"))
+                        })
+                        .collect();
+                    if !goals.is_empty() {
+                        return Some(format!("{}.", goals.join(", ")));
+                    }
+                }
+
                 let pred_name = term_to_prolog_arg(&pred)?;
                 return Some(format!("{pred_name}(X)."));
             }
@@ -337,7 +412,9 @@ fn lower_vp_to_query(term: &Term<String>) -> Option<String> {
     }
 }
 
-/// Strip the article `a_art` wrapper: `App(a_art, [noun])` → just the `noun`.
+/// Strip the article `a_art` and `both` wrappers:
+/// - `App(a_art, [noun])` → just the `noun`.
+/// - `App(both, [a_art, noun])` → just the `noun` (skip both + article).
 fn strip_article(term: &Term<String>) -> Term<String> {
     match term {
         Term::App(f, args) => {
@@ -347,6 +424,9 @@ fn strip_article(term: &Term<String>) -> Term<String> {
             };
             if fname == "a_art" && !args.is_empty() {
                 args[0].clone()
+            } else if fname == "both" && !args.is_empty() {
+                // both(a_art, noun) → skip both, try stripping article from the last arg
+                strip_article(&args[args.len() - 1])
             } else {
                 term.clone()
             }
@@ -387,7 +467,9 @@ fn extract_predicate(term: &Term<String>) -> Option<String> {
 pub fn term_to_prolog_arg(term: &Term<String>) -> Option<String> {
     match term {
         Term::Atom(name) => Some(name.clone()),
-        Term::App(_, _) => lower_term_to_prolog(term).map(|s| s.trim_end_matches('.').to_string()),
+        Term::App(_, _) => lower_term_to_prolog(term)
+            .and_then(|clauses| clauses.into_iter().next())
+            .map(|s| s.trim_end_matches('.').to_string()),
         Term::Var(_) => Some("_".to_string()),
         _ => None,
     }
@@ -505,5 +587,114 @@ mod tests {
         assert_eq!(result.len(), 1);
         assert!(result[0].starts_with("man(c"), "got: {:?}", result);
         assert!(result[0].ends_with(")."));
+    }
+
+    // -----------------------------------------------------------------------
+    // Term-level lowering tests (sentence → Prolog string)
+    // -----------------------------------------------------------------------
+
+    use montague_core::types::Term as CTerm;
+
+    /// `App(is_cop, [mortal, socrates])` → `["mortal(socrates)."]`
+    #[test]
+    fn lower_simple_copula() {
+        let term = CTerm::App(
+            Box::new(CTerm::Atom("is_cop".into())),
+            vec![CTerm::Atom("mortal".into()), CTerm::Atom("socrates".into())],
+        );
+        let clauses = lower_term_to_prolog(&term).unwrap();
+        assert_eq!(clauses, vec!["mortal(socrates)."]);
+    }
+
+    /// `App(is_cop, [App(and, [mortal, App(a_art, [man_noun])]), socrates])` →
+    /// `["mortal(socrates).", "man_noun(socrates)."]`
+    #[test]
+    fn lower_conjoined_copula() {
+        let a_man = CTerm::App(
+            Box::new(CTerm::Atom("a_art".into())),
+            vec![CTerm::Atom("man_noun".into())],
+        );
+        let and_pred = CTerm::App(
+            Box::new(CTerm::Atom("and".into())),
+            vec![CTerm::Atom("mortal".into()), a_man],
+        );
+        let term = CTerm::App(
+            Box::new(CTerm::Atom("is_cop".into())),
+            vec![and_pred, CTerm::Atom("socrates".into())],
+        );
+        let clauses = lower_term_to_prolog(&term).unwrap();
+        assert_eq!(clauses.len(), 2);
+        assert!(clauses.contains(&"mortal(socrates).".into()));
+        assert!(clauses.contains(&"man_noun(socrates).".into()));
+    }
+
+    /// `App(is_q, [socrates, App(and, [mortal, App(a_art, [man_noun])])])` →
+    /// `["mortal(socrates).", "man_noun(socrates)."]`
+    #[test]
+    fn lower_conjoined_polar_question() {
+        let a_man = CTerm::App(
+            Box::new(CTerm::Atom("a_art".into())),
+            vec![CTerm::Atom("man_noun".into())],
+        );
+        let and_pred = CTerm::App(
+            Box::new(CTerm::Atom("and".into())),
+            vec![CTerm::Atom("mortal".into()), a_man],
+        );
+        let term = CTerm::App(
+            Box::new(CTerm::Atom("is_q".into())),
+            vec![CTerm::Atom("socrates".into()), and_pred],
+        );
+        let clauses = lower_term_to_prolog(&term).unwrap();
+        assert_eq!(clauses.len(), 2);
+        assert!(clauses.contains(&"mortal(socrates).".into()));
+        assert!(clauses.contains(&"man_noun(socrates).".into()));
+    }
+
+    /// `App(who_q, [App(is_cop, [App(and, [mortal, App(a_art, [man_noun])])])])` →
+    /// `["mortal(X), man_noun(X)."]`
+    #[test]
+    fn lower_conjoined_wh_question() {
+        let a_man = CTerm::App(
+            Box::new(CTerm::Atom("a_art".into())),
+            vec![CTerm::Atom("man_noun".into())],
+        );
+        let and_pred = CTerm::App(
+            Box::new(CTerm::Atom("and".into())),
+            vec![CTerm::Atom("mortal".into()), a_man],
+        );
+        let copula = CTerm::App(
+            Box::new(CTerm::Atom("is_cop".into())),
+            vec![and_pred],
+        );
+        let term = CTerm::App(
+            Box::new(CTerm::Atom("who_q".into())),
+            vec![copula],
+        );
+        let clauses = lower_term_to_prolog(&term).unwrap();
+        assert_eq!(clauses.len(), 1);
+        // The two goals are comma-joined: mortal(X), man_noun(X).
+        let clause = &clauses[0];
+        assert!(clause.contains("mortal(X)"), "got: {clause}");
+        assert!(clause.contains("man_noun(X)"), "got: {clause}");
+        assert!(clause.contains(", "), "goals should be comma-separated: {clause}");
+    }
+
+    /// `App(is_cop, [App(both, [a_art, man_noun]), socrates])` (without and) →
+    /// just the noun after stripping both + article.
+    #[test]
+    fn lower_both_without_conjunction() {
+        let both_man = CTerm::App(
+            Box::new(CTerm::Atom("both".into())),
+            vec![
+                CTerm::Atom("a_art".into()),
+                CTerm::Atom("man_noun".into()),
+            ],
+        );
+        let term = CTerm::App(
+            Box::new(CTerm::Atom("is_cop".into())),
+            vec![both_man, CTerm::Atom("socrates".into())],
+        );
+        let clauses = lower_term_to_prolog(&term).unwrap();
+        assert_eq!(clauses, vec!["man_noun(socrates)."]);
     }
 }

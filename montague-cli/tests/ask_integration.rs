@@ -219,6 +219,109 @@ fn direct_query_after_assertion() {
     assert!(output.contains("yes."), "expected 'yes.' in output:\n{output}");
 }
 
+// ---------------------------------------------------------------------------
+// Conjunction tests
+// ---------------------------------------------------------------------------
+
+/// Conjoined assertion: "Socrates is a man and mortal." → both facts asserted.
+#[test]
+fn conjunction_assertion_and() {
+    let output = ask_example("qa-syllogism.mont", &[
+        "Socrates is a man and mortal.",
+    ]);
+    assert!(
+        output.contains("man_noun(socrates)"),
+        "expected man_noun(socrates) assertion:\n{output}"
+    );
+    assert!(
+        output.contains("mortal(socrates)"),
+        "expected mortal(socrates) assertion:\n{output}"
+    );
+}
+
+/// Conjoined polar query: "Is Socrates a man and mortal?" → yes.
+#[test]
+fn conjunction_query_and() {
+    let output = ask_example("qa-syllogism.mont", &[
+        "Socrates is a man.",
+        "Socrates is mortal.",
+        "Is Socrates a man and mortal?",
+    ]);
+    assert!(
+        output.contains("man_noun(socrates)"),
+        "expected man_noun(socrates) assertion:\n{output}"
+    );
+    assert!(
+        output.contains("mortal(socrates)"),
+        "expected mortal(socrates) assertion:\n{output}"
+    );
+    assert!(output.contains("yes."), "expected 'yes.' in output:\n{output}");
+}
+
+/// Conjoined polar query with "both": "Is Socrates both a man and mortal?" → yes.
+#[test]
+fn conjunction_query_both_and() {
+    let output = ask_example("qa-syllogism.mont", &[
+        "Socrates is a man.",
+        "Socrates is mortal.",
+        "Is Socrates both a man and mortal?",
+    ]);
+    assert!(output.contains("yes."), "expected 'yes.' in output:\n{output}");
+}
+
+/// Conjoined wh-query: "Who is a man and mortal?" → X = socrates.
+#[test]
+fn conjunction_wh() {
+    let output = ask_example("qa-syllogism.mont", &[
+        "Socrates is a man.",
+        "Socrates is mortal.",
+        "Who is a man and mortal?",
+    ]);
+    assert!(
+        output.contains("x = socrates"),
+        "expected 'X = socrates' binding:\n{output}"
+    );
+}
+
+/// Multi-turn with conjunction: assert then query conjoined facts.
+#[test]
+fn conjunction_multi_turn() {
+    let output = ask_example("qa-syllogism.mont", &[
+        "Socrates is a man and mortal.",
+        "Is Socrates a man and mortal?",
+    ]);
+    assert!(
+        output.contains("man_noun(socrates)"),
+        "expected man_noun(socrates) assertion:\n{output}"
+    );
+    assert!(
+        output.contains("mortal(socrates)"),
+        "expected mortal(socrates) assertion:\n{output}"
+    );
+    assert!(output.contains("yes."), "expected 'yes.' in output:\n{output}");
+}
+
+/// Assert conjoined facts, then verify both are queryable individually.
+#[test]
+fn conjunction_then_individual_query() {
+    let output = ask_example("qa-syllogism.mont", &[
+        "Socrates is a man and mortal.",
+        "Is Socrates a man?",
+        "Is Socrates mortal?",
+    ]);
+    assert!(
+        output.contains("man_noun(socrates)"),
+        "expected man_noun(socrates) assertion:\n{output}"
+    );
+    assert!(
+        output.contains("mortal(socrates)"),
+        "expected mortal(socrates) assertion:\n{output}"
+    );
+    // Both individual queries should return yes (facts are in KB)
+    let yes_count = output.matches("yes.").count();
+    assert!(yes_count >= 2, "expected at least 2 'yes.' responses, got {yes_count}:\n{output}");
+}
+
 /// Quit command exits cleanly with "bye.".
 #[test]
 fn quit_exits_cleanly() {
