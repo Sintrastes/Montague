@@ -15,7 +15,9 @@
   <a href="https://github.com/Sintrastes/Montague/actions/workflows/build.yml">
     <img src="https://github.com/Sintrastes/Montague/actions/workflows/build.yml/badge.svg">
   </a>
-  <img src="https://img.shields.io/badge/crates.io-0.3-red">
+  <a href="https://crates.io/crates/montague-core">
+    <img src="https://img.shields.io/badge/crates.io-0.3-red">
+  </a>
   <img src="https://img.shields.io/badge/License-AGPL v3.0-blue">
 </p>
 
