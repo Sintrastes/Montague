@@ -689,6 +689,141 @@ fn sort_copula_predication() {
     );
 }
 
+// ---------------------------------------------------------------------------
+// Basic English grammar tests (en_grammar_basic.mont)
+// ---------------------------------------------------------------------------
+
+fn ask_en(inputs: &[&str]) -> String {
+    let path = "../examples/en_grammar_basic.mont".to_string();
+    run_ask_session(&path, &[], inputs)
+}
+
+/// Simple copula predication: "Socrates is mortal."
+#[test]
+fn en_simple_predication() {
+    let o = ask_en(&["Socrates is mortal."]);
+    assert!(!o.contains("no parse"), "{o}");
+}
+
+/// Wh-question: "Who is mortal?"
+#[test]
+fn en_wh_question() {
+    let o = ask_en(&["Who is mortal?"]);
+    assert!(!o.contains("no parse"), "{o}");
+}
+
+/// Subject-aux inversion: "Is Socrates mortal?"
+#[test]
+fn en_polar_inversion() {
+    let o = ask_en(&["Is Socrates mortal?"]);
+    assert!(!o.contains("no parse"), "{o}");
+}
+
+/// Identity copula: "Socrates is a man."
+#[test]
+fn en_identity_copula() {
+    let o = ask_en(&["Socrates is a man."]);
+    assert!(!o.contains("no parse"), "{o}");
+}
+
+/// Quantifier: "every man is mortal."
+#[test]
+fn en_quantifier() {
+    let o = ask_en(&["every man is mortal."]);
+    assert!(!o.contains("no parse"), "{o}");
+}
+
+/// Intransitive: "a cat sleeps."
+#[test]
+fn en_intransitive() {
+    let o = ask_en(&["a cat sleeps."]);
+    assert!(!o.contains("no parse"), "{o}");
+}
+
+/// NP coordination: "Socrates and Plato are mortal."
+#[test]
+fn en_np_coordination() {
+    let o = ask_en(&["Socrates and Plato are mortal."]);
+    assert!(!o.contains("no parse"), "{o}");
+}
+
+/// Adj coordination: "Socrates is mortal and wise."
+#[test]
+fn en_adj_coordination() {
+    let o = ask_en(&["Socrates is mortal and wise."]);
+    assert!(!o.contains("no parse"), "{o}");
+}
+
+/// Pronoun subject: "he runs."
+#[test]
+fn en_pronoun_subject() {
+    let o = ask_en(&["he runs."]);
+    assert!(!o.contains("no parse"), "{o}");
+}
+
+/// Copula with pronoun: "she is happy."
+#[test]
+fn en_pronoun_copula() {
+    let o = ask_en(&["she is happy."]);
+    assert!(!o.contains("no parse"), "{o}");
+}
+
+/// First person: "I am happy."
+#[test]
+fn en_first_person_copula() {
+    let o = ask_en(&["I am happy."]);
+    assert!(!o.contains("no parse"), "{o}");
+}
+
+/// Possessive: "my cat sleeps."
+#[test]
+fn en_possessive() {
+    let o = ask_en(&["my cat sleeps."]);
+    assert!(!o.contains("no parse"), "{o}");
+}
+
+/// Pre-verbal adverb: "he always runs."
+#[test]
+fn en_preverbal_adverb() {
+    let o = ask_en(&["he always runs."]);
+    assert!(!o.contains("no parse"), "{o}");
+}
+
+/// Negation: "Socrates is not mortal."
+#[test]
+fn en_negation() {
+    let o = ask_en(&["Socrates is not mortal."]);
+    assert!(!o.contains("no parse"), "{o}");
+}
+
+/// Degree adverb: "Socrates is very happy."
+#[test]
+fn en_degree_adverb() {
+    let o = ask_en(&["Socrates is very happy."]);
+    assert!(!o.contains("no parse"), "{o}");
+}
+
+/// Relative clause: "the cat that sleeps is happy."
+#[test]
+fn en_relative_clause() {
+    let o = ask_en(&["the cat that sleeps is happy."]);
+    assert!(!o.contains("no parse"), "{o}");
+}
+
+/// Transitive verb: "Alice likes Bob."
+#[test]
+fn en_transitive() {
+    let o = ask_en(&["Alice likes Bob."]);
+    assert!(!o.contains("no parse"), "{o}");
+}
+
+/// Definite article: "the cat sleeps."
+#[test]
+fn en_definite_article() {
+    let o = ask_en(&["the cat sleeps."]);
+    assert!(!o.contains("no parse"), "{o}");
+}
+
 /// Quit command exits cleanly with "bye.".
 #[test]
 fn quit_exits_cleanly() {

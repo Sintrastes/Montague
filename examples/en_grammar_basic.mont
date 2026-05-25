@@ -1,0 +1,509 @@
+-- ==========================================================================
+-- Basic English Grammar — Closed-Class Words & Minimal Content Lexicon
+-- ==========================================================================
+-- Covers the ~150 most frequent grammatical English words plus ~25 content
+-- words for testing.  Uses only constructions validated in existing examples.
+-- ==========================================================================
+
+-- ==========================================================================
+-- Type Hierarchy
+-- ==========================================================================
+
+Type =
+    S       -- Sentence (proposition)
+  | Q       -- Question
+  | NP      -- Noun Phrase (argument)
+  | N       -- Common Noun (predicate, sortal)
+  | Adj     -- Adjective (predicative + modifier)
+  | Adv     -- Adverb
+  | PP      -- Prepositional Phrase
+  | Aux     -- Auxiliary / Modal
+  | Comp    -- Complementizer
+  | Rel     -- Relative pronoun (used for Rel type)
+  | Conj.   -- Conjunction (marker type, not used for individual coordinators)
+
+-- ==========================================================================
+-- Content Words (minimal set for testing — ~25)
+-- ==========================================================================
+
+-- Proper names
+socrates: NP.
+plato: NP.
+alice: NP.
+bob: NP.
+
+-- Common nouns
+man: N.
+men: N.
+cat: N.
+dog: N.
+bird: N.
+animal: N.
+philosopher: N.
+
+-- Adjectives
+mortal: Adj.
+happy: Adj.
+wise: Adj.
+tall: Adj.
+good: Adj.
+red: Adj.
+
+-- Intransitive verbs (bare VP: NP\S)
+runs: NP \ S.
+sleeps: NP \ S.
+talks: NP \ S.
+thinks: NP \ S.
+walks: NP \ S.
+
+-- Transitive verbs ((NP\S)/NP)
+likes: (NP \ S) / NP.
+sees: (NP \ S) / NP.
+knows: (NP \ S) / NP.
+eats: (NP \ S) / NP.
+
+-- ==========================================================================
+-- §1  Determiners & Quantifiers
+-- ==========================================================================
+
+-- Definite article: the cat → the(cat) : NP
+the: NP / N.
+
+-- Indefinite article: a cat → a_det(cat) : NP
+a_det: NP / N.
+
+-- Universal quantifier: every cat → S/(NP\S)  then + sleeps → S
+every: (S / (NP \ S)) / N.
+
+-- Universal: all cats
+all: (S / (NP \ S)) / N.
+
+-- Existential: some cats / a cat (quantifier reading)
+some: (S / (NP \ S)) / N.
+a_quant: (S / (NP \ S)) / N.
+
+-- Negative quantifier: no cat
+no_det: (S / (NP \ S)) / N.
+
+-- Demonstratives
+this_det: NP / N.
+that_det: NP / N.
+these_det: NP / N.
+those_det: NP / N.
+
+-- ==========================================================================
+-- §2  Pronouns — Subject, Object, Possessive, Reflexive
+-- ==========================================================================
+
+-- Subject pronouns
+i: NP.       you_sg: NP.   he: NP.     she: NP.
+it: NP.      we: NP.       they: NP.
+
+-- Object pronouns
+me: NP.      him: NP.      her: NP.    us: NP.    them: NP.
+
+-- Possessive determiners: my cat → my(cat) : NP
+my: NP / N.  your: NP / N.  his_det: NP / N.
+her_det: NP / N.  its: NP / N.  our: NP / N.  their: NP / N.
+
+-- Possessive pronouns (standalone NP: "it is mine")
+mine: NP.    yours: NP.    his_pron: NP.  hers: NP.
+ours: NP.    theirs: NP.
+
+-- Reflexive pronouns
+myself: NP.    yourself: NP.   himself: NP.   herself: NP.
+itself: NP.    ourselves: NP.  yourselves: NP. themselves: NP.
+
+-- ==========================================================================
+-- §3  Copulas — Predicative, Identity, Question-Inversion
+-- ==========================================================================
+
+-- Predicative (Adj → VP):  is happy, are happy, am happy
+is_cop:  (NP \ S) / Adj.
+are_cop: (NP \ S) / Adj.
+am_cop:  (NP \ S) / Adj.
+
+-- Identity (NP → VP):  is a cat, are cats, am a cat
+is_ident:  (NP \ S) / NP.
+are_ident: (NP \ S) / NP.
+am_ident:  (NP \ S) / NP.
+
+-- Subject-aux inversion (polar question): Is he happy?
+is_q:  (Q / Adj) / NP.
+are_q: (Q / Adj) / NP.
+
+-- ==========================================================================
+-- §4  Auxiliaries & Modals — (NP\S)/(NP\S): take bare VP, return VP
+-- ==========================================================================
+
+-- Modals
+can:    (NP \ S) / (NP \ S).
+will:   (NP \ S) / (NP \ S).
+would:  (NP \ S) / (NP \ S).
+should: (NP \ S) / (NP \ S).
+may:    (NP \ S) / (NP \ S).
+might:  (NP \ S) / (NP \ S).
+must:   (NP \ S) / (NP \ S).
+
+-- Do-support: do/does/did + bare VP (no inflection in .mont)
+do_aux:  (NP \ S) / (NP \ S).
+does:    (NP \ S) / (NP \ S).
+did:     (NP \ S) / (NP \ S).
+
+-- Perfect have: have/has/had + past participle (VP)
+have_aux: (NP \ S) / (NP \ S).
+has_aux:  (NP \ S) / (NP \ S).
+had_aux:  (NP \ S) / (NP \ S).
+
+-- ==========================================================================
+-- §5  Conjunctions — Coordinators for NP, Adj, VP, S
+-- ==========================================================================
+
+-- NP coordination (Φ rule): Tom and Jerry
+and_np: (NP \ NP) / NP.
+or_np:  (NP \ NP) / NP.
+
+-- Adj coordination: tall and strong
+and_adj: (Adj \ Adj) / Adj.
+or_adj:  (Adj \ Adj) / Adj.
+but_adj: (Adj \ Adj) / Adj.
+
+-- VP coordination: runs and jumps
+and_vp: ((NP \ S) \ (NP \ S)) / (NP \ S).
+or_vp:  ((NP \ S) \ (NP \ S)) / (NP \ S).
+
+-- S coordination: he runs and she jumps
+and_s: (S \ S) / S.
+or_s:  (S \ S) / S.
+but_s: (S \ S) / S.
+
+-- Correlative focus particles (decorative, N/N identity)
+both: NP / NP.
+either: NP / NP.
+neither: NP / NP.
+
+-- ==========================================================================
+-- §6  Prepositions — Nominal Modifier (N\N)/NP + VP Modifier
+-- ==========================================================================
+
+-- Nominal modifiers: book of poems, cat in the hat
+of:   (N \ N) / NP.
+in:   (N \ N) / NP.
+on:   (N \ N) / NP.
+at:   (N \ N) / NP.
+to:   (N \ N) / NP.
+for:  (N \ N) / NP.
+with: (N \ N) / NP.
+from: (N \ N) / NP.
+by:   (N \ N) / NP.
+about:(N \ N) / NP.
+
+-- VP modifiers: sleeps in the garden
+in_vp:   ((NP \ S) \ (NP \ S)) / NP.
+on_vp:   ((NP \ S) \ (NP \ S)) / NP.
+at_vp:   ((NP \ S) \ (NP \ S)) / NP.
+to_vp:   ((NP \ S) \ (NP \ S)) / NP.
+for_vp:  ((NP \ S) \ (NP \ S)) / NP.
+with_vp: ((NP \ S) \ (NP \ S)) / NP.
+from_vp: ((NP \ S) \ (NP \ S)) / NP.
+by_vp:   ((NP \ S) \ (NP \ S)) / NP.
+
+-- ==========================================================================
+-- §7  Complementizers & Subordinators
+-- ==========================================================================
+
+-- that-clause: I know that he runs
+that_comp: Comp / S.
+
+-- whether/if: I wonder whether he runs
+whether: Comp / S.
+if_comp: Comp / S.
+
+-- Adverbial subordinators: S\S / S
+because:  (S \ S) / S.
+although: (S \ S) / S.
+while:    (S \ S) / S.
+since:    (S \ S) / S.
+unless:   (S \ S) / S.
+when:     (S \ S) / S.
+after:    (S \ S) / S.
+before:   (S \ S) / S.
+if_sub:   (S \ S) / S.     -- "if it rains" as adverbial
+
+-- ==========================================================================
+-- §8  Wh-words — Questions
+-- ==========================================================================
+
+-- Wh-pronouns: Who sleeps? → who_q + VP → Q
+who_q:  Q / (NP \ S).
+what_q: Q / (NP \ S).
+
+-- Wh-determiner: Which cat sleeps?
+which_det: Q / N.
+
+-- Wh-adverbs: Where does he sleep? → Q/(NP\S)
+where_q: Q / (NP \ S).
+when_q:  Q / (NP \ S).
+why_q:   Q / (NP \ S).
+how_q:   Q / (NP \ S).
+
+-- ==========================================================================
+-- §9  Relative Pronouns — Subject Extraction (N\N)/(NP\S)
+-- ==========================================================================
+
+that_rel:  (N \ N) / (NP \ S).
+who_rel:   (N \ N) / (NP \ S).
+which_rel: (N \ N) / (NP \ S).
+
+-- ==========================================================================
+-- §10  Negation
+-- ==========================================================================
+
+-- Sentential / VP negation
+-- Post-copula adjective negation: is not happy → is(not(happy))
+not_adj: Adj / Adj.
+-- Pre-verbal VP negation: does not sleep → does(not(sleep))
+not_vp: (NP \ S) / (NP \ S).
+
+-- ==========================================================================
+-- §11  Adverbs — Degree, Frequency, Manner
+-- ==========================================================================
+
+-- Degree adverbs modifying adjectives: very tall
+very: Adj / Adj.
+too:  Adj / Adj.
+
+-- VP adverbs (post-verbal): runs quickly → VP\VP
+always_post:    (NP \ S) \ (NP \ S).
+never_post:     (NP \ S) \ (NP \ S).
+often_post:     (NP \ S) \ (NP \ S).
+sometimes_post: (NP \ S) \ (NP \ S).
+already_post:   (NP \ S) \ (NP \ S).
+still_post:     (NP \ S) \ (NP \ S).
+
+-- VP adverbs (pre-verbal): always runs → VP/VP
+always_pre:    (NP \ S) / (NP \ S).
+never_pre:     (NP \ S) / (NP \ S).
+often_pre:     (NP \ S) / (NP \ S).
+sometimes_pre: (NP \ S) / (NP \ S).
+already_pre:   (NP \ S) / (NP \ S).
+still_pre:     (NP \ S) / (NP \ S).
+
+-- Focus adverbs (pre-verbal): he only runs
+just_pre: (NP \ S) / (NP \ S).
+only_pre: (NP \ S) / (NP \ S).
+also_pre: (NP \ S) / (NP \ S).
+
+-- ==========================================================================
+-- §12  The verb "have" as main verb (transitive)
+-- ==========================================================================
+
+have_main: (NP \ S) / NP.
+has_main:  (NP \ S) / NP.
+
+-- ==========================================================================
+-- Productions — Closed-Class Words
+-- ==========================================================================
+
+-- Determiners
+the --> the.
+a, an --> a_det.
+a, an --> a_quant.
+every --> every.
+all --> all.
+some --> some.
+no --> no_det.
+this --> this_det.
+that --> that_det.
+these --> these_det.
+those --> those_det.
+
+-- Subject pronouns
+i --> i.
+you --> you_sg.
+he --> he.
+she --> she.
+it --> it.
+we --> we.
+they --> they.
+
+-- Object pronouns
+me --> me.
+him --> him.
+her --> her.
+us --> us.
+them --> them.
+
+-- Possessive determiners
+my --> my.
+your --> your.
+his --> his_det.
+her --> her_det.
+its --> its.
+our --> our.
+their --> their.
+
+-- Possessive pronouns
+mine --> mine.
+yours --> yours.
+his --> his_pron.
+hers --> hers.
+ours --> ours.
+theirs --> theirs.
+
+-- Reflexives
+myself --> myself.
+yourself --> yourself.
+himself --> himself.
+herself --> herself.
+itself --> itself.
+ourselves --> ourselves.
+yourselves --> yourselves.
+themselves --> themselves.
+
+-- Copulas
+is --> is_cop.
+is --> is_ident.
+is --> is_q.
+are --> are_cop.
+are --> are_ident.
+are --> are_q.
+am --> am_cop.
+am --> am_ident.
+
+-- Modals / auxiliaries
+can --> can.
+will --> will.
+would --> would.
+should --> should.
+may --> may.
+might --> might.
+must --> must.
+do --> do_aux.
+does --> does.
+did --> did.
+have --> have_aux.
+have --> have_main.
+has --> has_aux.
+has --> has_main.
+had --> had_aux.
+
+-- Conjunctions
+and --> and_np.
+and --> and_adj.
+and --> and_vp.
+and --> and_s.
+or --> or_np.
+or --> or_adj.
+or --> or_vp.
+or --> or_s.
+but --> but_adj.
+but --> but_s.
+both --> both.
+either --> either.
+neither --> neither.
+
+-- Prepositions (nominal)
+of --> of.
+in --> in.
+on --> on.
+at --> at.
+to --> to.
+for --> for.
+with --> with.
+from --> from.
+by --> by.
+about --> about.
+-- VP-modifier readings
+in --> in_vp.
+on --> on_vp.
+at --> at_vp.
+to --> to_vp.
+for --> for_vp.
+with --> with_vp.
+from --> from_vp.
+by --> by_vp.
+
+-- Complementizers
+that --> that_comp.
+that --> that_rel.
+whether --> whether.
+if --> if_comp.
+if --> if_sub.
+because --> because.
+although --> although.
+while --> while.
+since --> since.
+unless --> unless.
+when --> when.
+after --> after.
+before --> before.
+
+-- Wh-words
+who --> who_q.
+who --> who_rel.
+what --> what_q.
+which --> which_det.
+which --> which_rel.
+where --> where_q.
+when --> when_q.
+why --> why_q.
+how --> how_q.
+
+-- Negation
+not --> not_vp.
+not --> not_adj.
+
+-- Adverbs
+very --> very.
+too --> too.
+always --> always_pre.
+always --> always_post.
+never --> never_pre.
+never --> never_post.
+often --> often_pre.
+often --> often_post.
+sometimes --> sometimes_pre.
+sometimes --> sometimes_post.
+already --> already_pre.
+already --> already_post.
+still --> still_pre.
+still --> still_post.
+just --> just_pre.
+only --> only_pre.
+also --> also_pre.
+
+-- ==========================================================================
+-- Productions — Content Words (minimal test set)
+-- ==========================================================================
+
+socrates --> socrates.
+plato --> plato.
+alice --> alice.
+bob --> bob.
+
+man --> man.
+men --> men.
+cat --> cat.
+dog --> dog.
+bird --> bird.
+animal --> animal.
+philosopher --> philosopher.
+
+mortal --> mortal.
+happy --> happy.
+wise --> wise.
+tall --> tall.
+good --> good.
+red --> red.
+
+run, runs --> runs.
+sleep, sleeps --> sleeps.
+talk, talks --> talks.
+think, thinks --> thinks.
+walk, walks --> walks.
+
+like, likes --> likes.
+see, sees --> sees.
+know, knows --> knows.
+eat, eats --> eats.

@@ -496,7 +496,7 @@ fn cmd_ask(args: &[String]) {
             // parses like who_rel (N\N) that don't form complete utterances.
             parses.retain(|p| {
                 let dbg = format!("{:?}", p.ty);
-                dbg.contains("Sentence") || dbg.contains("Question") || dbg == r#"Basic("S")"#
+                dbg.contains("Sentence") || dbg.contains("Question") || dbg == r#"Basic("S")"# || dbg == r#"Basic("Q")"#
             });
 
             if parses.is_empty() {
