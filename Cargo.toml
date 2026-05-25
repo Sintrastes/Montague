@@ -22,13 +22,13 @@ authors = ["Nathan Bedell"]
 
 [workspace.dependencies]
 # Internal crates — paths for local development, version for crates.io.
-montague-core = { path = "montague-core", version = "0.2.0" }
-montague-fol = { path = "montague-fol", version = "0.2.0" }
-montague-standard = { path = "montague-standard", version = "0.2.0" }
-montague-mont = { path = "montague-mont", version = "0.2.0" }
-montague-prolog = { path = "montague-prolog", version = "0.2.0" }
-montague-pretty = { path = "montague-pretty", version = "0.2.0" }
-montague-derive = { path = "montague-derive", version = "0.2.0" }
+montague-core = { path = "montague-core", version = "0.3.0" }
+montague-fol = { path = "montague-fol", version = "0.3.0" }
+montague-standard = { path = "montague-standard", version = "0.3.0" }
+montague-mont = { path = "montague-mont", version = "0.3.0" }
+montague-prolog = { path = "montague-prolog", version = "0.3.0" }
+montague-pretty = { path = "montague-pretty", version = "0.3.0" }
+montague-derive = { path = "montague-derive", version = "0.3.0" }
 
 # External crates.
 thiserror = "1.0"

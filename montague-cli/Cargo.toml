@@ -12,9 +12,9 @@ name = "montague"
 path = "src/main.rs"
 
 [dependencies]
-montague = { path = "../montague", version = "0.2.0" }
+montague = { path = "../montague", version = "0.3.0" }
 scryer-prolog = { workspace = true }
-montague-llm = { path = "../montague-llm", version = "0.2.0", optional = true }
+montague-llm = { path = "../montague-llm", version = "0.3.0", optional = true }
 
 [features]
 default = []
