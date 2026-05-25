@@ -129,6 +129,71 @@ impl<T: Hash + Eq + Clone> SubtypeLattice<T> {
             .into_iter()
             .flat_map(|s| s.iter())
     }
+
+    /// Least upper bound (join) of `a` and `b` in the lattice.  Returns the
+    /// most specific type that is a supertype of both, or `None` if no unique
+    /// join exists (e.g. diamond-shaped lattice with multiple minimal common
+    /// ancestors).
+    ///
+    /// Needed for coordination (Φ rule) to compute the result category from
+    /// two conjuncts: `X CONJ X' → join(X, X')`.
+    pub fn join(&self, a: &T, b: &T) -> Option<T> {
+        if a == b {
+            return Some(a.clone());
+        }
+        if self.leq(a, b) {
+            return Some(b.clone());
+        }
+        if self.leq(b, a) {
+            return Some(a.clone());
+        }
+        let sup_a = self.all_supertypes(a);
+        let sup_b = self.all_supertypes(b);
+        let intersection: Vec<T> = sup_a
+            .iter()
+            .filter(|t| sup_b.contains(*t))
+            .cloned()
+            .collect();
+        if intersection.is_empty() {
+            return None;
+        }
+        // Keep only the minimal elements: for each candidate c, no other
+        // candidate is a strict subtype of c (other < c).
+        let mut minimal: Vec<T> = Vec::new();
+        for c in &intersection {
+            let is_minimal = !intersection.iter().any(|other| {
+                let diff = other.ne(c);
+                diff && self.leq(other, c) && !self.leq(c, other)
+            });
+            if is_minimal {
+                minimal.push(c.clone());
+            }
+        }
+        if minimal.len() == 1 {
+            Some(minimal.into_iter().next().unwrap())
+        } else {
+            None
+        }
+    }
+
+    /// Collect all supertypes (transitive closure upward) of `t`, including
+    /// `t` itself.
+    fn all_supertypes(&self, t: &T) -> HashSet<T> {
+        let mut result = HashSet::new();
+        let mut stack = vec![t.clone()];
+        while let Some(current) = stack.pop() {
+            if result.insert(current.clone()) {
+                if let Some(parents) = self.direct_supertypes.get(&current) {
+                    for p in parents {
+                        if !result.contains(p) {
+                            stack.push(p.clone());
+                        }
+                    }
+                }
+            }
+        }
+        result
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -191,6 +256,73 @@ mod tests {
         lat.add_subtype("A", "B");
         lat.add_subtype("A", "B");
         assert!(lat.leq(&"A", &"B"));
+    }
+
+    // -- join -----------------------------------------------------------
+
+    #[test]
+    fn join_equal() {
+        let lat: SubtypeLattice<&str> = SubtypeLattice::new();
+        assert_eq!(lat.join(&"A", &"A"), Some("A"));
+    }
+
+    #[test]
+    fn join_direct_subtype() {
+        let mut lat = SubtypeLattice::new();
+        lat.add_subtype("Person", "Animate");
+        // Person ∨ Animate = Animate (Animate is the LUB)
+        assert_eq!(lat.join(&"Person", &"Animate"), Some("Animate"));
+    }
+
+    #[test]
+    fn join_siblings_under_common_parent() {
+        let mut lat = SubtypeLattice::new();
+        lat.add_subtype("Person", "Animate");
+        lat.add_subtype("Animal", "Animate");
+        // Person ∨ Animal = Animate
+        assert_eq!(lat.join(&"Person", &"Animal"), Some("Animate"));
+    }
+
+    #[test]
+    fn join_no_common_ancestor() {
+        let mut lat = SubtypeLattice::new();
+        lat.add_subtype("Person", "Animate");
+        lat.add_subtype("Rock", "Physical");
+        // Person and Rock have no common ancestor → None
+        assert_eq!(lat.join(&"Person", &"Rock"), None);
+    }
+
+    #[test]
+    fn join_diamond_multiple_minimal() {
+        // Person :< Mammal, Person :< Pet, Mammal :< Animal, Pet :< Animal
+        // Person ∨ ??? — both Mammal and Pet are minimal common ancestors
+        // but neither is ≤ the other → no unique join
+        let mut lat = SubtypeLattice::new();
+        lat.add_subtype("Person", "Mammal");
+        lat.add_subtype("Person", "Pet");
+        lat.add_subtype("Mammal", "Animal");
+        lat.add_subtype("Pet", "Animal");
+        // Person ∨ Person is just Person (handled by equality case)
+        assert_eq!(lat.join(&"Person", &"Person"), Some("Person"));
+        // Mammal ∨ Pet = Animal (both under Animal)
+        assert_eq!(lat.join(&"Mammal", &"Pet"), Some("Animal"));
+        // But Mammal ∨ Pet where no common parent except Animal,
+        // and both are direct children of Animal → unique LUB = Animal
+        assert_eq!(lat.join(&"Mammal", &"Pet"), Some("Animal"));
+    }
+
+    #[test]
+    fn join_transitive() {
+        let mut lat = SubtypeLattice::new();
+        lat.add_subtype("Socrates", "Person");
+        lat.add_subtype("Person", "Animate");
+        lat.add_subtype("Animate", "Entity");
+        lat.add_subtype("Fido", "Dog");
+        lat.add_subtype("Dog", "Animal");
+        lat.add_subtype("Animal", "Animate");
+        lat.add_subtype("Animal", "Entity");
+        // Socrates ∨ Fido = Animate (first common ancestor going up)
+        assert_eq!(lat.join(&"Socrates", &"Fido"), Some("Animate"));
     }
 
     #[test]
