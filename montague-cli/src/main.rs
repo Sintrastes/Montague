@@ -532,7 +532,24 @@ fn cmd_ask(args: &[String]) {
                                                     eprintln!("  yes.");
                                                 } else {
                                                     for a in &results {
-                                                        eprintln!("  {a:?}");
+                                                        match a {
+                                                            scryer_prolog::LeafAnswer::LeafAnswer { bindings, .. } => {
+                                                                let parts: Vec<String> = bindings
+                                                                    .iter()
+                                                                    .map(|(k, v)| {
+    let val = match v {
+        scryer_prolog::Term::Atom(s) => s.clone(),
+        scryer_prolog::Term::Integer(n) => n.to_string(),
+        scryer_prolog::Term::Float(f) => f.to_string(),
+        other => format!("{other:?}"),
+    };
+    format!("{k} = {val}")
+})
+                                                                    .collect();
+                                                                eprintln!("  {}", parts.join(", "));
+                                                            }
+                                                            _ => eprintln!("  {a:?}"),
+                                                        }
                                                     }
                                                 }
                                             }
@@ -677,7 +694,28 @@ fn cmd_ask(args: &[String]) {
                             eprintln!("  yes.");
                         } else {
                             for a in &results {
-                                eprintln!("  {a:?}");
+                                match a {
+                                    scryer_prolog::LeafAnswer::LeafAnswer { bindings, .. } => {
+                                        if bindings.is_empty() {
+                                            eprintln!("  yes.");
+                                        } else {
+                                            let parts: Vec<String> = bindings
+                                                .iter()
+                                                .map(|(k, v)| {
+    let val = match v {
+        scryer_prolog::Term::Atom(s) => s.clone(),
+        scryer_prolog::Term::Integer(n) => n.to_string(),
+        scryer_prolog::Term::Float(f) => f.to_string(),
+        other => format!("{other:?}"),
+    };
+    format!("{k} = {val}")
+})
+                                                .collect();
+                                            eprintln!("  {}", parts.join(", "));
+                                        }
+                                    }
+                                    _ => eprintln!("  {a:?}"),
+                                }
                             }
                         }
                     }

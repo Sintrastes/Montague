@@ -266,6 +266,21 @@ pub fn lower_term_to_prolog(term: &Term<String>) -> Option<String> {
             return Some(format!("{pred_name}({subj})."));
         }
 
+        // Inverted copula (polar question): is_q(subj, pred) → pred(subj).
+        // `is_q : (Q/Adj)/N` consumes subj first (right-app), then pred (right-app).
+        if fname == "is_q" && args.len() == 2 {
+            let subj = term_to_prolog_arg(&args[0])?;
+            let pred = strip_article(&args[1]);
+            let pred_name = term_to_prolog_arg(&pred)?;
+            return Some(format!("{pred_name}({subj})."));
+        }
+
+        // Wh-pronoun: who_q(vp) → lower the VP with a free variable X.
+        // The VP is typically a copula compound like is_cop(mortal) or a verb.
+        if fname == "who_q" && args.len() == 1 {
+            return lower_vp_to_query(&args[0]);
+        }
+
         // Quantifier: all_q / every_q
         if (fname == "all_q" || fname == "every_q") && args.len() == 2 {
             let noun = term_to_prolog_arg(&args[0])?;
@@ -285,6 +300,41 @@ pub fn lower_term_to_prolog(term: &Term<String>) -> Option<String> {
         return Some(name.clone());
     }
     None
+}
+
+/// Lower a VP (Verb Phrase, type `Noun \ Sentence`) to a Prolog query with
+/// a free variable `X` for the missing subject. Used for wh-questions like
+/// "Who is mortal?" where the VP `is mortal` becomes `mortal(X).`
+///
+/// Handles:
+/// - `is_cop(pred)`  → `pred(X).`
+/// - `is_cop(App(a_art, [noun]))` → `noun(X).`
+fn lower_vp_to_query(term: &Term<String>) -> Option<String> {
+    match term {
+        Term::App(f, args) => {
+            let fname = match f.as_ref() {
+                Term::Atom(n) => n.clone(),
+                _ => return None,
+            };
+            // Copula VP: is_cop(predicate) → predicate(X).
+            if (fname == "is_cop" || fname == "are_cop") && !args.is_empty() {
+                let pred = strip_article(&args[0]);
+                let pred_name = term_to_prolog_arg(&pred)?;
+                return Some(format!("{pred_name}(X)."));
+            }
+            // Generic VP: verb(...args) → verb(X, ...args).
+            let arg_strs: Vec<String> = args.iter().filter_map(term_to_prolog_arg).collect();
+            if arg_strs.len() != args.len() {
+                return None;
+            }
+            Some(format!("{fname}(X, {}).", arg_strs.join(", ")))
+        }
+        Term::Atom(name) => {
+            // Intransitive verb: run → run(X).
+            Some(format!("{name}(X)."))
+        }
+        _ => None,
+    }
 }
 
 /// Strip the article `a_art` wrapper: `App(a_art, [noun])` → just the `noun`.
