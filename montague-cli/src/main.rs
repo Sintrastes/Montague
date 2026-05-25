@@ -467,8 +467,9 @@ fn cmd_ask(args: &[String]) {
                 || input_lower.starts_with("are ")
                 || input_lower.starts_with("do ");
             let clean_input = sent.trim_end_matches('?').trim().to_string();
+            let tokenized = tokenize_multiword(&clean_input, &lex.productions);
 
-            let parses = core::get_all_parses(&engine, &ctx, &sem, &clean_input);
+            let parses = core::get_all_parses(&engine, &ctx, &sem, &tokenized);
 
             if parses.is_empty() {
                 // Failed parse — try LLM recovery (up to 3 attempts)
@@ -513,7 +514,8 @@ fn cmd_ask(args: &[String]) {
                                 // Rebuild semantics and re-parse
                                 sem = resolver::build_semantics(&lex);
                                 ctx = ReductionCtx::new(&lex.lattice);
-                                let retry_parses = core::get_all_parses(&engine, &ctx, &sem, &clean_input);
+                                let retokenized = tokenize_multiword(&clean_input, &lex.productions);
+                                let retry_parses = core::get_all_parses(&engine, &ctx, &sem, &retokenized);
 
                                 if !retry_parses.is_empty() {
                                     eprintln!("  Re-parse succeeded with LLM suggestions.");
@@ -771,6 +773,42 @@ fn cmd_ask(args: &[String]) {
 }
 
 // ---------------------------------------------------------------------------
+// tokenize_multiword — longest-match-first multi-word token replacement
+// ---------------------------------------------------------------------------
+
+/// Collect multi-word surface forms from the lexicon (those containing `_`
+/// after canonicalization in the .mont parser), sort by length descending,
+/// and replace occurrences in the input with underscore-joined canonical
+/// forms so that `annotate()`'s `split_whitespace()` correctly produces
+/// single tokens for multi-word phrases.
+fn tokenize_multiword(input: &str, productions: &[montague::mont::ast::ProductionEntry]) -> String {
+    // Collect multi-word surface forms (those with underscores).
+    let mut phrases: Vec<&str> = productions
+        .iter()
+        .flat_map(|p| p.words.iter())
+        .filter(|w| w.contains('_'))
+        .map(|w| w.as_str())
+        .collect();
+    if phrases.is_empty() {
+        return input.to_string();
+    }
+    // Sort longest first for greedy longest-match.
+    phrases.sort_by_key(|p| -(p.len() as isize));
+    // Deduplicate (same phrase may appear in multiple productions).
+    phrases.dedup();
+
+    let mut result = input.to_lowercase();
+    for phrase in &phrases {
+        // The canonical form uses underscores; the user typed spaces.
+        let user_form = phrase.replace('_', " ");
+        if result.contains(&user_form) {
+            result = result.replace(&user_form, phrase);
+        }
+    }
+    result
+}
+
+// ---------------------------------------------------------------------------
 // split_sentences — break input on sentence boundaries
 // ---------------------------------------------------------------------------
 
@@ -957,8 +995,13 @@ fn build_recovery_prompt(
          ```\n\
          ATOM name type\n\
          PROD word --> name\n\
+         PROD \"multi word phrase\" --> name\n\
          RULE head(args) :- body(args).\n\
          ```\n\
+         \n\
+         IMPORTANT about PROD: Use double-quoted strings for multi-word phrases.\n\
+         For example: PROD \"as well as\" --> as_well_as\n\
+         Spaces inside quotes are automatically canonicalized to underscores.\n\
          \n\
          Examples:\n\
          \n\
@@ -980,6 +1023,12 @@ fn build_recovery_prompt(
          ATOM immortal Adjective\n\
          PROD immortal --> immortal\n\
          RULE immortal(X) :- \\+ mortal(X).\n\
+         ```\n\
+         \n\
+         For multi-word conjunctions (\"as well as\", \"in order to\"):\n\
+         ```\n\
+         ATOM as_well_as (Adjective \\ Adjective) / Adjective\n\
+         PROD \"as well as\" --> as_well_as\n\
          ```"
     );
 
@@ -1359,6 +1408,11 @@ fn cmd_init(args: &[String]) {
          atom_name: (Type / Type) \\ Type.\n\
          word --> atom_name.\n\
          word1, word2 --> atom_name.\n\
+         \"multi word\" --> atom_name.\n\
+         \n\
+         Multi-word productions: use double-quoted strings on the LHS of -->.\n\
+         Spaces inside quotes are canonicalized to underscores. Example:\n\
+         \"as well as\" --> as_well_as.\n\
          \n\
          Common patterns:\n\
          - Proper names: entity: Noun.  with production: entity --> entity.\n\

@@ -269,18 +269,30 @@ pub fn lower_term_to_prolog(term: &Term<String>) -> Option<Vec<String>> {
             let pred = strip_article(&args[0]);
             let subj = term_to_prolog_arg(&args[1])?;
 
-            // Conjunction: and(pred1, pred2) → two clauses sharing the subject.
-            if let Some(conjuncts) = extract_conjuncts(&pred) {
-                let clauses: Vec<String> = conjuncts
+            // Conjunction/disjunction: conj(pred1, pred2) → separate clauses.
+            if let Some((conjuncts, kind)) = extract_conjunction(&pred) {
+                let goals: Vec<String> = conjuncts
                     .iter()
                     .filter_map(|c| {
                         let stripped = strip_article(c);
                         let name = term_to_prolog_arg(&stripped)?;
-                        Some(format!("{name}({subj})."))
+                        Some(format!("{name}({subj})"))
                     })
                     .collect();
-                if !clauses.is_empty() {
-                    return Some(clauses);
+                if !goals.is_empty() {
+                    if kind.can_assert() {
+                        // And/But/Nor: produce separate assertz clauses (with negation
+                        // wrapping for Nor).
+                        let clauses: Vec<String> = match kind {
+                            ConjKind::Nor => goals.iter().map(|g| format!("\\+ ({g}).")).collect(),
+                            _ => goals.iter().map(|g| format!("{g}.")).collect(),
+                        };
+                        return Some(clauses);
+                    } else {
+                        // Or: skip assertion (disjunctive facts aren't meaningful).
+                        eprintln!("  (note: 'or' in assertions is not supported — assert each separately)");
+                        return Some(vec![]);
+                    }
                 }
             }
 
@@ -294,18 +306,18 @@ pub fn lower_term_to_prolog(term: &Term<String>) -> Option<Vec<String>> {
             let subj = term_to_prolog_arg(&args[0])?;
             let pred = strip_article(&args[1]);
 
-            // Conjunction in polar question: "Is Socrates a man and mortal?"
-            if let Some(conjuncts) = extract_conjuncts(&pred) {
-                let clauses: Vec<String> = conjuncts
+            // Conjunction/disjunction in polar question.
+            if let Some((conjuncts, kind)) = extract_conjunction(&pred) {
+                let goals: Vec<String> = conjuncts
                     .iter()
                     .filter_map(|c| {
                         let stripped = strip_article(c);
                         let name = term_to_prolog_arg(&stripped)?;
-                        Some(format!("{name}({subj})."))
+                        Some(format!("{name}({subj})"))
                     })
                     .collect();
-                if !clauses.is_empty() {
-                    return Some(clauses);
+                if !goals.is_empty() {
+                    return Some(vec![format!("{}.", kind.join(&goals))]);
                 }
             }
 
@@ -340,18 +352,56 @@ pub fn lower_term_to_prolog(term: &Term<String>) -> Option<Vec<String>> {
     None
 }
 
-/// If `term` is an `and`-conjunction `App(and, [c1, c2])`, return the two
-/// conjuncts.  The first conjunct in the predicate position (closest to the
-/// copula) is `args[0]`; the second (article-wrapped noun) is `args[1]`.
-fn extract_conjuncts(term: &Term<String>) -> Option<Vec<Term<String>>> {
+/// How to combine multiple goals produced by a conjunction/disjunction.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ConjKind {
+    /// Logical AND: join goals with `, ` (conjunction).  Used by `and`, `but`,
+    /// `as_well_as`, `but_also`.
+    And,
+    /// Logical OR: join goals with `; ` (disjunction).  Used by `or`.
+    Or,
+    /// Negated AND: wrap each goal in `\+ (…)` and join with `, `.  Used by `nor`.
+    Nor,
+}
+
+impl ConjKind {
+    /// Join goal strings according to this kind.
+    fn join(&self, goals: &[String]) -> String {
+        match self {
+            ConjKind::And => goals.join(", "),
+            ConjKind::Or => goals.join("; "),
+            ConjKind::Nor => goals
+                .iter()
+                .map(|g| format!("\\+ ({g})"))
+                .collect::<Vec<_>>()
+                .join(", "),
+        }
+    }
+
+    /// For assertions: `And`/`Nor` produce separate clauses; `Or` is skipped
+    /// (disjunctive assertions are semantically awkward in Prolog).
+    fn can_assert(&self) -> bool {
+        matches!(self, ConjKind::And | ConjKind::Nor)
+    }
+}
+
+/// If `term` is a conjunction/disjunction `App(conj, [c1, c2])`, return the
+/// conjuncts and the kind of connection.
+fn extract_conjunction(term: &Term<String>) -> Option<(Vec<Term<String>>, ConjKind)> {
     match term {
         Term::App(f, args) => {
             let fname = match f.as_ref() {
                 Term::Atom(n) => n,
                 _ => return None,
             };
-            if fname == "and" && args.len() >= 2 {
-                Some(args.iter().cloned().collect())
+            let kind = match fname.as_str() {
+                "and" | "but" | "as_well_as" | "but_also" => ConjKind::And,
+                "or" => ConjKind::Or,
+                "nor" => ConjKind::Nor,
+                _ => return None,
+            };
+            if args.len() >= 2 {
+                Some((args.iter().cloned().collect(), kind))
             } else {
                 None
             }
@@ -379,8 +429,10 @@ fn lower_vp_to_query(term: &Term<String>) -> Option<String> {
             if (fname == "is_cop" || fname == "are_cop") && !args.is_empty() {
                 let pred = strip_article(&args[0]);
 
-                // Conjunction inside VP: "who is a man and mortal?" → mortal(X), man_noun(X).
-                if let Some(conjuncts) = extract_conjuncts(&pred) {
+                // Conjunction/disjunction inside VP: "who is a man and mortal?"
+                // → mortal(X), man_noun(X).   "who is a man or mortal?"
+                // → mortal(X); man_noun(X).
+                if let Some((conjuncts, kind)) = extract_conjunction(&pred) {
                     let goals: Vec<String> = conjuncts
                         .iter()
                         .filter_map(|c| {
@@ -390,7 +442,7 @@ fn lower_vp_to_query(term: &Term<String>) -> Option<String> {
                         })
                         .collect();
                     if !goals.is_empty() {
-                        return Some(format!("{}.", goals.join(", ")));
+                        return Some(format!("{}.", kind.join(&goals)));
                     }
                 }
 
@@ -412,9 +464,10 @@ fn lower_vp_to_query(term: &Term<String>) -> Option<String> {
     }
 }
 
-/// Strip the article `a_art` and `both` wrappers:
+/// Strip decorative wrappers from a predicate argument:
 /// - `App(a_art, [noun])` → just the `noun`.
-/// - `App(both, [a_art, noun])` → just the `noun` (skip both + article).
+/// - `App(both, [a_art, noun])` → just the `noun` (skip decorative + article).
+/// - Same for `either`, `neither`, `not_only`.
 fn strip_article(term: &Term<String>) -> Term<String> {
     match term {
         Term::App(f, args) => {
@@ -424,8 +477,12 @@ fn strip_article(term: &Term<String>) -> Term<String> {
             };
             if fname == "a_art" && !args.is_empty() {
                 args[0].clone()
-            } else if fname == "both" && !args.is_empty() {
-                // both(a_art, noun) → skip both, try stripping article from the last arg
+            } else if (fname == "both"
+                || fname == "either"
+                || fname == "neither"
+                || fname == "not_only")
+                && !args.is_empty()
+            {
                 strip_article(&args[args.len() - 1])
             } else {
                 term.clone()
@@ -629,7 +686,7 @@ mod tests {
     }
 
     /// `App(is_q, [socrates, App(and, [mortal, App(a_art, [man_noun])])])` →
-    /// `["mortal(socrates).", "man_noun(socrates)."]`
+    /// `["mortal(socrates), man_noun(socrates)."]` (compound query, comma-separated)
     #[test]
     fn lower_conjoined_polar_question() {
         let a_man = CTerm::App(
@@ -645,9 +702,11 @@ mod tests {
             vec![CTerm::Atom("socrates".into()), and_pred],
         );
         let clauses = lower_term_to_prolog(&term).unwrap();
-        assert_eq!(clauses.len(), 2);
-        assert!(clauses.contains(&"mortal(socrates).".into()));
-        assert!(clauses.contains(&"man_noun(socrates).".into()));
+        assert_eq!(clauses.len(), 1);
+        let clause = &clauses[0];
+        assert!(clause.contains("mortal(socrates)"), "got: {clause}");
+        assert!(clause.contains("man_noun(socrates)"), "got: {clause}");
+        assert!(clause.contains(", "), "goals should be comma-separated: {clause}");
     }
 
     /// `App(who_q, [App(is_cop, [App(and, [mortal, App(a_art, [man_noun])])])])` →
@@ -679,6 +738,28 @@ mod tests {
         assert!(clause.contains(", "), "goals should be comma-separated: {clause}");
     }
 
+    /// `App(is_cop, [App(as_well_as, [mortal, App(a_art, [man_noun])]), socrates])` →
+    /// `["mortal(socrates).", "man_noun(socrates)."]`
+    #[test]
+    fn lower_conjoined_as_well_as() {
+        let a_man = CTerm::App(
+            Box::new(CTerm::Atom("a_art".into())),
+            vec![CTerm::Atom("man_noun".into())],
+        );
+        let as_well_as_pred = CTerm::App(
+            Box::new(CTerm::Atom("as_well_as".into())),
+            vec![CTerm::Atom("mortal".into()), a_man],
+        );
+        let term = CTerm::App(
+            Box::new(CTerm::Atom("is_cop".into())),
+            vec![as_well_as_pred, CTerm::Atom("socrates".into())],
+        );
+        let clauses = lower_term_to_prolog(&term).unwrap();
+        assert_eq!(clauses.len(), 2);
+        assert!(clauses.contains(&"mortal(socrates).".into()));
+        assert!(clauses.contains(&"man_noun(socrates).".into()));
+    }
+
     /// `App(is_cop, [App(both, [a_art, man_noun]), socrates])` (without and) →
     /// just the noun after stripping both + article.
     #[test]
@@ -696,5 +777,121 @@ mod tests {
         );
         let clauses = lower_term_to_prolog(&term).unwrap();
         assert_eq!(clauses, vec!["man_noun(socrates)."]);
+    }
+
+    /// `App(is_cop, [App(or, [mortal, App(a_art, [man_noun])]), socrates])` →
+    /// empty vec (disjunctive assertions aren't supported).
+    #[test]
+    fn lower_disjunction_assertion_skipped() {
+        let a_man = CTerm::App(
+            Box::new(CTerm::Atom("a_art".into())),
+            vec![CTerm::Atom("man_noun".into())],
+        );
+        let or_pred = CTerm::App(
+            Box::new(CTerm::Atom("or".into())),
+            vec![CTerm::Atom("mortal".into()), a_man],
+        );
+        let term = CTerm::App(
+            Box::new(CTerm::Atom("is_cop".into())),
+            vec![or_pred, CTerm::Atom("socrates".into())],
+        );
+        let clauses = lower_term_to_prolog(&term).unwrap();
+        assert!(clauses.is_empty(), "or-assertion should produce empty vec, got: {clauses:?}");
+    }
+
+    /// `App(is_q, [socrates, App(or, [mortal, App(a_art, [man_noun])])])` →
+    /// `["mortal(socrates); man_noun(socrates)."]` (;-separated query).
+    #[test]
+    fn lower_disjunction_query() {
+        let a_man = CTerm::App(
+            Box::new(CTerm::Atom("a_art".into())),
+            vec![CTerm::Atom("man_noun".into())],
+        );
+        let or_pred = CTerm::App(
+            Box::new(CTerm::Atom("or".into())),
+            vec![CTerm::Atom("mortal".into()), a_man],
+        );
+        let term = CTerm::App(
+            Box::new(CTerm::Atom("is_q".into())),
+            vec![CTerm::Atom("socrates".into()), or_pred],
+        );
+        let clauses = lower_term_to_prolog(&term).unwrap();
+        assert_eq!(clauses.len(), 1);
+        assert!(clauses[0].contains("mortal(socrates)"), "got: {}", clauses[0]);
+        assert!(clauses[0].contains("man_noun(socrates)"), "got: {}", clauses[0]);
+        assert!(clauses[0].contains("; "), "expected ;-separated disjunction, got: {}", clauses[0]);
+    }
+
+    /// `App(is_cop, [App(but, [mortal, App(a_art, [man_noun])]), socrates])` →
+    /// same as `and` — two separate clauses.
+    #[test]
+    fn lower_but_conjunction() {
+        let a_man = CTerm::App(
+            Box::new(CTerm::Atom("a_art".into())),
+            vec![CTerm::Atom("man_noun".into())],
+        );
+        let but_pred = CTerm::App(
+            Box::new(CTerm::Atom("but".into())),
+            vec![CTerm::Atom("mortal".into()), a_man],
+        );
+        let term = CTerm::App(
+            Box::new(CTerm::Atom("is_cop".into())),
+            vec![but_pred, CTerm::Atom("socrates".into())],
+        );
+        let clauses = lower_term_to_prolog(&term).unwrap();
+        assert_eq!(clauses.len(), 2);
+        assert!(clauses.contains(&"mortal(socrates).".into()));
+        assert!(clauses.contains(&"man_noun(socrates).".into()));
+    }
+
+    /// `App(is_q, [socrates, App(nor, [mortal, App(a_art, [man_noun])])])` →
+    /// `["\+ (mortal(socrates)), \+ (man_noun(socrates))."]`
+    #[test]
+    fn lower_nor_query() {
+        let a_man = CTerm::App(
+            Box::new(CTerm::Atom("a_art".into())),
+            vec![CTerm::Atom("man_noun".into())],
+        );
+        let nor_pred = CTerm::App(
+            Box::new(CTerm::Atom("nor".into())),
+            vec![CTerm::Atom("mortal".into()), a_man],
+        );
+        let term = CTerm::App(
+            Box::new(CTerm::Atom("is_q".into())),
+            vec![CTerm::Atom("socrates".into()), nor_pred],
+        );
+        let clauses = lower_term_to_prolog(&term).unwrap();
+        assert_eq!(clauses.len(), 1);
+        let clause = &clauses[0];
+        assert!(clause.contains("\\+ (mortal(socrates))"), "got: {clause}");
+        assert!(clause.contains("\\+ (man_noun(socrates))"), "got: {clause}");
+    }
+
+    /// `strip_article` test: `either(a_art, noun)` → `noun`.
+    #[test]
+    fn strip_article_either() {
+        let either_man = CTerm::App(
+            Box::new(CTerm::Atom("either".into())),
+            vec![
+                CTerm::Atom("a_art".into()),
+                CTerm::Atom("man_noun".into()),
+            ],
+        );
+        let result = strip_article(&either_man);
+        assert_eq!(result, CTerm::Atom("man_noun".into()));
+    }
+
+    /// `strip_article` test: `neither(a_art, noun)` → `noun`.
+    #[test]
+    fn strip_article_neither() {
+        let neither_man = CTerm::App(
+            Box::new(CTerm::Atom("neither".into())),
+            vec![
+                CTerm::Atom("a_art".into()),
+                CTerm::Atom("man_noun".into()),
+            ],
+        );
+        let result = strip_article(&neither_man);
+        assert_eq!(result, CTerm::Atom("man_noun".into()));
     }
 }

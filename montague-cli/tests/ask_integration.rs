@@ -322,6 +322,162 @@ fn conjunction_then_individual_query() {
     assert!(yes_count >= 2, "expected at least 2 'yes.' responses, got {yes_count}:\n{output}");
 }
 
+// ---------------------------------------------------------------------------
+// Disjunction and additional conjunction tests (or, but, nor, either...or, etc.)
+// ---------------------------------------------------------------------------
+
+/// Assertion with "but": "Socrates is a man but mortal." → both facts asserted.
+#[test]
+fn conjunction_assertion_but() {
+    let output = ask_example("qa-syllogism.mont", &[
+        "Socrates is a man but mortal.",
+    ]);
+    assert!(
+        output.contains("man_noun(socrates)"),
+        "expected man_noun(socrates) assertion:\n{output}"
+    );
+    assert!(
+        output.contains("mortal(socrates)"),
+        "expected mortal(socrates) assertion:\n{output}"
+    );
+}
+
+/// Query with "or": "Is Socrates a man or mortal?" → finds solutions (True).
+#[test]
+fn disjunction_query_or() {
+    let output = ask_example("qa-syllogism.mont", &[
+        "Socrates is a man.",
+        "Socrates is mortal.",
+        "Is Socrates a man or mortal?",
+    ]);
+    // Disjunction via `;` produces True solutions (one per branch).
+    assert!(
+        output.contains("true") || output.contains("True") || output.contains("yes"),
+        "expected True/yes for or-query:\n{output}"
+    );
+}
+
+/// Query with "either...or": "Is Socrates either a man or mortal?" → True.
+#[test]
+fn disjunction_query_either_or() {
+    let output = ask_example("qa-syllogism.mont", &[
+        "Socrates is a man.",
+        "Socrates is mortal.",
+        "Is Socrates either a man or mortal?",
+    ]);
+    assert!(
+        output.contains("true") || output.contains("True") || output.contains("yes"),
+        "expected True/yes for either-or query:\n{output}"
+    );
+}
+
+/// Query with "neither...nor": "Is Socrates neither a man nor mortal?"
+/// → False (both facts exist in KB, so the negation fails).
+#[test]
+fn disjunction_query_neither_nor() {
+    let output = ask_example("qa-syllogism.mont", &[
+        "Socrates is a man.",
+        "Socrates is mortal.",
+        "Is Socrates neither a man nor mortal?",
+    ]);
+    // Both facts are true, so neither-is-not holds → false.
+    assert!(
+        output.contains("false") || output.contains("False") || output.contains("no"),
+        "expected False/no for neither-nor query:\n{output}"
+    );
+}
+
+/// Query with "not only...but also": "Is Socrates not only a man but also
+/// mortal?" → yes (same semantics as and).
+#[test]
+fn conjunction_query_not_only_but_also() {
+    let output = ask_example("qa-syllogism.mont", &[
+        "Socrates is a man.",
+        "Socrates is mortal.",
+        "Is Socrates not only a man but also mortal?",
+    ]);
+    assert!(output.contains("yes."), "expected 'yes.' in output:\n{output}");
+}
+
+/// Wh-query with "or": "Who is a man or mortal?" → X = socrates.
+#[test]
+fn disjunction_wh_or() {
+    let output = ask_example("qa-syllogism.mont", &[
+        "Socrates is a man.",
+        "Socrates is mortal.",
+        "Who is a man or mortal?",
+    ]);
+    // Disjunction with free variable X produces bindings.
+    assert!(
+        output.contains("x = socrates"),
+        "expected 'X = socrates' binding:\n{output}"
+    );
+}
+
+/// Wh-query with "neither...nor": "Who is neither a man nor mortal?"
+/// → no result (both facts match socrates, so negated query returns nothing).
+#[test]
+fn disjunction_wh_neither_nor() {
+    let output = ask_example("qa-syllogism.mont", &[
+        "Socrates is a man.",
+        "Socrates is mortal.",
+        "Who is neither a man nor mortal?",
+    ]);
+    // Socrates IS both, so the negated query should find no one → no/False.
+    assert!(
+        output.contains("no") || output.contains("false") || output.contains("False"),
+        "expected no/False for wh-neither-nor:\n{output}"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Multi-word token tests ("as well as")
+// ---------------------------------------------------------------------------
+
+/// Conjoined assertion with "as well as": "Socrates is a man as well as
+/// mortal." → both facts asserted.
+#[test]
+fn conjunction_assertion_as_well_as() {
+    let output = ask_example("qa-syllogism.mont", &[
+        "Socrates is a man as well as mortal.",
+    ]);
+    assert!(
+        output.contains("man_noun(socrates)"),
+        "expected man_noun(socrates) assertion:\n{output}"
+    );
+    assert!(
+        output.contains("mortal(socrates)"),
+        "expected mortal(socrates) assertion:\n{output}"
+    );
+}
+
+/// Conjoined polar query with "as well as": "Is Socrates a man as well as
+/// mortal?" → yes.
+#[test]
+fn conjunction_query_as_well_as() {
+    let output = ask_example("qa-syllogism.mont", &[
+        "Socrates is a man.",
+        "Socrates is mortal.",
+        "Is Socrates a man as well as mortal?",
+    ]);
+    assert!(output.contains("yes."), "expected 'yes.' in output:\n{output}");
+}
+
+/// Conjoined wh-query with "as well as": "Who is a man as well as mortal?"
+/// → X = socrates.
+#[test]
+fn conjunction_wh_as_well_as() {
+    let output = ask_example("qa-syllogism.mont", &[
+        "Socrates is a man.",
+        "Socrates is mortal.",
+        "Who is a man as well as mortal?",
+    ]);
+    assert!(
+        output.contains("x = socrates"),
+        "expected 'X = socrates' binding:\n{output}"
+    );
+}
+
 /// Quit command exits cleanly with "bye.".
 #[test]
 fn quit_exits_cleanly() {

@@ -30,6 +30,8 @@ enum Token {
     As,
     Ident(String),
     DocString(String),
+    /// Double-quoted string for multi-word PROD entries like `"as well as"`.
+    QuotedString(String),
 }
 
 struct TokenWithSpan {
@@ -195,6 +197,27 @@ impl<'a> Scanner<'a> {
                 self.pos += 1;
                 Some(TokenWithSpan {
                     token: Token::Comma,
+                    span: Span::new(start, self.pos),
+                })
+            }
+            '"' => {
+                self.pos += 1; // consume opening "
+                let cs = self.pos;
+                while self.pos < self.src.len() {
+                    if self.src.as_bytes()[self.pos] == b'"' {
+                        let content = self.src[cs..self.pos].to_string();
+                        self.pos += 1; // consume closing "
+                        return Some(TokenWithSpan {
+                            token: Token::QuotedString(content),
+                            span: Span::new(start, self.pos),
+                        });
+                    }
+                    self.pos += 1;
+                }
+                // Unterminated quote — treat rest as content
+                let content = self.src[cs..].to_string();
+                Some(TokenWithSpan {
+                    token: Token::QuotedString(content),
                     span: Span::new(start, self.pos),
                 })
             }
@@ -433,13 +456,31 @@ impl<'a> Parser<'a> {
         ))
     }
 
+    /// Parse a surface word in a production LHS — either a single identifier
+    /// or a double-quoted multi-word phrase. Multi-word phrases have internal
+    /// spaces replaced with underscores for canonical single-token matching.
+    fn prod_word(&mut self) -> Option<Spanned<String>> {
+        match self.tokens.get(self.pos) {
+            Some(TokenWithSpan {
+                token: Token::QuotedString(s),
+                span,
+            }) => {
+                let word = s.replace(' ', "_");
+                let r = Spanned::new(word, *span);
+                self.pos += 1;
+                Some(r)
+            }
+            _ => self.entity_ident(),
+        }
+    }
+
     fn production_decl(&mut self) -> Option<Spanned<Declaration>> {
         let mut words = Vec::new();
-        let first = self.entity_ident()?;
+        let first = self.prod_word()?;
         let start = first.span.start;
         words.push(first.item);
         while self.eat(Token::Comma) {
-            if let Some(w) = self.entity_ident() {
+            if let Some(w) = self.prod_word() {
                 words.push(w.item);
             } else {
                 break;
@@ -474,6 +515,7 @@ impl<'a> Parser<'a> {
                 }
             }
             Some(Token::DocString(_)) => self.atom_decl(),
+            Some(Token::QuotedString(_)) => self.production_decl(),
             _ => None,
         }
     }
@@ -611,6 +653,28 @@ mod tests {
             Declaration::ProductionDecl { words, entity } => {
                 assert_eq!(words, &["like", "love"]);
                 assert_eq!(entity, "Like");
+            }
+            _ => panic!(),
+        }
+    }
+    #[test]
+    fn parse_quoted_multiword_production() {
+        let f = check(r#""as well as" --> as_well_as."#);
+        match &f.declarations[0].item {
+            Declaration::ProductionDecl { words, entity } => {
+                assert_eq!(words, &["as_well_as"]);
+                assert_eq!(entity, "as_well_as");
+            }
+            _ => panic!(),
+        }
+    }
+    #[test]
+    fn parse_mixed_production_with_quoted() {
+        let f = check(r#"man, "as well as" --> man_noun."#);
+        match &f.declarations[0].item {
+            Declaration::ProductionDecl { words, entity } => {
+                assert_eq!(words, &["man", "as_well_as"]);
+                assert_eq!(entity, "man_noun");
             }
             _ => panic!(),
         }
