@@ -125,13 +125,14 @@ pub fn get_all_parses_chart<A, T, X>(
     input: &str,
 ) -> Vec<X>
 where
-    A: Clone + Eq + Hash + 'static,
-    T: Hash + Eq + Clone + 'static,
+    A: Clone + Eq + Hash + Send + Sync + 'static,
+    T: Hash + Eq + Clone + Send + Sync + 'static,
     X: Clone + PartialEq,
 {
     let tokens = annotate_words(sem, input);
     let mut chart = Chart::from_tokens(tokens);
     chart.fill(engine, ctx);
+    chart.apply_postpasses(engine.postpasses(), ctx);
     let parses = chart.all_parses();
     let mut results: Vec<X> = Vec::new();
     for d in &parses {
@@ -176,8 +177,8 @@ pub fn reduce<A, T, X>(
     terms: Vec<AT<A, T>>,
 ) -> NonDet<X>
 where
-    A: Clone + 'static,
-    T: Hash + Eq + Clone + 'static,
+    A: Clone + Eq + Hash + Send + Sync + 'static,
+    T: Hash + Eq + Clone + Send + Sync + 'static,
     X: Clone,
 {
     if terms.len() == 1 {
@@ -204,8 +205,8 @@ pub fn get_all_parses<A, T, X>(
     input: &str,
 ) -> Vec<X>
 where
-    A: Clone + 'static,
-    T: Hash + Eq + Clone + 'static,
+    A: Clone + Eq + Hash + Send + Sync + 'static,
+    T: Hash + Eq + Clone + Send + Sync + 'static,
     X: Clone + PartialEq,
 {
     let mut results = Vec::new();
@@ -227,8 +228,8 @@ pub fn get_parse<A, T, X>(
     input: &str,
 ) -> Option<X>
 where
-    A: Clone + 'static,
-    T: Hash + Eq + Clone + 'static,
+    A: Clone + Eq + Hash + Send + Sync + 'static,
+    T: Hash + Eq + Clone + Send + Sync + 'static,
     X: Clone + PartialEq,
 {
     get_all_parses(engine, ctx, sem, input).into_iter().next()

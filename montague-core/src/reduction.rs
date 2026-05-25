@@ -156,18 +156,21 @@ where
 /// `ReductionEngine::standard()` ships with `LeftAbsorption` and
 /// `RightAbsorption` (the canonical Lambek-calculus reductions). Plugins
 /// extend it via `add_rule` / `with_rule`.
+use crate::chart::{ChartPostpass, CoordinationPostpass};
+
 pub struct ReductionEngine<A, T>
 where
     A: Clone,
     T: Hash + Eq + Clone,
 {
     rules: Vec<Box<dyn ReductionRule<A, T>>>,
+    postpasses: Vec<Box<dyn ChartPostpass<A, T>>>,
 }
 
 impl<A, T> Default for ReductionEngine<A, T>
 where
-    A: Clone + 'static,
-    T: Hash + Eq + Clone + 'static,
+    A: Clone + Eq + Hash + Send + Sync + 'static,
+    T: Hash + Eq + Clone + Send + Sync + 'static,
 {
     fn default() -> Self {
         Self::standard()
@@ -176,19 +179,24 @@ where
 
 impl<A, T> ReductionEngine<A, T>
 where
-    A: Clone + 'static,
-    T: Hash + Eq + Clone + 'static,
+    A: Clone + Eq + Hash + Send + Sync + 'static,
+    T: Hash + Eq + Clone + Send + Sync + 'static,
 {
-    /// Engine with no rules. Use `add_rule` / `with_rule` to populate.
+    /// Engine with no rules and no post-passes.
     pub fn empty() -> Self {
-        Self { rules: Vec::new() }
+        Self {
+            rules: Vec::new(),
+            postpasses: Vec::new(),
+        }
     }
 
-    /// Engine pre-loaded with the standard Lambek absorption rules.
+    /// Engine pre-loaded with the standard Lambek absorption rules plus
+    /// the coordination Φ rule post-pass.
     pub fn standard() -> Self {
         Self::empty()
             .with_rule(LeftAbsorption)
             .with_rule(RightAbsorption)
+            .with_postpass(CoordinationPostpass)
     }
 
     /// Standard rules plus harmonic composition (>B, <B).  Composition can
@@ -200,6 +208,11 @@ where
             .with_rule(BackwardComposition)
     }
 
+    /// Reference to the post-passes for chart-level processing.
+    pub fn postpasses(&self) -> &[Box<dyn ChartPostpass<A, T>>] {
+        &self.postpasses
+    }
+
     /// Append a rule. Returns `self` for chaining.
     pub fn with_rule(mut self, rule: impl ReductionRule<A, T> + 'static) -> Self {
         self.rules.push(Box::new(rule));
@@ -209,6 +222,15 @@ where
     /// Append a rule (mutating variant).
     pub fn add_rule(&mut self, rule: Box<dyn ReductionRule<A, T>>) {
         self.rules.push(rule);
+    }
+
+    /// Append a chart post-pass. Returns `self` for chaining.
+    pub fn with_postpass(
+        mut self,
+        pp: impl ChartPostpass<A, T> + 'static,
+    ) -> Self {
+        self.postpasses.push(Box::new(pp));
+        self
     }
 
     /// Number of registered rules.

@@ -20,8 +20,8 @@ use montague_standard::Standard;
 /// and reduction rules.
 pub struct Engine<A, T>
 where
-    A: Clone + Eq + Hash + 'static,
-    T: Hash + Eq + Clone + 'static,
+    A: Clone + Eq + Hash + Send + Sync + 'static,
+    T: Hash + Eq + Clone + Send + Sync + 'static,
 {
     pub registry: Registry,
     pub lattice: SubtypeLattice<T>,
@@ -32,8 +32,8 @@ where
 
 impl<A, T> Default for Engine<A, T>
 where
-    A: Clone + Eq + Hash + 'static,
-    T: Hash + Eq + Clone + 'static,
+    A: Clone + Eq + Hash + Send + Sync + 'static,
+    T: Hash + Eq + Clone + Send + Sync + 'static,
 {
     fn default() -> Self {
         let mut registry = Registry::empty();
@@ -56,8 +56,8 @@ where
 
 impl<A, T> Engine<A, T>
 where
-    A: Clone + Eq + Hash + 'static,
-    T: Hash + Eq + Clone + 'static,
+    A: Clone + Eq + Hash + Send + Sync + 'static,
+    T: Hash + Eq + Clone + Send + Sync + 'static,
 {
     /// Build an engine from existing components.
     pub fn new(

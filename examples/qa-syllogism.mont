@@ -16,18 +16,40 @@ Person :< Noun.
 
 -- | The philosopher.
 socrates: Person.
+plato: Person.
 
--- | Common noun.
+-- | Common nouns.
 man_noun: Noun.
+philosopher: Noun.
+being: Noun.
 
--- | Adjective / predicate.
+-- | Adjectives / predicates.
 mortal: Adjective.
+living: Adjective.
 
--- | Article "a".
+-- | Article "a" — predicative (produces Adjective for copula predication).
 a_art: Adjective / Noun.
 
--- | Copula.
+-- | Article "a" — nominal (produces Noun for identity copula).
+a_np: Noun / Noun.
+
+-- | Prenominal adjective modifiers.
+mortal_adj: Noun / Noun.
+living_adj: Noun / Noun.
+
+-- | Copula — predicative (takes Adjective).
 is_cop: (Noun \ Sentence) / Adjective.
+
+-- | Copula — identity (takes Noun/NP).
+is_ident: (Noun \ Sentence) / Noun.
+
+-- | Definite determiner "the".
+the: Noun / Noun.
+
+-- | Relative pronouns for subject extraction.
+--   "philosopher that is mortal" / "philosopher who is mortal".
+that_rel: (Noun \ Noun) / (Noun \ Sentence).
+who_rel: (Noun \ Noun) / (Noun \ Sentence).
 
 -- | Quantifier.
 all_q: (Sentence / (Noun \ Sentence)) / Noun.
@@ -77,13 +99,23 @@ as_well_as: (Adjective \ Adjective) / Adjective.
 
 -- Productions.
 socrates --> socrates.
+plato --> plato.
 man, men --> man_noun.
+philosopher --> philosopher.
+being, beings --> being.
 mortal --> mortal.
+mortal --> mortal_adj.
+living --> living.
+living --> living_adj.
 a --> a_art.
 is, are --> is_cop.
 is, are --> is_q.
-all, every --> all_q.
+is, are --> is_ident.
+the --> the.
+that --> that_rel.
 who --> who_q.
+who --> who_rel.
+all, every --> all_q.
 and --> and.
 but --> but.
 or --> or.

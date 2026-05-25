@@ -1,0 +1,49 @@
+-- Subject extraction via relative pronoun "that".
+--
+-- The relative pronoun type (N\N)/(NP\S) takes a subject-gapped clause
+-- to the right and returns a noun modifier.
+--
+-- NOTE: In .mont syntax, `A \ B` = takes A from left, produces B.
+--       Standard `S\NP` (takes NP from left) is written `NP \ S` here.
+--
+-- Acceptance tests:
+--   "every number that divides six is positive"  → parses
+--   "a number that divides six is prime"         → parses
+
+Type = S | NP | N | Adj.
+
+-- Common nouns
+number: N.
+prime_n: N.
+
+-- Adjectives
+positive: Adj.
+prime_adj: Adj.
+
+-- Proper noun
+six: NP.
+
+-- Transitive verb: (NP\S)/NP — takes object (NP from right), then subject (NP from left)
+divides: (NP \ S) / NP.
+
+-- Relative pronoun (subject extraction): takes NP\S clause to right
+that_rel: (N \ N) / (NP \ S).
+
+-- Type-raised determiners: (S/(NP\S))/N
+every: (S / (NP \ S)) / N.
+a_det: (S / (NP \ S)) / N.
+
+-- Copula for adjectives
+is_cop: (NP \ S) / Adj.
+
+-- Productions
+number --> number.
+prime --> prime_n.
+prime --> prime_adj.
+positive --> positive.
+six --> six.
+divide, divides --> divides.
+that --> that_rel.
+every --> every.
+a --> a_det.
+is, are --> is_cop.

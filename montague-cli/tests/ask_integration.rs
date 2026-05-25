@@ -527,8 +527,116 @@ fn composition_post_verbal_adverb() {
 }
 
 // ---------------------------------------------------------------------------
+// Coordination tests (coordination.mont — Φ rule)
+// ---------------------------------------------------------------------------
+
+/// NP coordination: "Socrates and Plato are mortal" → parses.
+#[test]
+fn coordination_np() {
+    let output = ask_example("coordination.mont", &[
+        "Socrates and Plato are mortal.",
+    ]);
+    assert!(
+        output.contains("mortal"),
+        "expected mortal assertion via NP coordination:\n{output}"
+    );
+}
+
+/// Adjective coordination: "Socrates is mortal and wise" → both asserted.
+#[test]
+fn coordination_adj() {
+    let output = ask_example("coordination.mont", &[
+        "Socrates is mortal and wise.",
+    ]);
+    assert!(
+        output.contains("mortal(socrates)"),
+        "expected mortal(socrates):\n{output}"
+    );
+    assert!(
+        output.contains("wise(socrates)"),
+        "expected wise(socrates):\n{output}"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Extraction tests (extraction.mont — relative pronoun)
+// ---------------------------------------------------------------------------
+
+/// "every number that divides six is positive" → parses via subject
+/// extraction with the relative pronoun that : (N\N)/(S\NP).
+#[test]
+fn extraction_subject_relative_universal() {
+    let output = ask_example("extraction.mont", &[
+        "every number that divides six is positive.",
+    ]);
+    assert!(
+        !output.contains("no parse"),
+        "'every number that divides six is positive' should parse:\n{output}"
+    );
+}
+
+/// "a number that divides six is prime" → parses (existential quantifier).
+#[test]
+fn extraction_subject_relative_existential() {
+    let output = ask_example("extraction.mont", &[
+        "a number that divides six is prime.",
+    ]);
+    assert!(
+        !output.contains("no parse"),
+        "'a number that divides six is prime' should parse:\n{output}"
+    );
+}
+
+/// "number that divides six" alone → parses as N (noun phrase with
+/// relative clause modifier).
+#[test]
+fn extraction_bare_relative() {
+    let output = ask_example("extraction.mont", &[
+        "six divides six.",
+    ]);
+    assert!(
+        !output.contains("no parse"),
+        "simple transitive sentence should parse:\n{output}"
+    );
+}
+
+// ---------------------------------------------------------------------------
 // Selectional restriction tests (sorts.mont)
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Extraction + relative clause tests (qa-syllogism.mont)
+// ---------------------------------------------------------------------------
+
+/// "Socrates is the philosopher that is mortal" → identity copula with
+/// subject-extracted relative clause.
+#[test]
+fn extraction_identity_with_relative() {
+    let output = ask_example("qa-syllogism.mont", &[
+        "Socrates is a philosopher.",
+        "Socrates is mortal.",
+        "Socrates is the philosopher that is mortal.",
+    ]);
+    assert!(
+        !output.contains("no parse"),
+        "identity with relative clause should parse:\n{output}"
+    );
+}
+
+/// "Who is the philosopher that is mortal?" → wh-question with relative
+/// clause inside a definite description.
+#[test]
+fn extraction_wh_with_relative() {
+    let output = ask_example("qa-syllogism.mont", &[
+        "Socrates is a philosopher.",
+        "Socrates is mortal.",
+        "Who is the philosopher that is mortal?",
+    ]);
+    assert!(
+        !output.contains("no parse"),
+        "wh-question with relative clause should parse:\n{output}"
+    );
+}
 
 /// "cat sleeps" → parses (Animate matches Animate-requiring verb).
 #[test]

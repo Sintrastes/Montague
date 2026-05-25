@@ -371,10 +371,25 @@ fn cmd_ask(args: &[String]) {
         let body = clause.trim().trim_end_matches('.');
 
         // Extract predicate name/arity for dynamic declaration.
+        // Must find the matching close paren for the HEAD's open paren,
+        // not the last paren in the rule (which could be in the body).
         let pred_sig = if let Some(open) = body.find('(') {
             let name = &body[..open].trim();
-            // Count args by counting commas between the parens
-            let close = body.rfind(')').unwrap_or(body.len());
+            let mut depth = 1u32;
+            let mut close = body.len();
+            for (i, c) in body[open + 1..].char_indices() {
+                match c {
+                    '(' => depth += 1,
+                    ')' => {
+                        depth -= 1;
+                        if depth == 0 {
+                            close = open + 1 + i;
+                            break;
+                        }
+                    }
+                    _ => {}
+                }
+            }
             let args_str = &body[open + 1..close];
             let arity = if args_str.trim().is_empty() { 0 } else { args_str.matches(',').count() + 1 };
             format!("{name}/{arity}")
@@ -476,7 +491,14 @@ fn cmd_ask(args: &[String]) {
             let clean_input = sent.trim_end_matches('?').trim().to_string();
             let tokenized = tokenize_multiword(&clean_input, &lex.productions);
 
-            let parses = core::get_all_parses_chart(&engine, &ctx, &sem, &tokenized);
+            let mut parses = core::get_all_parses_chart(&engine, &ctx, &sem, &tokenized);
+            // Prefer Question-typed parses when input is a question (resolves
+            // who_q vs who_rel ambiguity — who_q produces Question type).
+            if is_question {
+                parses.sort_by_key(|p| {
+                    if format!("{:?}", p.ty).contains("Question") { 0 } else { 1 }
+                });
+            }
 
             if parses.is_empty() {
                 // Failed parse — try LLM recovery (up to 3 attempts)
@@ -611,7 +633,7 @@ fn cmd_ask(args: &[String]) {
                                              For example:\n\
                                              PROD immortal --> immortal\n\
                                              \n\
-                                             Output in a ``` block."
+                                             Output in a ```montague block."
                                         )
                                     } else {
                                         let lexicon_summary = format_lexicon_summary(&lex);
@@ -623,7 +645,7 @@ fn cmd_ask(args: &[String]) {
                                              \n\
                                              What is missing or wrong? Look at how similar sentences \
                                              parse in this lexicon. What additional entries are \
-                                             needed? Output in a ``` block."
+                                             needed? Output in a ```montague block."
                                         )
                                     };
                                     if flags.debug {
@@ -679,6 +701,21 @@ fn cmd_ask(args: &[String]) {
 
                 eprintln!("  No parse found for: {sent:?}");
                 continue;
+            }
+
+            // Disambiguate before using a parse.  If the LLM picks one,
+            // swap it to the front so `parses[0]` is the chosen reading.
+            #[cfg(feature = "llm")]
+            if parses.len() > 1 && flags.llm_enabled {
+                if let Some(ref mut backend) = llm {
+                    if let Some(pick) =
+                        llm_pick_parse(backend, sent, &parses, flags.debug)
+                    {
+                        if pick > 0 && pick < parses.len() {
+                            parses.swap(0, pick);
+                        }
+                    }
+                }
             }
 
             // Take first parse
@@ -763,17 +800,9 @@ fn cmd_ask(args: &[String]) {
                 }
             }
 
-            // Multiple parses — disambiguate via LLM
-            if parses.len() > 1 {
-                if sentence_count == 1 {
-                    eprintln!("  ({} parses total)", parses.len());
-                }
-                #[cfg(feature = "llm")]
-                if flags.llm_enabled {
-                    if let Some(ref mut backend) = llm {
-                        disambiguate_parses(backend, sent, &parses, flags.debug);
-                    }
-                }
+            // Report ambiguity (LLM already picked before query if enabled).
+            if parses.len() > 1 && sentence_count == 1 {
+                eprintln!("  ({} parses total)", parses.len());
             }
         }
     }
@@ -999,12 +1028,16 @@ fn build_recovery_prompt(
          existing word in the lexicon. Then output your proposed entries in a code block \
          using this format:\n\
          \n\
-         ```\n\
+         ```montague\n\
          ATOM name type\n\
          PROD word --> name\n\
          PROD \"multi word phrase\" --> name\n\
          RULE head(args) :- body(args).\n\
          ```\n\
+         \n\
+         IMPORTANT: Use ```montague blocks (NOT ```prolog or ```plain).\n\
+         The format is Montague DSL, not Prolog. ATOM/PROD/RULE are the\n\
+         only recognized entry types.\n\
          \n\
          IMPORTANT about PROD: Use double-quoted strings for multi-word phrases.\n\
          For example: PROD \"as well as\" --> as_well_as\n\
@@ -1014,28 +1047,36 @@ fn build_recovery_prompt(
          \n\
          If the lexicon has `mortal: Adjective` and the sentence is \"Socrates is wise\":\n\
          Since \"wise\" appears in the same position as \"mortal\" (after \"is\"), it\u{2019}s an Adjective.\n\
-         ```\n\
+         ```montague\n\
          ATOM wise Adjective\n\
          PROD wise --> wise\n\
          ```\n\
          \n\
          If the lexicon has `cat: Noun` and the sentence is \"a dog sleeps\":\n\
-         ```\n\
+         ```montague\n\
          ATOM dog Noun\n\
          PROD dog --> dog\n\
          ```\n\
          \n\
          If the word is the negation of an existing word (e.g. \"immortal\" vs \"mortal\"):\n\
-         ```\n\
+         ```montague\n\
          ATOM immortal Adjective\n\
          PROD immortal --> immortal\n\
          RULE immortal(X) :- \\+ mortal(X).\n\
          ```\n\
          \n\
          For multi-word conjunctions (\"as well as\", \"in order to\"):\n\
-         ```\n\
+         ```montague\n\
          ATOM as_well_as (Adjective \\ Adjective) / Adjective\n\
          PROD \"as well as\" --> as_well_as\n\
+         ```\n\
+         \n\
+         For adjective-noun modification (\"living beings\"):\n\
+         ```montague\n\
+         ATOM living_adj Noun / Noun\n\
+         ATOM being Noun\n\
+         PROD living --> living_adj\n\
+         PROD being --> being\n\
          ```"
     );
 
@@ -1258,7 +1299,58 @@ fn suggest_knowledge_gap(
     }
 }
 
-/// Ask the LLM to disambiguate multiple parses.
+/// Ask the LLM to pick the best parse.  Returns the 1-based index from the
+/// LLM's response, converted to 0-based, or `None` if the LLM doesn't give
+/// a clear answer.
+#[cfg(feature = "llm")]
+fn llm_pick_parse(
+    llm: &mut Box<dyn Llm>,
+    sentence: &str,
+    parses: &[montague::core::AnnotatedTerm<String, String>],
+    debug: bool,
+) -> Option<usize> {
+    if parses.len() <= 1 {
+        return Some(0);
+    }
+
+    let system = String::from(
+        "You are a linguistic disambiguation assistant. Given a sentence and \
+         multiple parse trees, rank them by plausibility. \
+         Respond with ONLY the number of the best parse (e.g. '1'), nothing else.",
+    );
+
+    let mut parse_list = String::new();
+    for (i, at) in parses.iter().enumerate() {
+        let sexp = display_term_as_sexp(&at.term);
+        parse_list.push_str(&format!("{}. {sexp}\n", i + 1));
+    }
+
+    let user = format!(
+        "Sentence: {sentence}\n\nParses:\n{parse_list}\n\
+         Which parse is most plausible? Respond with just the number."
+    );
+
+    let response = match debug_complete(llm, &system, &user, 100, debug) {
+        Ok(r) => r,
+        Err(_) => return Some(0),
+    };
+
+    // Extract the first digit from the response.
+    for c in response.chars() {
+        if let Some(d) = c.to_digit(10) {
+            let idx = d as usize;
+            if idx >= 1 && idx <= parses.len() {
+                if debug {
+                    eprintln!("  [debug] LLM picked parse {idx}: {response}");
+                }
+                return Some(idx - 1);
+            }
+        }
+    }
+    Some(0)
+}
+
+/// Ask the LLM to disambiguate multiple parses (display-only).
 #[cfg(feature = "llm")]
 fn disambiguate_parses(
     llm: &mut Box<dyn Llm>,

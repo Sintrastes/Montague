@@ -54,8 +54,8 @@ fn reduce_dfs<A, T, X>(
     terms: Vec<AnnotatedTerm<A, T>>,
 ) -> Vec<X>
 where
-    A: Clone + 'static,
-    T: Hash + Eq + Clone + 'static,
+    A: Clone + Eq + Hash + Send + Sync + 'static,
+    T: Hash + Eq + Clone + Send + Sync + 'static,
     X: Clone,
 {
     if terms.len() == 1 {
@@ -84,8 +84,8 @@ pub fn parse<A, T>(
     input: &str,
 ) -> HashSet<AnnotatedTerm<A, T>>
 where
-    A: Clone + Eq + Hash + 'static,
-    T: Hash + Eq + Clone + 'static,
+    A: Clone + Eq + Hash + Send + Sync + 'static,
+    T: Hash + Eq + Clone + Send + Sync + 'static,
 {
     use crate::{annotate, reduce};
     let mut results = HashSet::new();

@@ -125,8 +125,8 @@ pub struct Chart<A, T> {
 
 impl<A, T> Chart<A, T>
 where
-    A: Clone + Eq + Hash + 'static,
-    T: Hash + Eq + Clone + 'static,
+    A: Clone + Eq + Hash + Send + Sync + 'static,
+    T: Hash + Eq + Clone + Send + Sync + 'static,
 {
     /// Build a chart of size `n` from per-word lexical entries.
     ///
@@ -361,6 +361,167 @@ where
 
     /// Apply the postpass to the chart, potentially adding derivations.
     fn apply(&self, chart: &mut Chart<A, T>, ctx: &ReductionCtx<'_, T>);
+}
+
+// ---------------------------------------------------------------------------
+// Coordination post-pass (Step 4 — Φ rule)
+// ---------------------------------------------------------------------------
+
+/// Returns `true` if `ty` has the shape of a coordinator: `(X\X)/X` or
+/// `(X/X)\X` — i.e., it takes two arguments of the same (joinable) category
+/// and returns that category.
+fn is_coordinator_type<T: Hash + Eq + Clone>(ty: &LambekType<T>) -> bool {
+    // (X\X)/X = LeftArrow(RightArrow(x1, x2), x3) where x1 ≈ x2 ≈ x3
+    if let LambekType::LeftArrow(inner, arg) = ty {
+        if let LambekType::RightArrow(x1, x2) = inner.as_ref() {
+            return x1.as_ref() == x2.as_ref() && x2.as_ref() == arg.as_ref();
+        }
+    }
+    // (X/X)\X = RightArrow(LeftArrow(x1, x2), x3) where x1 ≈ x2 ≈ x3
+    if let LambekType::RightArrow(inner, arg) = ty {
+        if let LambekType::LeftArrow(x1, x2) = inner.as_ref() {
+            return x1.as_ref() == x2.as_ref() && x2.as_ref() == arg.as_ref();
+        }
+    }
+    false
+}
+
+/// Join two Lambek types using the lattice.  Equal types trivially join.
+/// Both `Basic` → delegates to `SubtypeLattice::join`.  Function types with
+/// matching structure join component-wise.  Returns `None` otherwise.
+fn join_types<T: Hash + Eq + Clone>(
+    lat: &SubtypeLattice<T>,
+    a: &LambekType<T>,
+    b: &LambekType<T>,
+) -> Option<LambekType<T>> {
+    if a == b {
+        return Some(a.clone());
+    }
+    if let (LambekType::Basic(ba), LambekType::Basic(bb)) = (a, b) {
+        return lat.join(ba, bb).map(LambekType::Basic);
+    }
+    match (a, b) {
+        (LambekType::LeftArrow(x1, y1), LambekType::LeftArrow(x2, y2))
+        | (LambekType::RightArrow(x1, y1), LambekType::RightArrow(x2, y2)) => {
+            let x = join_types(lat, x1, x2)?;
+            let y = join_types(lat, y1, y2)?;
+            if let LambekType::LeftArrow(..) = a {
+                Some(LambekType::LeftArrow(Box::new(x), Box::new(y)))
+            } else {
+                Some(LambekType::RightArrow(Box::new(x), Box::new(y)))
+            }
+        }
+        _ => None,
+    }
+}
+
+/// Coordination post-pass: implements the Φ rule `X CONJ X → X`.
+///
+/// After the binary bottom-up fill, scans the chart for coordinator tokens
+/// flanked by two constituents of joinable categories.  The result category
+/// is the least upper bound computed by `SubtypeLattice::join`.
+pub struct CoordinationPostpass;
+
+impl<A, T> ChartPostpass<A, T> for CoordinationPostpass
+where
+    A: Clone + Eq + Hash + Send + Sync + 'static,
+    T: Hash + Eq + Clone + Send + Sync + 'static,
+{
+    fn name(&self) -> &'static str {
+        "coordination"
+    }
+    fn applies_to(&self) -> &ConnectiveSet {
+        static SET: std::sync::OnceLock<ConnectiveSet> = std::sync::OnceLock::new();
+        SET.get_or_init(|| {
+            ConnectiveSet::new()
+                .with(TypeShape::LeftArrow)
+                .with(TypeShape::RightArrow)
+        })
+    }
+    fn apply(&self, chart: &mut Chart<A, T>, ctx: &ReductionCtx<'_, T>) {
+        let n = chart.len();
+        // Need spans of at least 3 tokens: left + coord + right.
+        for span_len in 3..=n {
+            for i in 0..=n - span_len {
+                let j = i + span_len;
+                for k in (i + 1)..j {
+                    // The coordinator must occupy exactly one token.
+                    if k + 1 >= j {
+                        continue;
+                    }
+                    // k is the middle split — check cell[k][k+1] for coordinators.
+                    let coord_cell = match chart.cell_try(k, k + 1) {
+                        Some(c) => c,
+                        None => continue,
+                    };
+                    // Find a coordinator term to use for semantics.
+                    let coord_term = coord_cell.by_type.iter().find_map(|(ty, ids)| {
+                        if is_coordinator_type(ty) {
+                            Some(coord_cell.get(ids[0]).term.clone())
+                        } else {
+                            None
+                        }
+                    });
+                    let Some(conj) = coord_term else { continue };
+
+                    // Collect left and right derivations.
+                    let left_cell = match chart.cell_try(i, k) {
+                        Some(c) => c,
+                        None => continue,
+                    };
+                    let right_cell = match chart.cell_try(k + 1, j) {
+                        Some(c) => c,
+                        None => continue,
+                    };
+
+                    let mut new_derivs: Vec<Derivation<A, T>> = Vec::new();
+                    for (lty, lids) in &left_cell.by_type {
+                        for lid in lids {
+                            let ld = left_cell.get(*lid);
+                            for (rty, rids) in &right_cell.by_type {
+                                if let Some(joined) = join_types(ctx.lattice, lty, rty) {
+                                    for rid in rids {
+                                        let rd = right_cell.get(*rid);
+                                        let sem = Term::App(
+                                            Box::new(conj.clone()),
+                                            vec![ld.term.clone(), rd.term.clone()],
+                                        );
+                                        new_derivs.push(Derivation {
+                                            term: sem,
+                                            ty: joined.clone(),
+                                            left_span: Some((i, j)),
+                                            right_span: None,
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Insert new derivations into cell[i][j], deduplicating.
+                    let target = chart.cell_mut(i, j);
+                    for d in &new_derivs {
+                        let already = target
+                            .by_type
+                            .get(&d.ty)
+                            .map(|ids| {
+                                ids.iter()
+                                    .any(|id| target.get(*id).term == d.term)
+                            })
+                            .unwrap_or(false);
+                        if !already && d.ty.depth() <= MAX_DEPTH {
+                            target.insert(Derivation {
+                                term: d.term.clone(),
+                                ty: d.ty.clone(),
+                                left_span: Some((i, j)),
+                                right_span: None,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 // Stub ExtractionPostpass — real logic in M9.

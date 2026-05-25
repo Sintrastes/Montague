@@ -325,17 +325,39 @@ pub fn lower_term_to_prolog(term: &Term<String>) -> Option<Vec<String>> {
             return Some(vec![format!("{pred_name}({subj}).")]);
         }
 
-        // Wh-pronoun: who_q(vp) → lower the VP with a free variable X.
-        // The VP is typically a copula compound like is_cop(mortal) or a verb.
-        if fname == "who_q" && args.len() == 1 {
+        // Wh-pronoun / relative: who_q(vp) or who_rel(vp) → lower the VP
+        // with a free variable X.  who_rel acts as a wh-word when it appears
+        // as the outermost question-former (same semantics as who_q).
+        if (fname == "who_q" || fname == "who_rel") && args.len() == 1 {
             return lower_vp_to_query(&args[0]).map(|s| vec![s]);
         }
 
         // Quantifier: all_q / every_q
+        // The VP may be a simple predicate or an identity copula is_ident(nominal).
+        // For is_ident, decompose the nominal into one rule per goal.
         if (fname == "all_q" || fname == "every_q") && args.len() == 2 {
-            let noun = term_to_prolog_arg(&args[0])?;
+            let noun_goals = lower_noun_phrase_to_goals(&args[0])?;
+            let body = noun_goals.join(", ");
+
+            // If the VP is is_ident(nominal), decompose the nominal.
+            if let Term::App(vp_f, vp_args) = &args[1] {
+                let vp_name = match vp_f.as_ref() {
+                    Term::Atom(n) => n.as_str(),
+                    _ => "",
+                };
+                if vp_name == "is_ident" && !vp_args.is_empty() {
+                    if let Some(head_goals) = lower_noun_phrase_to_goals(&vp_args[0]) {
+                        let clauses: Vec<String> = head_goals
+                            .iter()
+                            .map(|g| format!("{g} :- {body}."))
+                            .collect();
+                        return Some(clauses);
+                    }
+                }
+            }
+
             let pred = extract_predicate(&args[1])?;
-            return Some(vec![format!("{pred}(X) :- {noun}(X).")]);
+            return Some(vec![format!("{pred}(X) :- {body}.")]);
         }
 
         // Default: generic App → function(args).
@@ -395,7 +417,7 @@ fn extract_conjunction(term: &Term<String>) -> Option<(Vec<Term<String>>, ConjKi
                 _ => return None,
             };
             let kind = match fname.as_str() {
-                "and" | "but" | "as_well_as" | "but_also" => ConjKind::And,
+                "and" | "and_adj" | "and_np" | "but" | "as_well_as" | "but_also" => ConjKind::And,
                 "or" => ConjKind::Or,
                 "nor" => ConjKind::Nor,
                 _ => return None,
@@ -425,6 +447,17 @@ fn lower_vp_to_query(term: &Term<String>) -> Option<String> {
                 Term::Atom(n) => n.clone(),
                 _ => return None,
             };
+            // Identity copula VP: is_ident(desc) → try to unfold description.
+            // "who is the philosopher that is mortal?" → philosopher(X), mortal(X).
+            if fname == "is_ident" && !args.is_empty() {
+                if let Some(goals) = unfold_description(&args[0]) {
+                    return Some(format!("{}.", goals.join(", ")));
+                }
+                // Fall back to generic lowering.
+                let pred_name = term_to_prolog_arg(&args[0])?;
+                return Some(format!("{pred_name}(X)."));
+            }
+
             // Copula VP: is_cop(predicate) → predicate(X).
             if (fname == "is_cop" || fname == "are_cop") && !args.is_empty() {
                 let pred = strip_article(&args[0]);
@@ -462,6 +495,99 @@ fn lower_vp_to_query(term: &Term<String>) -> Option<String> {
         }
         _ => None,
     }
+}
+
+/// Decompose a noun phrase into Prolog goals with free variable X.
+/// - `being` → `["being(X)"]`
+/// - `living_adj(being)` → `["being(X)", "living_adj(X)"]`
+fn lower_noun_phrase_to_goals(term: &Term<String>) -> Option<Vec<String>> {
+    match term {
+        Term::Atom(name) => Some(vec![format!("{name}(X)")]),
+        Term::App(f, args) => {
+            let adj = match f.as_ref() {
+                Term::Atom(n) => n.clone(),
+                _ => return None,
+            };
+            // Strip _adj suffix for the predicate name
+            let adj_pred = adj.strip_suffix("_adj").unwrap_or(&adj);
+            let mut goals = vec![format!("{adj_pred}(X)")];
+            // Recursively decompose the noun argument
+            for arg in args {
+                if let Some(inner) = lower_noun_phrase_to_goals(arg) {
+                    goals.extend(inner);
+                }
+            }
+            Some(goals)
+        }
+        _ => None,
+    }
+}
+
+/// Unfold a definite/indefinite description into query goals for a wh-variable X.
+///
+/// Handles:
+/// - `the(that_rel(N, is_cop(P)))` → `[N(X), P(X)]`
+/// - `the(who_rel(N, is_cop(P)))` → `[N(X), P(X)]`
+/// - `the(mortal_adj(N))` → `[N(X), mortal(X)]`
+/// - `a_np(mortal_adj(N))` → `[N(X), mortal(X)]`
+fn unfold_description(term: &Term<String>) -> Option<Vec<String>> {
+    // Must be App(det, [inner]) where det is "the" or "a_np"
+    let Term::App(det_f, det_args) = term else { return None };
+    let det_name = match det_f.as_ref() {
+        Term::Atom(n) => n.as_str(),
+        _ => return None,
+    };
+    if det_args.len() != 1 {
+        return None;
+    }
+    let inner = &det_args[0];
+
+    // Case 1: relative clause — the(that_rel(N, VP)) or the(who_rel(N, VP))
+    if let Term::App(rel_f, rel_args) = inner {
+        let rel_name = match rel_f.as_ref() {
+            Term::Atom(n) => n.as_str(),
+            _ => "",
+        };
+        if (rel_name == "that_rel" || rel_name == "who_rel") && rel_args.len() >= 2 {
+            // rel : (N\N)/(NP\S) — right-app consumes VP (args[0]),
+            // left-app consumes N (args[1]).
+            let vp = &rel_args[0];
+            let noun = term_to_prolog_arg(&rel_args[1])?;
+            let pred = match vp {
+                Term::App(f, vp_args) => {
+                    let vp_fname = match f.as_ref() {
+                        Term::Atom(n) => n.as_str(),
+                        _ => "",
+                    };
+                    if (vp_fname == "is_cop" || vp_fname == "are_cop")
+                        && !vp_args.is_empty()
+                    {
+                        strip_article(&vp_args[0])
+                    } else {
+                        strip_article(vp)
+                    }
+                }
+                _ => strip_article(vp),
+            };
+            let pred_name = term_to_prolog_arg(&pred)?;
+            return Some(vec![format!("{noun}(X)"), format!("{pred_name}(X)")]);
+        }
+
+        // Case 2: prenominal adjective — the(mortal_adj(N)) or a_np(mortal_adj(N))
+        // where an N/N adjective absorbs the noun on the right.
+        if (det_name == "the" || det_name == "a_np") && rel_args.len() == 1 {
+            let noun = term_to_prolog_arg(&rel_args[0])?;
+            let adj_name = match rel_f.as_ref() {
+                Term::Atom(n) => n.clone(),
+                _ => return None,
+            };
+            // Strip _adj suffix if present so "mortal_adj" → "mortal"
+            let adj_pred = adj_name.strip_suffix("_adj").unwrap_or(&adj_name);
+            return Some(vec![format!("{noun}(X)"), format!("{adj_pred}(X)")]);
+        }
+    }
+
+    None
 }
 
 /// Strip decorative wrappers from a predicate argument:
@@ -879,6 +1005,38 @@ mod tests {
         );
         let result = strip_article(&either_man);
         assert_eq!(result, CTerm::Atom("man_noun".into()));
+    }
+
+    /// `who_q(is_ident(the(that_rel(philosopher, is_cop(mortal)))))` →
+    /// `["philosopher(X), mortal(X)."]`
+    #[test]
+    fn lower_wh_with_relative_clause() {
+        let vp = CTerm::App(
+            Box::new(CTerm::Atom("is_cop".into())),
+            vec![CTerm::Atom("mortal".into())],
+        );
+        // that_rel first absorbs VP (right-app), then N (left-app):
+        // args = [VP, N] after apply_partial flattening.
+        let rel = CTerm::App(
+            Box::new(CTerm::Atom("that_rel".into())),
+            vec![vp, CTerm::Atom("philosopher".into())],
+        );
+        let desc = CTerm::App(
+            Box::new(CTerm::Atom("the".into())),
+            vec![rel],
+        );
+        let ident = CTerm::App(
+            Box::new(CTerm::Atom("is_ident".into())),
+            vec![desc],
+        );
+        let wh = CTerm::App(
+            Box::new(CTerm::Atom("who_q".into())),
+            vec![ident],
+        );
+        let clauses = lower_term_to_prolog(&wh).unwrap();
+        assert_eq!(clauses.len(), 1);
+        assert!(clauses[0].contains("philosopher(X)"), "got: {}", clauses[0]);
+        assert!(clauses[0].contains("mortal(X)"), "got: {}", clauses[0]);
     }
 
     /// `strip_article` test: `neither(a_art, noun)` → `noun`.

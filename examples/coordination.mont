@@ -1,0 +1,38 @@
+-- Coordination demo: NP conjunction via the Φ rule (chart post-pass).
+--
+-- The coordinator "and" has type (NP \ NP) / NP. The CoordinationPostpass
+-- detects the (X\X)/X shape and joins the left and right constituents via
+-- SubtypeLattice::join.
+--
+-- Test with:
+--   montague ask examples/coordination.mont
+--   > Socrates and Plato are mortal.
+--   > Socrates is mortal and wise.
+
+Type = Sentence | Noun | Adjective | Person.
+
+Person :< Noun.
+
+socrates: Person.
+plato: Person.
+
+mortal: Adjective.
+wise: Adjective.
+
+-- Copula
+is_cop: (Noun \ Sentence) / Adjective.
+
+-- Coordinator for NPs: "Socrates and Plato"
+and_np: (Noun \ Noun) / Noun.
+
+-- Coordinator for Adjectives: "mortal and wise"
+and_adj: (Adjective \ Adjective) / Adjective.
+
+-- Productions
+socrates --> socrates.
+plato --> plato.
+mortal --> mortal.
+wise --> wise.
+is, are --> is_cop.
+and --> and_np.
+and --> and_adj.
