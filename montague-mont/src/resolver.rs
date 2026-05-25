@@ -9,7 +9,7 @@ use montague_core::registry::Registry;
 use montague_core::subtyping::SubtypeLattice;
 use montague_core::types::LambekType;
 
-use crate::ast::{AtomEntry, Declaration, MontFile, ProductionEntry, Span, TypeExpr};
+use crate::ast::{AtomEntry, Declaration, MontFile, MorphemeEntry, ProductionEntry, Span, TypeExpr};
 use crate::error::ResolveError;
 
 /// The output of name resolution — a typed lexicon ready for parsing.
@@ -20,6 +20,7 @@ use crate::error::ResolveError;
 pub struct ResolvedLexicon {
     pub atoms: Vec<AtomEntry<LambekType<String>>>,
     pub productions: Vec<ProductionEntry>,
+    pub morphemes: Vec<MorphemeEntry<LambekType<String>>>,
     pub lattice: SubtypeLattice<String>,
 }
 
@@ -83,6 +84,32 @@ pub fn resolve(file: &MontFile, reg: &Registry) -> Result<ResolvedLexicon, Vec<R
         }
     }
 
+    // -- Pass 3b: morpheme declarations --
+    let mut morphemes = Vec::new();
+    for decl in &file.declarations {
+        if let Declaration::MorphemeDecl { surface, ty, strips } = &decl.item {
+            match resolve_type_expr(&ty.item, &known_types, reg, &mut errors, ty.span) {
+                Some(resolved) => {
+                    let entity = morpheme_entity_name(surface);
+                    let strips = if strips.is_empty() {
+                        default_strips(surface)
+                    } else {
+                        strips.clone()
+                    };
+                    morphemes.push(MorphemeEntry {
+                        surface: surface.clone(),
+                        entity,
+                        type_expr: resolved,
+                        strips,
+                        span: decl.span,
+                    });
+                }
+                None => {}
+            }
+        }
+    }
+    dedup_morpheme_entities(&mut morphemes);
+
     // -- Pass 4: production declarations --
     let mut productions = Vec::new();
     for decl in &file.declarations {
@@ -101,11 +128,54 @@ pub fn resolve(file: &MontFile, reg: &Registry) -> Result<ResolvedLexicon, Vec<R
         Ok(ResolvedLexicon {
             atoms,
             productions,
+            morphemes,
             lattice,
         })
     } else {
         Err(errors)
     }
+}
+
+/// Derive a unique entity name from a morpheme surface form.
+/// Strips `+` and `'`, appends `_suffix`. If the name collides with an
+/// already-registered entity, appends a counter.
+fn morpheme_entity_name(surface: &str) -> String {
+    if surface == "+'s" {
+        return "poss_suffix".to_string();
+    }
+    let base = surface.strip_prefix('+').unwrap_or(surface);
+    format!("{base}_suffix")
+}
+
+/// Ensure entity names are unique across morphemes. Appends `_N` to
+/// duplicates.
+fn dedup_morpheme_entities(morphemes: &mut [MorphemeEntry<LambekType<String>>]) {
+    let mut seen: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+    for m in morphemes.iter_mut() {
+        let count = seen.entry(m.entity.clone()).or_insert(0);
+        if *count > 0 {
+            m.entity = format!("{}_{}", m.entity, count);
+        }
+        *count += 1;
+    }
+}
+
+/// Derive default spelling-recovery classes from the suffix surface form.
+fn default_strips(surface: &str) -> Vec<crate::ast::SpellingClass> {
+    use crate::ast::SpellingClass;
+    let suffix = surface.strip_prefix('+').unwrap_or(surface);
+    if suffix == "'s" {
+        return vec![SpellingClass::Poss];
+    }
+    // Vowel-initial suffixes: `+ed`, `+ing` → e-deletion + consonant doubling
+    if suffix.starts_with('e') || suffix.starts_with('i') {
+        return vec![SpellingClass::EDeletion, SpellingClass::ConsonantDoubling];
+    }
+    // `+ly` → y→i reversal
+    if suffix.starts_with('l') && suffix.contains('y') || suffix == "ly" {
+        return vec![SpellingClass::YToI];
+    }
+    vec![]
 }
 
 /// Resolve a type expression AST node to a `LambekType<String>`.
@@ -164,6 +234,7 @@ fn resolve_type_expr(
 // Semantics builder: ResolvedLexicon → Semantics (bridge to engine)
 // ---------------------------------------------------------------------------
 
+use montague_core::morph::{MorphemeInfo, MorphSegmenter, SpellingClass as CoreSpellingClass};
 use montague_core::semantics::Semantics;
 use montague_core::types::{AnnotatedTerm, NonDet, Term};
 
@@ -178,27 +249,71 @@ pub fn build_semantics(
 ) -> Semantics<String, String, AnnotatedTerm<String, String>> {
     let atoms = lexicon.atoms.clone();
     let productions = lexicon.productions.clone();
+    let morphemes = lexicon.morphemes.clone();
+    let morphemes2 = morphemes.clone();
 
     Semantics::new(
         // type_of_atom: entity name → its LambekType
         move |entity: &String| -> NonDet<LambekType<String>> {
-            atoms
+            let from_atoms: Vec<_> = atoms
                 .iter()
                 .filter(|a| &a.entity == entity)
                 .map(|a| a.type_expr.clone())
+                .collect();
+            if !from_atoms.is_empty() {
+                return from_atoms;
+            }
+            morphemes
+                .iter()
+                .filter(|m| &m.entity == entity)
+                .map(|m| m.type_expr.clone())
                 .collect()
         },
-        // parse_term: surface word → Term::Atom(entity) for matching productions
+        // parse_term: surface word → Term::Atom(entity) for matching productions/morphemes
         move |word: &str| -> NonDet<Term<String>> {
-            productions
+            let mut results: Vec<Term<String>> = productions
                 .iter()
                 .filter(|p| p.words.iter().any(|w| w == word))
                 .map(|p| Term::Atom(p.entity.clone()))
-                .collect()
+                .collect();
+            // Also match morpheme surface forms (e.g., "+s", "+ing")
+            results.extend(
+                morphemes2
+                    .iter()
+                    .filter(|m| m.surface == word)
+                    .map(|m| Term::Atom(m.entity.clone())),
+            );
+            results
         },
         // interp: identity
         |at| at,
     )
+}
+
+/// Build a [`MorphSegmenter`] from the morpheme entries in a resolved lexicon.
+///
+/// Converts `montague_mont::ast::SpellingClass` → `montague_core::morph::SpellingClass`.
+pub fn build_segmenter(lexicon: &ResolvedLexicon) -> MorphSegmenter {
+    let morphemes: Vec<MorphemeInfo> = lexicon
+        .morphemes
+        .iter()
+        .map(|m| MorphemeInfo {
+            surface: m.surface.clone(),
+            entity: m.entity.clone(),
+            ty: m.type_expr.clone(),
+            strips: m
+                .strips
+                .iter()
+                .map(|c| match c {
+                    crate::ast::SpellingClass::EDeletion => CoreSpellingClass::EDeletion,
+                    crate::ast::SpellingClass::ConsonantDoubling => CoreSpellingClass::ConsonantDoubling,
+                    crate::ast::SpellingClass::YToI => CoreSpellingClass::YToI,
+                    crate::ast::SpellingClass::Poss => CoreSpellingClass::Poss,
+                })
+                .collect(),
+        })
+        .collect();
+    MorphSegmenter::new(morphemes)
 }
 
 // ---------------------------------------------------------------------------
@@ -306,5 +421,67 @@ mod tests {
         let lex = resolve_str(src).unwrap();
         assert_eq!(lex.atoms.len(), 1);
         assert!(matches!(lex.atoms[0].type_expr, LambekType::Disj(..)));
+    }
+
+    #[test]
+    fn resolve_morph_decl_basic() {
+        let src = "Type = S | NP | N.\n\
+                   MORPH +s : (NP \\ S) \\ (NP \\ S).";
+        let lex = resolve_str(src).unwrap();
+        assert_eq!(lex.morphemes.len(), 1);
+        assert_eq!(lex.morphemes[0].surface, "+s");
+        assert_eq!(lex.morphemes[0].entity, "s_suffix");
+        assert!(lex.morphemes[0].strips.is_empty());
+    }
+
+    #[test]
+    fn resolve_morph_duplicate_surfaces() {
+        let src = "Type = S | NP | N.\n\
+                   MORPH +s : (NP \\ S) \\ (NP \\ S).\n\
+                   MORPH +s : NP \\ N STRIPS e.";
+        let lex = resolve_str(src).unwrap();
+        assert_eq!(lex.morphemes.len(), 2);
+        // First gets normal name, second gets disambiguated
+        assert_eq!(lex.morphemes[0].surface, "+s");
+        assert_eq!(lex.morphemes[1].surface, "+s");
+        // Entities should be different
+        assert_ne!(lex.morphemes[0].entity, lex.morphemes[1].entity);
+    }
+
+    #[test]
+    fn resolve_morph_decl_default_strips() {
+        let src = "Type = S | NP | N.\n\
+                   MORPH +ed : (NP \\ S) \\ (NP \\ S).";
+        let lex = resolve_str(src).unwrap();
+        assert_eq!(lex.morphemes.len(), 1);
+        assert_eq!(lex.morphemes[0].strips.len(), 2);
+        assert_eq!(lex.morphemes[0].strips[0], crate::ast::SpellingClass::EDeletion);
+        assert_eq!(lex.morphemes[0].strips[1], crate::ast::SpellingClass::ConsonantDoubling);
+    }
+
+    #[test]
+    fn resolve_morph_decl_possessive_entity() {
+        let src = "Type = NP | N.\n\
+                   MORPH +'s : (NP / N) \\ NP STRIPS poss.";
+        let lex = resolve_str(src).unwrap();
+        assert_eq!(lex.morphemes.len(), 1);
+        assert_eq!(lex.morphemes[0].entity, "poss_suffix");
+        assert_eq!(lex.morphemes[0].strips.len(), 1);
+    }
+
+    #[test]
+    fn resolve_morph_in_semantics() {
+        let src = "Type = S | NP | N.\n\
+                   MORPH +s : (NP \\ S) \\ (NP \\ S).\n\
+                   run: NP \\ S.\n\
+                   run --> run.";
+        let lex = resolve_str(src).unwrap();
+        let sem = build_semantics(&lex);
+        // The morpheme surface "+s" should produce a term via parse_term
+        let terms = (sem.parse_term)("+s");
+        assert_eq!(terms.len(), 1);
+        // The morpheme entity should have a type via type_of_atom
+        let types = (sem.type_of_atom)(&"s_suffix".to_string());
+        assert_eq!(types.len(), 1);
     }
 }

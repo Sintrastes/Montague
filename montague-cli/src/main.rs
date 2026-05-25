@@ -124,9 +124,10 @@ fn cmd_lower(args: &[String]) {
     if let Some(ref sent) = sentence {
         let sem: Semantics<String, String, core::AnnotatedTerm<String, String>> =
             resolver::build_semantics(&lex);
+        let segmenter = resolver::build_segmenter(&lex);
         let engine = ReductionEngine::standard();
         let ctx = ReductionCtx::new(&lex.lattice);
-        let parses = core::get_all_parses_chart(&engine, &ctx, &sem, sent);
+        let parses = core::get_all_parses_with_morphology(&engine, &ctx, &sem, &segmenter, sent);
 
         if parses.is_empty() {
             eprintln!("No parse found for: {sent:?}");
@@ -232,10 +233,11 @@ fn cmd_tree(args: &[String]) {
 
     let sem: Semantics<String, String, core::AnnotatedTerm<String, String>> =
         resolver::build_semantics(&lex);
+    let segmenter = resolver::build_segmenter(&lex);
     let engine = ReductionEngine::standard();
     let ctx = ReductionCtx::new(&lex.lattice);
 
-    let parses = core::get_all_parses_chart(&engine, &ctx, &sem, &sentence);
+    let parses = core::get_all_parses_with_morphology(&engine, &ctx, &sem, &segmenter, &sentence);
 
     if parses.is_empty() {
         eprintln!("No parse found for: {sentence:?}");
@@ -348,6 +350,7 @@ fn cmd_ask(args: &[String]) {
     };
     let mut sem: Semantics<String, String, core::AnnotatedTerm<String, String>> =
         resolver::build_semantics(&lex);
+    let mut segmenter = resolver::build_segmenter(&lex);
     let engine = if flags.compose {
         ReductionEngine::with_composition()
     } else {
@@ -491,7 +494,7 @@ fn cmd_ask(args: &[String]) {
             let clean_input = sent.trim_end_matches('?').trim().to_string();
             let tokenized = tokenize_multiword(&clean_input, &lex.productions);
 
-            let mut parses = core::get_all_parses_chart(&engine, &ctx, &sem, &tokenized);
+            let mut parses = core::get_all_parses_with_morphology(&engine, &ctx, &sem, &segmenter, &tokenized);
             // Keep only Sentence / Question derivations — discard partial
             // parses like who_rel (N\N) that don't form complete utterances.
             parses.retain(|p| {
@@ -541,9 +544,10 @@ fn cmd_ask(args: &[String]) {
 
                                 // Rebuild semantics and re-parse
                                 sem = resolver::build_semantics(&lex);
+                                segmenter = resolver::build_segmenter(&lex);
                                 ctx = ReductionCtx::new(&lex.lattice);
                                 let retokenized = tokenize_multiword(&clean_input, &lex.productions);
-                                let retry_parses = core::get_all_parses_chart(&engine, &ctx, &sem, &retokenized);
+                                let retry_parses = core::get_all_parses_with_morphology(&engine, &ctx, &sem, &segmenter, &retokenized);
 
                                 if !retry_parses.is_empty() {
                                     eprintln!("  Re-parse succeeded with LLM suggestions.");

@@ -302,6 +302,35 @@ have_main: (NP \ S) / NP.
 has_main:  (NP \ S) / NP.
 
 -- ==========================================================================
+-- §13  Inflectional Morphemes
+-- ==========================================================================
+-- Morphemes are bound suffixes that attach to stems.  The segmenter produces
+-- ambiguous stem+suffix splits that compete with whole-word productions in
+-- the chart, so morphology never overrides stored (irregular/opaque) forms.
+-- ==========================================================================
+
+-- Third-singular verb agreement: "he run+s" → runs
+MORPH +s : (NP \ S) \ (NP \ S).
+
+-- Plural noun: "cat+s" → cats
+MORPH +s : NP \ N.
+
+-- Past tense / past participle: "walk+ed", "us+ed" (e-deletion)
+MORPH +ed : (NP \ S) \ (NP \ S) STRIPS e, CC.
+
+-- Gerund (VP → N): "run+ing" (as in "running is fun")
+MORPH +ing : N \ (NP \ S) STRIPS e, CC.
+
+-- Progressive participle (VP → VP): "is run+ing"
+MORPH +ing : (NP \ S) \ (NP \ S) STRIPS e, CC.
+
+-- Adverb from adjective: "happy+ly" → happily, "quick+ly" → quickly
+MORPH +ly : Adv \ Adj STRIPS y_i.
+
+-- Genitive / possessive: "Socrates+'s" → Socrates's / Socrates'
+MORPH +'s : (NP / N) \ NP STRIPS poss.
+
+-- ==========================================================================
 -- Productions — Closed-Class Words
 -- ==========================================================================
 

@@ -12,6 +12,7 @@
 pub mod autocomplete;
 pub mod chart;
 pub mod display;
+pub mod morph;
 pub mod reduction;
 #[cfg(test)]
 pub(crate) mod reference;
@@ -27,6 +28,7 @@ pub use reduction::{
     RuleApplicability, TypeShape,
 };
 pub use registry::{ConstId, PredId};
+pub use morph::{MorphemeInfo, MorphSegmenter, SpellingClass as MorphSpellingClass};
 pub use sem::{
     alpha_eq, alpha_rename, beta_normalize, free_vars, Backend, BackendCtx, BetaNormalize,
     DirectInterp, OpSet, Pass, PassCtx, SemTerm, VarEnv, VarId,
@@ -146,6 +148,51 @@ where
         }
     }
     results
+}
+
+/// Like [`get_all_parses_chart`] but also tries morphological segmentations.
+///
+/// When the segmenter has morphemes, each input word is segmented into
+/// `[stem, suffix]` pairs where valid.  All candidate token sequences compete
+/// via independent chart runs; results are merged and deduplicated.
+pub fn get_all_parses_with_morphology<A, T, X>(
+    engine: &ReductionEngine<A, T>,
+    ctx: &ReductionCtx<'_, T>,
+    sem: &Semantics<A, T, X>,
+    segmenter: &MorphSegmenter,
+    input: &str,
+) -> Vec<X>
+where
+    A: Clone + Eq + Hash + Send + Sync + 'static,
+    T: Hash + Eq + Clone + Send + Sync + 'static,
+    X: Clone + PartialEq,
+{
+    let words: Vec<String> = input
+        .chars()
+        .filter(|c| !matches!(c, ',' | ';' | '.' | '!' | '?'))
+        .collect::<String>()
+        .split_whitespace()
+        .map(|w| w.to_lowercase())
+        .collect();
+
+    let is_known = |stem: &str| -> bool { !(sem.parse_term)(stem).is_empty() };
+
+    let segmentations = if segmenter.has_morphemes() {
+        segmenter.segment_sentence(&words, &is_known)
+    } else {
+        vec![words]
+    };
+
+    let mut all_results: Vec<X> = Vec::new();
+    for seg in segmentations {
+        let joined = seg.join(" ");
+        for parse in get_all_parses_chart(engine, ctx, sem, &joined) {
+            if !all_results.contains(&parse) {
+                all_results.push(parse);
+            }
+        }
+    }
+    all_results
 }
 
 /// Generate all 3-way splits `(prefix, [i, i+1], suffix)` of `xs` for every

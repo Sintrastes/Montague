@@ -5,6 +5,32 @@
 
 use std::fmt;
 
+/// Spelling-change reversal class for morpheme segmentation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum SpellingClass {
+    /// Reverse e-deletion: try appending `e` to stripped stem.
+    EDeletion,
+    /// Reverse consonant doubling: try un-doubling final char.
+    ConsonantDoubling,
+    /// Reverse y→i: replace terminal `i` with `y` at the boundary.
+    YToI,
+    /// Possessive: strip `'s`, also try without trailing `s`.
+    Poss,
+}
+
+impl SpellingClass {
+    /// Parse from a STRIPS-class keyword string.
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s {
+            "e" => Some(SpellingClass::EDeletion),
+            "CC" => Some(SpellingClass::ConsonantDoubling),
+            "y_i" => Some(SpellingClass::YToI),
+            "poss" => Some(SpellingClass::Poss),
+            _ => None,
+        }
+    }
+}
+
 /// Byte-range span in the source text.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Span {
@@ -81,6 +107,12 @@ pub enum Declaration {
     },
     /// `word1, word2 --> entity.`
     ProductionDecl { words: Vec<String>, entity: String },
+    /// `MORPH +s : type [STRIPS class,...].`
+    MorphemeDecl {
+        surface: String,
+        ty: Spanned<TypeExpr>,
+        strips: Vec<SpellingClass>,
+    },
 }
 
 // ---------------------------------------------------------------------------
@@ -159,6 +191,22 @@ impl fmt::Display for Declaration {
             Declaration::ProductionDecl { words, entity } => {
                 write!(f, "{} --> {entity}.", words.join(", "))
             }
+            Declaration::MorphemeDecl { surface, ty, strips } => {
+                write!(f, "MORPH {surface}: {}", ty.item)?;
+                if !strips.is_empty() {
+                    let classes: Vec<&str> = strips
+                        .iter()
+                        .map(|c| match c {
+                            SpellingClass::EDeletion => "e",
+                            SpellingClass::ConsonantDoubling => "CC",
+                            SpellingClass::YToI => "y_i",
+                            SpellingClass::Poss => "poss",
+                        })
+                        .collect();
+                    write!(f, " STRIPS {}", classes.join(", "))?;
+                }
+                write!(f, ".")
+            }
         }
     }
 }
@@ -203,5 +251,15 @@ pub struct AtomEntry<T> {
 pub struct ProductionEntry {
     pub words: Vec<String>,
     pub entity: String,
+    pub span: Span,
+}
+
+/// A resolved morpheme entry.
+#[derive(Debug, Clone)]
+pub struct MorphemeEntry<T> {
+    pub surface: String,
+    pub entity: String,
+    pub type_expr: T,
+    pub strips: Vec<SpellingClass>,
     pub span: Span,
 }

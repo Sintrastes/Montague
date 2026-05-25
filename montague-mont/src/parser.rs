@@ -32,6 +32,10 @@ enum Token {
     DocString(String),
     /// Double-quoted string for multi-word PROD entries like `"as well as"`.
     QuotedString(String),
+    /// `MORPH` keyword.
+    Morph,
+    /// `STRIPS` keyword.
+    Strips,
 }
 
 struct TokenWithSpan {
@@ -221,6 +225,22 @@ impl<'a> Scanner<'a> {
                     span: Span::new(start, self.pos),
                 })
             }
+            '+' => {
+                self.pos += 1; // consume +
+                while self.pos < self.src.len() {
+                    let ch = self.src.as_bytes()[self.pos] as char;
+                    if ch.is_alphanumeric() || ch == '\'' || ch == '_' {
+                        self.pos += 1;
+                    } else {
+                        break;
+                    }
+                }
+                let s = self.src[start..self.pos].to_string();
+                Some(TokenWithSpan {
+                    token: Token::Ident(s),
+                    span: Span::new(start, self.pos),
+                })
+            }
             _c if _c.is_alphabetic() => {
                 while self.pos < self.src.len() {
                     let ch = self.src.as_bytes()[self.pos] as char;
@@ -235,6 +255,8 @@ impl<'a> Scanner<'a> {
                     "Type" => Token::Type,
                     "import" => Token::Import,
                     "as" => Token::As,
+                    "MORPH" => Token::Morph,
+                    "STRIPS" => Token::Strips,
                     _ => Token::Ident(s),
                 };
                 Some(TokenWithSpan {
@@ -501,6 +523,7 @@ impl<'a> Parser<'a> {
 
     fn declaration(&mut self) -> Option<Spanned<Declaration>> {
         match self.peek() {
+            Some(Token::Morph) => self.morpheme_decl(),
             Some(Token::Type) => self.type_decl(),
             Some(Token::Ident(_)) => {
                 if self.pos + 1 < self.tokens.len() {
@@ -518,6 +541,49 @@ impl<'a> Parser<'a> {
             Some(Token::QuotedString(_)) => self.production_decl(),
             _ => None,
         }
+    }
+
+    fn morpheme_decl(&mut self) -> Option<Spanned<Declaration>> {
+        let start = self.peek_span().unwrap_or(0);
+        self.eat(Token::Morph);
+        let surface = self.ident()?;
+        if !surface.item.starts_with('+') {
+            self.errors.push(MontParseError::InvalidEntityName {
+                found: surface.item.clone(),
+                span: surface.span,
+            });
+        }
+        self.eat(Token::Colon);
+        let ty = self.type_expr()?;
+        let mut strips = Vec::new();
+        if self.eat(Token::Strips) {
+            loop {
+                let class = self.ident()?;
+                match SpellingClass::from_str(&class.item) {
+                    Some(c) => strips.push(c),
+                    None => {
+                        self.errors.push(MontParseError::UnexpectedToken {
+                            expected: "strips class (e, CC, y_i, 's)".into(),
+                            found: class.item.clone(),
+                            span: class.span,
+                        });
+                    }
+                }
+                if !self.eat(Token::Comma) {
+                    break;
+                }
+            }
+        }
+        let end = self.peek_span().unwrap_or(ty.span.end);
+        self.eat(Token::End);
+        Some(Spanned::new(
+            Declaration::MorphemeDecl {
+                surface: surface.item,
+                ty,
+                strips,
+            },
+            Span::new(start, end),
+        ))
     }
 
     fn directive(&mut self) -> Option<Spanned<Directive>> {
@@ -709,5 +775,64 @@ mod tests {
     fn parse_full_example() {
         let f = check("Type = Noun | Sentence | Person | Adjective.\nPerson :< Noun.\nsocrates: Person.\nman, men --> Man.\nmortal: Adjective.");
         assert_eq!(f.declarations.len(), 5);
+    }
+
+    #[test]
+    fn parse_morph_decl_basic() {
+        let f = check("MORPH +s : (NP \\ S) \\ (NP \\ S).");
+        match &f.declarations[0].item {
+            Declaration::MorphemeDecl { surface, strips, .. } => {
+                assert_eq!(surface, "+s");
+                assert!(strips.is_empty());
+            }
+            _ => panic!("expected MorphemeDecl"),
+        }
+    }
+
+    #[test]
+    fn parse_morph_decl_with_strips() {
+        let f = check("MORPH +ed : (NP \\ S) \\ (NP \\ S) STRIPS e, CC.");
+        match &f.declarations[0].item {
+            Declaration::MorphemeDecl { surface, strips, .. } => {
+                assert_eq!(surface, "+ed");
+                assert_eq!(strips.len(), 2);
+                assert_eq!(strips[0], SpellingClass::EDeletion);
+                assert_eq!(strips[1], SpellingClass::ConsonantDoubling);
+            }
+            _ => panic!("expected MorphemeDecl"),
+        }
+    }
+
+    #[test]
+    fn parse_morph_decl_y_i() {
+        let f = check("MORPH +ly : Adv \\ Adj STRIPS y_i.");
+        match &f.declarations[0].item {
+            Declaration::MorphemeDecl { strips, .. } => {
+                assert_eq!(strips.len(), 1);
+                assert_eq!(strips[0], SpellingClass::YToI);
+            }
+            _ => panic!("expected MorphemeDecl"),
+        }
+    }
+
+    #[test]
+    fn parse_morph_decl_possessive() {
+        let f = check("MORPH +'s : (NP / N) \\ NP STRIPS poss.");
+        match &f.declarations[0].item {
+            Declaration::MorphemeDecl { surface, strips, .. } => {
+                assert_eq!(surface, "+'s");
+                assert_eq!(strips.len(), 1);
+                assert_eq!(strips[0], SpellingClass::Poss);
+            }
+            _ => panic!("expected MorphemeDecl"),
+        }
+    }
+
+    #[test]
+    fn parse_morph_decl_roundtrips() {
+        let src = "MORPH +ing : (N \\ (NP \\ S)) STRIPS e, CC.";
+        let f = check(src);
+        let output = f.declarations[0].item.to_string();
+        assert_eq!(output, "MORPH +ing: (N \\ (NP \\ S)) STRIPS e, CC.");
     }
 }
