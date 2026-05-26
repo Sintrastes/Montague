@@ -1566,7 +1566,7 @@ fn cmd_init(args: &[String]) {
 
     // Also try resolving
     let reg = core::registry::Registry::empty();
-    match resolver::resolve_with_resolver(&ast, &reg, &resolver::FsFileResolver, &base_dir_of(file)) {
+    match resolver::resolve_with_resolver(&ast, &reg, &resolver::FsFileResolver, ".") {
         Ok(lex) => {
             let atom_count = lex.atoms.len();
             let prod_count = lex.productions.len();

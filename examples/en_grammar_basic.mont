@@ -161,6 +161,22 @@ both: NP / NP.
 either: NP / NP.
 neither: NP / NP.
 
+-- Negated conjunction: "nor" — same shape as and/or/but
+nor_np:  (NP \ NP) / NP.
+nor_adj: (Adj \ Adj) / Adj.
+nor_vp:  ((NP \ S) \ (NP \ S)) / (NP \ S).
+nor_s:   (S \ S) / S.
+
+-- Adj-focused variants of both/either/neither for "both a man and mortal"
+both_focus:  (Adj / N) / (Adj / N).
+either_focus: (Adj / N) / (Adj / N).
+neither_focus: (Adj / N) / (Adj / N).
+
+-- Paired conjunction particles
+not_only:   (Adj / N) / (Adj / N).
+but_also:   (Adj \ Adj) / Adj.
+as_well_as: (Adj \ Adj) / Adj.
+
 -- ==========================================================================
 -- §6  Prepositions — Nominal Modifier (N\N)/NP + VP Modifier
 -- ==========================================================================
@@ -418,6 +434,16 @@ but --> but_s.
 both --> both.
 either --> either.
 neither --> neither.
+nor --> nor_np.
+nor --> nor_adj.
+nor --> nor_vp.
+nor --> nor_s.
+both --> both_focus.
+either --> either_focus.
+neither --> neither_focus.
+"not only" --> not_only.
+"but also" --> but_also.
+"as well as" --> as_well_as.
 
 -- Prepositions (nominal)
 of --> of.

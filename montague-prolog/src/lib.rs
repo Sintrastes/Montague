@@ -433,9 +433,11 @@ fn extract_conjunction(term: &Term<String>) -> Option<(Vec<Term<String>>, ConjKi
                 _ => return None,
             };
             let kind = match fname.as_str() {
-                "and" | "and_adj" | "and_np" | "but" | "as_well_as" | "but_also" => ConjKind::And,
-                "or" => ConjKind::Or,
-                "nor" => ConjKind::Nor,
+                "and" | "and_adj" | "and_np" | "and_vp" | "and_s"
+                | "but" | "but_adj" | "but_s"
+                | "as_well_as" | "but_also" => ConjKind::And,
+                "or" | "or_adj" | "or_np" | "or_vp" | "or_s" => ConjKind::Or,
+                "nor" | "nor_adj" | "nor_np" | "nor_vp" | "nor_s" => ConjKind::Nor,
                 _ => return None,
             };
             if args.len() >= 2 {
@@ -617,11 +619,14 @@ fn strip_article(term: &Term<String>) -> Term<String> {
                 Term::Atom(n) => n,
                 _ => return term.clone(),
             };
-            if fname == "a_art" && !args.is_empty() {
+            if (fname == "a_art" || fname == "a_det" || fname == "the") && !args.is_empty() {
                 args[0].clone()
             } else if (fname == "both"
                 || fname == "either"
                 || fname == "neither"
+                || fname == "both_focus"
+                || fname == "either_focus"
+                || fname == "neither_focus"
                 || fname == "not_only")
                 && !args.is_empty()
             {

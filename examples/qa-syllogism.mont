@@ -62,20 +62,6 @@ eats: (NP \ S) / NP.
 mortal_adj: N / N.
 living_adj: N / N.
 
--- Conjunction: adjacent-Adjective coordination
-and: (Adj \ Adj) / Adj.
-but: (Adj \ Adj) / Adj.
-or: (Adj \ Adj) / Adj.
-nor: (Adj \ Adj) / Adj.
-
--- Focus particles for paired constructions
-both: (Adj / N) / (Adj / N).
-either: (Adj / N) / (Adj / N).
-neither: (Adj / N) / (Adj / N).
-not_only: (Adj / N) / (Adj / N).
-but_also: (Adj \ Adj) / Adj.
-as_well_as: (Adj \ Adj) / Adj.
-
 -- ==========================================================================
 -- Productions
 -- ==========================================================================
@@ -120,13 +106,3 @@ know, knows --> knows.
 eat, eats --> eats.
 
 -- Conjunction
-and --> and.
-but --> but.
-or --> or.
-nor --> nor.
-both --> both.
-either --> either.
-neither --> neither.
-"not only" --> not_only.
-"but also" --> but_also.
-"as well as" --> as_well_as.
