@@ -617,7 +617,9 @@ impl<'a> Parser<'a> {
     }
 
     /// `extend <ident> (. <ident>)* .`  or  `extend by "<uri>".`
+    /// Backtracks on failure so `extend` can be used as an entity name in atom/prod decls.
     fn extend_decl(&mut self) -> Option<Spanned<Directive>> {
+        let saved = self.pos;
         let start = self.peek_span().unwrap_or(0);
         self.eat(Token::Extend);
         // Check for "by" as a regular ident (not a keyword)
@@ -636,6 +638,7 @@ impl<'a> Parser<'a> {
                             found: format!("{:?}", self.peek()),
                             span: Span::new(start, self.pos),
                         });
+                        self.pos = saved;
                         return None;
                     }
                 };
@@ -644,7 +647,14 @@ impl<'a> Parser<'a> {
                 return Some(Spanned::new(Directive::ExtendBy { uri }, Span::new(start, end)));
             }
         }
-        let mut parts = vec![self.ident()?.item.clone()];
+        let id = match self.ident() {
+            Some(id) => id,
+            None => {
+                self.pos = saved;
+                return None;
+            }
+        };
+        let mut parts = vec![id.item.clone()];
         while self.eat(Token::Dot) {
             if let Some(id) = self.ident() {
                 parts.push(id.item.clone());
@@ -730,6 +740,11 @@ impl<'a> Parser<'a> {
                 Some(Token::Extend) => {
                     if let Some(d) = self.extend_decl() {
                         directives.push(d);
+                    } else {
+                        // extend_decl backtracked — "extend" used as entity name,
+                        // not as a directive.  Skip the keyword token so the
+                        // remaining tokens (e.g. type expression) don't leak.
+                        self.pos += 1;
                     }
                 }
                 Some(_) => {

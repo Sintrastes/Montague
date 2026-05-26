@@ -1,0 +1,2541 @@
+-- ==========================================================================
+-- English Common Vocabulary — Top ~800 Content Words by Frequency
+-- ==========================================================================
+-- Extends en_grammar_basic with a substantial content lexicon organized by
+-- semantic subtype.  Nouns are assigned to the most specific applicable leaf
+-- type (no raw N).  Verbs are typed by valency.  Adjectives are Adj.
+-- ==========================================================================
+
+namespace montague.en_common_vocabulary.
+
+extend montague.en_grammar_basic.
+
+-- ==========================================================================
+-- Noun Subtyping Hierarchy (WordNet-based, max 4 levels deep)
+-- ==========================================================================
+
+-- Root — never used directly
+type N_animate.       type N_inanimate.     type N_abstract.      type N_group.
+N_animate   :< N.     N_inanimate :< N.     N_abstract :< N.     N_group :< N.
+
+-- Animate branch
+type Person.      type Animal.      type Plant.       type BodyPart.
+Person  :< N_animate.   Animal :< N_animate.   Plant  :< N_animate.   BodyPart :< N_animate.
+
+-- Inanimate branch
+type Artifact.       type NaturalObject.  type Substance.      type Location.
+Artifact :< N_inanimate.  NaturalObject :< N_inanimate.  Substance :< N_inanimate.  Location :< N_inanimate.
+
+type Building.    type Furniture.   type Clothing.    type Tool.       type Vehicle.
+Building  :< Artifact.  Furniture :< Artifact.  Clothing :< Artifact.  Tool :< Artifact.  Vehicle :< Artifact.
+
+type Container.   type Food.        type Weapon.      type Instrument.
+Container :< Artifact.  Food :< Artifact.  Weapon :< Artifact.  Instrument :< Artifact.
+
+type Material.    type Liquid.
+Material :< Substance.  Liquid :< Substance.
+
+type GeographicArea.  type Structure_geo.
+GeographicArea :< Location.  Structure_geo :< Location.
+
+-- Abstract branch
+type Time.        type Quantity.     type Idea.         type Event.
+Time     :< N_abstract.  Quantity :< N_abstract.  Idea :< N_abstract.  Event :< N_abstract.
+
+type State.       type Communication.  type Attribute.    type Emotion.
+State  :< N_abstract.  Communication :< N_abstract.  Attribute :< N_abstract.  Emotion :< N_abstract.
+
+type Relation.    type Shape.
+Relation :< N_abstract.  Shape :< N_abstract.
+
+-- Group branch
+type SocialGroup.  type Collection.
+SocialGroup :< N_group.  Collection :< N_group.
+
+-- ==========================================================================
+-- Nouns — Animate > Person
+-- ==========================================================================
+
+person: Person.
+child: Person.    children: Person.
+woman: Person.    women: Person.
+student: Person.
+mother: Person.
+father: Person.
+friend: Person.
+teacher: Person.
+president: Person.
+doctor: Person.
+kid: Person.
+girl: Person.
+boy: Person.
+parent: Person.
+member: Person.
+officer: Person.
+author: Person.
+expert: Person.
+manager: Person.
+employee: Person.
+worker: Person.
+patient: Person.
+soldier: Person.
+lawyer: Person.
+professor: Person.
+citizen: Person.
+reporter: Person.
+editor: Person.
+artist: Person.
+scientist: Person.
+writer: Person.
+actor: Person.
+athlete: Person.
+politician: Person.
+governor: Person.
+minister: Person.
+secretary: Person.
+leader: Person.
+neighbor: Person.
+partner: Person.
+colleague: Person.
+customer: Person.
+visitor: Person.
+guest: Person.
+voter: Person.
+farmer: Person.
+driver: Person.
+pilot: Person.
+nurse: Person.
+physician: Person.
+prisoner: Person.
+teenager: Person.
+gentleman: Person.
+lady: Person.
+candidate: Person.
+director: Person.
+volunteer: Person.
+coach: Person.
+priest: Person.
+investigator: Person.
+analyst: Person.
+observer: Person.
+designer: Person.
+maker: Person.
+commander: Person.
+educator: Person.
+supporter: Person.
+
+-- ==========================================================================
+-- Nouns — Animate > Animal
+-- ==========================================================================
+
+horse: Animal.
+fish: Animal.
+sheep: Animal.
+chicken: Animal.
+creature: Animal.
+
+-- ==========================================================================
+-- Nouns — Animate > Plant
+-- ==========================================================================
+
+tree: Plant.
+flower: Plant.
+grass: Plant.
+seed: Plant.
+leaf: Plant.
+crop: Plant.
+
+-- ==========================================================================
+-- Nouns — Animate > BodyPart
+-- ==========================================================================
+
+hand: BodyPart.
+head: BodyPart.
+eye: BodyPart.
+foot: BodyPart.
+arm: BodyPart.
+face: BodyPart.
+shoulder: BodyPart.
+mouth: BodyPart.
+finger: BodyPart.
+leg: BodyPart.
+knee: BodyPart.
+neck: BodyPart.
+lip: BodyPart.
+ear: BodyPart.
+nose: BodyPart.
+chest: BodyPart.
+breast: BodyPart.
+tooth: BodyPart.
+throat: BodyPart.
+bone: BodyPart.
+muscle: BodyPart.
+skin: BodyPart.
+brain: BodyPart.
+heart: BodyPart.
+blood: BodyPart.
+breath: BodyPart.
+
+-- ==========================================================================
+-- Nouns — Inanimate > Artifact > Building
+-- ==========================================================================
+
+house: Building.
+room: Building.
+door: Building.
+window: Building.
+hall: Building.
+floor: Building.
+wall: Building.
+roof: Building.
+kitchen: Building.
+bedroom: Building.
+bathroom: Building.
+
+-- ==========================================================================
+-- Nouns — Inanimate > Artifact > Furniture
+-- ==========================================================================
+
+table: Furniture.
+chair: Furniture.
+bed: Furniture.
+desk: Furniture.
+
+-- ==========================================================================
+-- Nouns — Inanimate > Artifact > Clothing
+-- ==========================================================================
+
+clothes: Clothing.
+shoe: Clothing.
+shirt: Clothing.
+jacket: Clothing.
+coat: Clothing.
+hat: Clothing.
+suit: Clothing.
+dress: Clothing.
+belt: Clothing.
+pocket: Clothing.
+
+-- ==========================================================================
+-- Nouns — Inanimate > Artifact > Tool
+-- ==========================================================================
+
+tool: Tool.
+knife: Tool.
+key: Tool.
+device: Tool.
+
+-- ==========================================================================
+-- Nouns — Inanimate > Artifact > Vehicle
+-- ==========================================================================
+
+car: Vehicle.
+bus: Vehicle.
+truck: Vehicle.
+train: Vehicle.
+plane: Vehicle.
+bike: Vehicle.
+boat: Vehicle.
+ship: Vehicle.
+
+-- ==========================================================================
+-- Nouns — Inanimate > Artifact > Container
+-- ==========================================================================
+
+box: Container.
+bag: Container.
+bottle: Container.
+cup: Container.
+bowl: Container.
+
+-- ==========================================================================
+-- Nouns — Inanimate > Artifact > Food
+-- ==========================================================================
+
+food: Food.
+bread: Food.
+meat: Food.
+egg: Food.
+cheese: Food.
+milk: Food.
+butter: Food.
+sugar: Food.
+salt: Food.
+wine: Food.
+coffee: Food.
+tea: Food.
+beer: Food.
+juice: Food.
+sauce: Food.
+cream: Food.
+meal: Food.
+dinner: Food.
+lunch: Food.
+breakfast: Food.
+potato: Food.
+tomato: Food.
+bean: Food.
+corn: Food.
+rice: Food.
+fruit: Food.
+vegetable: Food.
+
+-- ==========================================================================
+-- Nouns — Inanimate > Artifact > Weapon
+-- ==========================================================================
+
+gun: Weapon.
+bomb: Weapon.
+missile: Weapon.
+weapon: Weapon.
+
+-- ==========================================================================
+-- Nouns — Inanimate > Artifact > Instrument
+-- ==========================================================================
+
+camera: Instrument.
+radio: Instrument.
+phone: Instrument.
+computer: Instrument.
+machine: Instrument.
+engine: Instrument.
+television: Instrument.
+tape: Instrument.
+cable: Instrument.
+wire: Instrument.
+screen: Instrument.
+
+-- ==========================================================================
+-- Nouns — Inanimate > NaturalObject
+-- ==========================================================================
+
+mountain: NaturalObject.
+river: NaturalObject.
+lake: NaturalObject.
+ocean: NaturalObject.
+sea: NaturalObject.
+hill: NaturalObject.
+island: NaturalObject.
+rock: NaturalObject.
+stone: NaturalObject.
+star: NaturalObject.
+sun: NaturalObject.
+moon: NaturalObject.
+sky: NaturalObject.
+cloud: NaturalObject.
+planet: NaturalObject.
+earth: NaturalObject.
+forest: NaturalObject.
+desert: NaturalObject.
+
+-- ==========================================================================
+-- Nouns — Inanimate > Substance
+-- ==========================================================================
+
+water: Substance.
+air: Substance.
+fire: Substance.
+smoke: Substance.
+oil: Substance.
+gas: Substance.
+ice: Substance.
+snow: Substance.
+rain: Substance.
+wind: Substance.
+sand: Substance.
+soil: Substance.
+dust: Substance.
+
+-- Material
+metal: Material.
+iron: Material.
+steel: Material.
+glass: Material.
+wood: Material.
+paper: Material.
+plastic: Material.
+gold: Material.
+silver: Material.
+
+-- ==========================================================================
+-- Nouns — Inanimate > Location
+-- ==========================================================================
+
+place: Location.
+city: Location.
+town: Location.
+village: Location.
+street: Location.
+road: Location.
+area: Location.
+region: Location.
+garden: Location.
+park: Location.
+beach: Location.
+coast: Location.
+ground: Location.
+territory: Location.
+site: Location.
+campus: Location.
+field: Location.
+yard: Location.
+farm: Location.
+neighborhood: Location.
+
+-- GeographicArea
+country: GeographicArea.
+land: GeographicArea.
+island: GeographicArea.
+
+-- Structure
+bridge: Structure_geo.
+tower: Structure_geo.
+
+-- ==========================================================================
+-- Nouns — Abstract > Time
+-- ==========================================================================
+
+time: Time.
+day: Time.
+year: Time.
+month: Time.
+week: Time.
+hour: Time.
+minute: Time.
+moment: Time.
+morning: Time.
+evening: Time.
+night: Time.
+afternoon: Time.
+century: Time.
+decade: Time.
+period: Time.
+season: Time.
+summer: Time.
+winter: Time.
+spring: Time.
+weekend: Time.
+holiday: Time.
+era: Time.
+future: Time.
+past: Time.
+
+-- ==========================================================================
+-- Nouns — Abstract > Quantity
+-- ==========================================================================
+
+number: Quantity.
+amount: Quantity.
+level: Quantity.
+rate: Quantity.
+percentage: Quantity.
+portion: Quantity.
+volume: Quantity.
+total: Quantity.
+score: Quantity.
+degree: Quantity.
+limit: Quantity.
+capacity: Quantity.
+
+-- ==========================================================================
+-- Nouns — Abstract > Idea
+-- ==========================================================================
+
+idea: Idea.
+fact: Idea.
+problem: Idea.
+system: Idea.
+plan: Idea.
+reason: Idea.
+theory: Idea.
+concept: Idea.
+principle: Idea.
+method: Idea.
+theme: Idea.
+topic: Idea.
+secret: Idea.
+truth: Idea.
+mystery: Idea.
+pattern: Idea.
+philosophy: Idea.
+strategy: Idea.
+belief: Idea.
+faith: Idea.
+knowledge: Idea.
+science: Idea.
+purpose: Idea.
+goal: Idea.
+objective: Idea.
+option: Idea.
+choice: Idea.
+possibility: Idea.
+opportunity: Idea.
+chance: Idea.
+example: Idea.
+evidence: Idea.
+proof: Idea.
+
+-- ==========================================================================
+-- Nouns — Abstract > Event
+-- ==========================================================================
+
+war: Event.
+party: Event.
+game: Event.
+meeting: Event.
+accident: Event.
+incident: Event.
+battle: Event.
+disaster: Event.
+ceremony: Event.
+wedding: Event.
+birthday: Event.
+emergency: Event.
+event: Event.
+trip: Event.
+journey: Event.
+tour: Event.
+visit: Event.
+show: Event.
+movie: Event.
+film: Event.
+concert: Event.
+exercise: Event.
+
+-- ==========================================================================
+-- Nouns — Abstract > Communication
+-- ==========================================================================
+
+word: Communication.
+question: Communication.
+answer: Communication.
+story: Communication.
+message: Communication.
+statement: Communication.
+speech: Communication.
+conversation: Communication.
+discussion: Communication.
+argument: Communication.
+explanation: Communication.
+description: Communication.
+comment: Communication.
+report: Communication.
+news: Communication.
+language: Communication.
+letter: Communication.
+text: Communication.
+article: Communication.
+document: Communication.
+book: Communication.
+note: Communication.
+song: Communication.
+music: Communication.
+name: Communication.
+subject: Communication.
+title: Communication.
+instruction: Communication.
+definition: Communication.
+promise: Communication.
+joke: Communication.
+tale: Communication.
+
+-- ==========================================================================
+-- Nouns — Abstract > State
+-- ==========================================================================
+
+state: State.
+condition: State.
+peace: State.
+freedom: State.
+health: State.
+safety: State.
+danger: State.
+trouble: State.
+difficulty: State.
+crisis: State.
+situation: State.
+poverty: State.
+silence: State.
+disorder: State.
+
+-- ==========================================================================
+-- Nouns — Abstract > Attribute
+-- ==========================================================================
+
+quality: Attribute.
+beauty: Attribute.
+strength: Attribute.
+speed: Attribute.
+talent: Attribute.
+intelligence: Attribute.
+skill: Attribute.
+ability: Attribute.
+
+-- ==========================================================================
+-- Nouns — Abstract > Emotion
+-- ==========================================================================
+
+love: Emotion.
+fear: Emotion.
+anger: Emotion.
+joy: Emotion.
+passion: Emotion.
+hope: Emotion.
+emotion: Emotion.
+anxiety: Emotion.
+mood: Emotion.
+desire: Emotion.
+surprise: Emotion.
+pleasure: Emotion.
+
+-- ==========================================================================
+-- Nouns — Abstract > Relation
+-- ==========================================================================
+
+relation: Relation.
+connection: Relation.
+difference: Relation.
+contrast: Relation.
+comparison: Relation.
+combination: Relation.
+relationship: Relation.
+
+-- ==========================================================================
+-- Nouns — Abstract > Shape
+-- ==========================================================================
+
+shape: Shape.
+form: Shape.
+circle: Shape.
+edge: Shape.
+line: Shape.
+hole: Shape.
+corner: Shape.
+
+-- ==========================================================================
+-- Nouns — Group > SocialGroup
+-- ==========================================================================
+
+family: SocialGroup.
+group: SocialGroup.
+company: SocialGroup.
+government: SocialGroup.
+team: SocialGroup.
+community: SocialGroup.
+organization: SocialGroup.
+society: SocialGroup.
+agency: SocialGroup.
+army: SocialGroup.
+nation: SocialGroup.
+population: SocialGroup.
+generation: SocialGroup.
+class: SocialGroup.
+club: SocialGroup.
+crowd: SocialGroup.
+band: SocialGroup.
+committee: SocialGroup.
+jury: SocialGroup.
+union: SocialGroup.
+league: SocialGroup.
+crew: SocialGroup.
+staff: SocialGroup.
+minority: SocialGroup.
+majority: SocialGroup.
+audience: SocialGroup.
+troop: SocialGroup.
+
+-- ==========================================================================
+-- Nouns — Group > Collection
+-- ==========================================================================
+
+collection: Collection.
+set: Collection.
+series: Collection.
+list: Collection.
+supply: Collection.
+stock: Collection.
+
+-- ==========================================================================
+-- Proper Names
+-- ==========================================================================
+
+-- (in qa-syllogism)
+
+-- ==========================================================================
+-- Verbs — Intransitive (NP \ S)
+-- ==========================================================================
+
+go: NP \ S.
+come: NP \ S.
+live: NP \ S.
+die: NP \ S.
+happen: NP \ S.
+sit: NP \ S.
+stand: NP \ S.
+wait: NP \ S.
+stay: NP \ S.
+fall: NP \ S.
+remain: NP \ S.
+arrive: NP \ S.
+lie: NP \ S.
+rise: NP \ S.
+work: NP \ S.
+play: NP \ S.
+listen: NP \ S.
+smile: NP \ S.
+laugh: NP \ S.
+dance: NP \ S.
+fly: NP \ S.
+swim: NP \ S.
+jump: NP \ S.
+climb: NP \ S.
+travel: NP \ S.
+return: NP \ S.
+leave: NP \ S.
+enter: NP \ S.
+disappear: NP \ S.
+appear: NP \ S.
+exist: NP \ S.
+cry: NP \ S.
+shout: NP \ S.
+scream: NP \ S.
+stare: NP \ S.
+pray: NP \ S.
+breathe: NP \ S.
+retire: NP \ S.
+recover: NP \ S.
+succeed: NP \ S.
+struggle: NP \ S.
+vote: NP \ S.
+graduate: NP \ S.
+wake: NP \ S.
+slip: NP \ S.
+slide: NP \ S.
+bend: NP \ S.
+nod: NP \ S.
+whisper: NP \ S.
+
+-- ==========================================================================
+-- Verbs — Transitive ((NP \ S) / NP)
+-- ==========================================================================
+
+take: (NP \ S) / NP.
+give: (NP \ S) / NP.
+find: (NP \ S) / NP.
+tell: (NP \ S) / NP.
+want: (NP \ S) / NP.
+use: (NP \ S) / NP.
+ask: (NP \ S) / NP.
+need: (NP \ S) / NP.
+feel: (NP \ S) / NP.
+put: (NP \ S) / NP.
+keep: (NP \ S) / NP.
+let: (NP \ S) / NP.
+help: (NP \ S) / NP.
+show: (NP \ S) / NP.
+hear: (NP \ S) / NP.
+hold: (NP \ S) / NP.
+bring: (NP \ S) / NP.
+provide: (NP \ S) / NP.
+pay: (NP \ S) / NP.
+meet: (NP \ S) / NP.
+include: (NP \ S) / NP.
+learn: (NP \ S) / NP.
+lead: (NP \ S) / NP.
+follow: (NP \ S) / NP.
+stop: (NP \ S) / NP.
+create: (NP \ S) / NP.
+allow: (NP \ S) / NP.
+add: (NP \ S) / NP.
+spend: (NP \ S) / NP.
+open: (NP \ S) / NP.
+win: (NP \ S) / NP.
+offer: (NP \ S) / NP.
+remember: (NP \ S) / NP.
+consider: (NP \ S) / NP.
+buy: (NP \ S) / NP.
+serve: (NP \ S) / NP.
+send: (NP \ S) / NP.
+expect: (NP \ S) / NP.
+build: (NP \ S) / NP.
+cut: (NP \ S) / NP.
+reach: (NP \ S) / NP.
+kill: (NP \ S) / NP.
+suggest: (NP \ S) / NP.
+raise: (NP \ S) / NP.
+pass: (NP \ S) / NP.
+sell: (NP \ S) / NP.
+require: (NP \ S) / NP.
+decide: (NP \ S) / NP.
+explain: (NP \ S) / NP.
+carry: (NP \ S) / NP.
+break: (NP \ S) / NP.
+thank: (NP \ S) / NP.
+receive: (NP \ S) / NP.
+join: (NP \ S) / NP.
+agree: (NP \ S) / NP.
+pick: (NP \ S) / NP.
+wear: (NP \ S) / NP.
+support: (NP \ S) / NP.
+hit: (NP \ S) / NP.
+produce: (NP \ S) / NP.
+cover: (NP \ S) / NP.
+describe: (NP \ S) / NP.
+catch: (NP \ S) / NP.
+draw: (NP \ S) / NP.
+choose: (NP \ S) / NP.
+cause: (NP \ S) / NP.
+involve: (NP \ S) / NP.
+increase: (NP \ S) / NP.
+seek: (NP \ S) / NP.
+throw: (NP \ S) / NP.
+fill: (NP \ S) / NP.
+represent: (NP \ S) / NP.
+drop: (NP \ S) / NP.
+push: (NP \ S) / NP.
+reduce: (NP \ S) / NP.
+save: (NP \ S) / NP.
+shoot: (NP \ S) / NP.
+protect: (NP \ S) / NP.
+accept: (NP \ S) / NP.
+identify: (NP \ S) / NP.
+determine: (NP \ S) / NP.
+prepare: (NP \ S) / NP.
+argue: (NP \ S) / NP.
+recognize: (NP \ S) / NP.
+indicate: (NP \ S) / NP.
+wonder: (NP \ S) / NP.
+fail: (NP \ S) / NP.
+name: (NP \ S) / NP.
+compare: (NP \ S) / NP.
+miss: (NP \ S) / NP.
+state: (NP \ S) / NP.
+discuss: (NP \ S) / NP.
+check: (NP \ S) / NP.
+prove: (NP \ S) / NP.
+claim: (NP \ S) / NP.
+remove: (NP \ S) / NP.
+enjoy: (NP \ S) / NP.
+establish: (NP \ S) / NP.
+imagine: (NP \ S) / NP.
+avoid: (NP \ S) / NP.
+finish: (NP \ S) / NP.
+respond: (NP \ S) / NP.
+maintain: (NP \ S) / NP.
+reveal: (NP \ S) / NP.
+contain: (NP \ S) / NP.
+apply: (NP \ S) / NP.
+manage: (NP \ S) / NP.
+perform: (NP \ S) / NP.
+treat: (NP \ S) / NP.
+affect: (NP \ S) / NP.
+worry: (NP \ S) / NP.
+mention: (NP \ S) / NP.
+improve: (NP \ S) / NP.
+reflect: (NP \ S) / NP.
+beat: (NP \ S) / NP.
+notice: (NP \ S) / NP.
+wish: (NP \ S) / NP.
+prevent: (NP \ S) / NP.
+assume: (NP \ S) / NP.
+suffer: (NP \ S) / NP.
+publish: (NP \ S) / NP.
+hurt: (NP \ S) / NP.
+achieve: (NP \ S) / NP.
+announce: (NP \ S) / NP.
+examine: (NP \ S) / NP.
+touch: (NP \ S) / NP.
+experience: (NP \ S) / NP.
+replace: (NP \ S) / NP.
+encourage: (NP \ S) / NP.
+define: (NP \ S) / NP.
+introduce: (NP \ S) / NP.
+handle: (NP \ S) / NP.
+refuse: (NP \ S) / NP.
+gain: (NP \ S) / NP.
+express: (NP \ S) / NP.
+deliver: (NP \ S) / NP.
+observe: (NP \ S) / NP.
+earn: (NP \ S) / NP.
+operate: (NP \ S) / NP.
+contribute: (NP \ S) / NP.
+settle: (NP \ S) / NP.
+feed: (NP \ S) / NP.
+collect: (NP \ S) / NP.
+promote: (NP \ S) / NP.
+marry: (NP \ S) / NP.
+survive: (NP \ S) / NP.
+lift: (NP \ S) / NP.
+gather: (NP \ S) / NP.
+limit: (NP \ S) / NP.
+fit: (NP \ S) / NP.
+associate: (NP \ S) / NP.
+spread: (NP \ S) / NP.
+ignore: (NP \ S) / NP.
+measure: (NP \ S) / NP.
+demonstrate: (NP \ S) / NP.
+threaten: (NP \ S) / NP.
+commit: (NP \ S) / NP.
+deny: (NP \ S) / NP.
+destroy: (NP \ S) / NP.
+extend_v: (NP \ S) / NP.
+combine: (NP \ S) / NP.
+demand: (NP \ S) / NP.
+remind: (NP \ S) / NP.
+grab: (NP \ S) / NP.
+hire: (NP \ S) / NP.
+attack: (NP \ S) / NP.
+welcome: (NP \ S) / NP.
+expand: (NP \ S) / NP.
+explore: (NP \ S) / NP.
+obtain: (NP \ S) / NP.
+surround: (NP \ S) / NP.
+invite: (NP \ S) / NP.
+repeat: (NP \ S) / NP.
+predict: (NP \ S) / NP.
+belong: (NP \ S) / NP.
+acknowledge: (NP \ S) / NP.
+recommend: (NP \ S) / NP.
+generate: (NP \ S) / NP.
+propose: (NP \ S) / NP.
+capture: (NP \ S) / NP.
+prefer: (NP \ S) / NP.
+select: (NP \ S) / NP.
+declare: (NP \ S) / NP.
+appreciate: (NP \ S) / NP.
+defend: (NP \ S) / NP.
+ensure: (NP \ S) / NP.
+warn: (NP \ S) / NP.
+pursue: (NP \ S) / NP.
+steal: (NP \ S) / NP.
+estimate: (NP \ S) / NP.
+investigate: (NP \ S) / NP.
+solve: (NP \ S) / NP.
+eliminate: (NP \ S) / NP.
+confirm: (NP \ S) / NP.
+rely: (NP \ S) / NP.
+attract: (NP \ S) / NP.
+grant: (NP \ S) / NP.
+review: (NP \ S) / NP.
+display: (NP \ S) / NP.
+suspect: (NP \ S) / NP.
+permit: (NP \ S) / NP.
+arrest: (NP \ S) / NP.
+purchase: (NP \ S) / NP.
+suppose: (NP \ S) / NP.
+perceive: (NP \ S) / NP.
+inform: (NP \ S) / NP.
+abandon: (NP \ S) / NP.
+transform: (NP \ S) / NP.
+enable: (NP \ S) / NP.
+preserve: (NP \ S) / NP.
+arrange: (NP \ S) / NP.
+deserve: (NP \ S) / NP.
+resolve: (NP \ S) / NP.
+contact: (NP \ S) / NP.
+quote: (NP \ S) / NP.
+urge: (NP \ S) / NP.
+elect: (NP \ S) / NP.
+implement: (NP \ S) / NP.
+resist: (NP \ S) / NP.
+embrace: (NP \ S) / NP.
+supply: (NP \ S) / NP.
+assist: (NP \ S) / NP.
+construct: (NP \ S) / NP.
+analyze: (NP \ S) / NP.
+impose: (NP \ S) / NP.
+evaluate: (NP \ S) / NP.
+illustrate: (NP \ S) / NP.
+concentrate: (NP \ S) / NP.
+transfer: (NP \ S) / NP.
+mark: (NP \ S) / NP.
+locate: (NP \ S) / NP.
+file: (NP \ S) / NP.
+record: (NP \ S) / NP.
+report: (NP \ S) / NP.
+test: (NP \ S) / NP.
+design: (NP \ S) / NP.
+plan: (NP \ S) / NP.
+study: (NP \ S) / NP.
+form: (NP \ S) / NP.
+base: (NP \ S) / NP.
+charge: (NP \ S) / NP.
+search: (NP \ S) / NP.
+
+-- ==========================================================================
+-- Verbs — Ambitransitive (both intransitive and transitive)
+-- ==========================================================================
+
+-- eat
+eat: (NP \ S) / NP.
+-- read
+read: NP \ S.
+read: (NP \ S) / NP.
+-- write
+write: NP \ S.
+write: (NP \ S) / NP.
+-- sing
+sing: NP \ S.
+sing: (NP \ S) / NP.
+-- drink
+drink: (NP \ S) / NP.
+-- cook
+cook: NP \ S.
+cook: (NP \ S) / NP.
+-- paint
+paint: (NP \ S) / NP.
+-- wash
+wash: (NP \ S) / NP.
+-- drive
+drive: (NP \ S) / NP.
+-- teach
+teach: NP \ S.
+teach: (NP \ S) / NP.
+-- fight
+fight: NP \ S.
+fight: (NP \ S) / NP.
+-- speak
+speak: NP \ S.
+speak: (NP \ S) / NP.
+-- move
+move: NP \ S.
+move: (NP \ S) / NP.
+-- begin
+begin: (NP \ S) / NP.
+-- start
+start: (NP \ S) / NP.
+-- end
+end: NP \ S.
+end: (NP \ S) / NP.
+-- change
+change: NP \ S.
+change: (NP \ S) / NP.
+-- turn
+turn: NP \ S.
+turn: (NP \ S) / NP.
+-- burn
+burn: NP \ S.
+burn: (NP \ S) / NP.
+-- hang
+hang: NP \ S.
+hang: (NP \ S) / NP.
+-- shake
+shake: (NP \ S) / NP.
+-- roll
+roll: NP \ S.
+roll: (NP \ S) / NP.
+-- stick
+stick: (NP \ S) / NP.
+-- blow
+blow: NP \ S.
+blow: (NP \ S) / NP.
+-- cross
+cross: (NP \ S) / NP.
+-- dress
+dress: NP \ S.
+dress: (NP \ S) / NP.
+-- lock
+lock: (NP \ S) / NP.
+-- block
+block: (NP \ S) / NP.
+-- land
+land: NP \ S.
+land: (NP \ S) / NP.
+-- clean
+clean: (NP \ S) / NP.
+-- divide
+divide: (NP \ S) / NP.
+
+-- ==========================================================================
+-- Verbs — Clausal complement ((NP \ S) / S)
+-- ==========================================================================
+
+think: (NP \ S) / S.
+believe: (NP \ S) / S.
+say: (NP \ S) / S.
+know: (NP \ S) / S.
+
+-- ==========================================================================
+-- Adjectives
+-- ==========================================================================
+
+new: Adj.
+other: Adj.
+good: Adj.
+high: Adj.
+old: Adj.
+great: Adj.
+big: Adj.
+small: Adj.
+large: Adj.
+national: Adj.
+young: Adj.
+different: Adj.
+black: Adj.
+long: Adj.
+little: Adj.
+important: Adj.
+political: Adj.
+bad: Adj.
+white: Adj.
+real: Adj.
+best: Adj.
+right: Adj.
+social: Adj.
+public: Adj.
+sure: Adj.
+low: Adj.
+early: Adj.
+human: Adj.
+local: Adj.
+late: Adj.
+major: Adj.
+better: Adj.
+economic: Adj.
+strong: Adj.
+possible: Adj.
+whole: Adj.
+free: Adj.
+military: Adj.
+true: Adj.
+federal: Adj.
+international: Adj.
+full: Adj.
+special: Adj.
+easy: Adj.
+clear: Adj.
+recent: Adj.
+certain: Adj.
+personal: Adj.
+open: Adj.
+hard: Adj.
+difficult: Adj.
+available: Adj.
+likely: Adj.
+short: Adj.
+single: Adj.
+wrong: Adj.
+current: Adj.
+past: Adj.
+fine: Adj.
+poor: Adj.
+common: Adj.
+natural: Adj.
+significant: Adj.
+similar: Adj.
+hot: Adj.
+dead: Adj.
+serious: Adj.
+ready: Adj.
+simple: Adj.
+left: Adj.
+general: Adj.
+physical: Adj.
+environmental: Adj.
+financial: Adj.
+dark: Adj.
+various: Adj.
+entire: Adj.
+close: Adj.
+cold: Adj.
+final: Adj.
+green: Adj.
+nice: Adj.
+huge: Adj.
+popular: Adj.
+traditional: Adj.
+wide: Adj.
+particular: Adj.
+top: Adj.
+deep: Adj.
+far: Adj.
+individual: Adj.
+specific: Adj.
+necessary: Adj.
+middle: Adj.
+beautiful: Adj.
+heavy: Adj.
+sexual: Adj.
+tough: Adj.
+commercial: Adj.
+total: Adj.
+modern: Adj.
+positive: Adj.
+civil: Adj.
+safe: Adj.
+interesting: Adj.
+rich: Adj.
+western: Adj.
+senior: Adj.
+professional: Adj.
+successful: Adj.
+fresh: Adj.
+southern: Adj.
+global: Adj.
+critical: Adj.
+concerned: Adj.
+original: Adj.
+basic: Adj.
+powerful: Adj.
+perfect: Adj.
+nuclear: Adj.
+sorry: Adj.
+normal: Adj.
+front: Adj.
+supposed: Adj.
+independent: Adj.
+willing: Adj.
+previous: Adj.
+interested: Adj.
+wild: Adj.
+quick: Adj.
+light: Adj.
+bright: Adj.
+tiny: Adj.
+additional: Adj.
+living: Adj.
+present: Adj.
+warm: Adj.
+annual: Adj.
+responsible: Adj.
+regular: Adj.
+soft: Adj.
+afraid: Adj.
+native: Adj.
+broad: Adj.
+wonderful: Adj.
+growing: Adj.
+quiet: Adj.
+complete: Adj.
+active: Adj.
+chief: Adj.
+cool: Adj.
+dangerous: Adj.
+moral: Adj.
+healthy: Adj.
+negative: Adj.
+following: Adj.
+historical: Adj.
+direct: Adj.
+daily: Adj.
+fair: Adj.
+famous: Adj.
+familiar: Adj.
+appropriate: Adj.
+eastern: Adj.
+primary: Adj.
+clean: Adj.
+male: Adj.
+alive: Adj.
+extra: Adj.
+domestic: Adj.
+northern: Adj.
+dry: Adj.
+sweet: Adj.
+strange: Adj.
+urban: Adj.
+mental: Adj.
+educational: Adj.
+favorite: Adj.
+complex: Adj.
+scientific: Adj.
+impossible: Adj.
+married: Adj.
+alone: Adj.
+emotional: Adj.
+thin: Adj.
+empty: Adj.
+expensive: Adj.
+yellow: Adj.
+prime: Adj.
+obvious: Adj.
+comfortable: Adj.
+angry: Adj.
+thick: Adj.
+unique: Adj.
+internal: Adj.
+ethnic: Adj.
+actual: Adj.
+sick: Adj.
+slow: Adj.
+brown: Adj.
+standard: Adj.
+funny: Adj.
+correct: Adj.
+crazy: Adj.
+just: Adj.
+ancient: Adj.
+golden: Adj.
+equal: Adj.
+typical: Adj.
+conservative: Adj.
+smart: Adj.
+rare: Adj.
+separate: Adj.
+busy: Adj.
+cheap: Adj.
+gray: Adj.
+overall: Adj.
+initial: Adj.
+terrible: Adj.
+multiple: Adj.
+essential: Adj.
+criminal: Adj.
+careful: Adj.
+upper: Adj.
+tired: Adj.
+vast: Adj.
+limited: Adj.
+proud: Adj.
+increased: Adj.
+enormous: Adj.
+liberal: Adj.
+massive: Adj.
+narrow: Adj.
+solid: Adj.
+useful: Adj.
+secret: Adj.
+unusual: Adj.
+sharp: Adj.
+creative: Adj.
+proper: Adj.
+guilty: Adj.
+technical: Adj.
+weak: Adj.
+illegal: Adj.
+fun: Adj.
+spiritual: Adj.
+musical: Adj.
+dramatic: Adj.
+excellent: Adj.
+lucky: Adj.
+unable: Adj.
+sad: Adj.
+brief: Adj.
+violent: Adj.
+silent: Adj.
+immediate: Adj.
+double: Adj.
+formal: Adj.
+joint: Adj.
+opposite: Adj.
+consistent: Adj.
+grand: Adj.
+racial: Adj.
+glad: Adj.
+ordinary: Adj.
+numerous: Adj.
+practical: Adj.
+amazing: Adj.
+intense: Adj.
+visible: Adj.
+competitive: Adj.
+fundamental: Adj.
+severe: Adj.
+usual: Adj.
+psychological: Adj.
+increasing: Adj.
+holy: Adj.
+constant: Adj.
+capable: Adj.
+nervous: Adj.
+crucial: Adj.
+electronic: Adj.
+pure: Adj.
+smooth: Adj.
+nearby: Adj.
+inner: Adj.
+junior: Adj.
+straight: Adj.
+pretty: Adj.
+permanent: Adj.
+wet: Adj.
+
+-- ==========================================================================
+-- Adverbs (manner/degree not already in en_grammar_basic)
+-- ==========================================================================
+
+-- Note: Most frequency adverbs (always, never, often, sometimes, already,
+-- still) and degree adverbs (very, too) are in the grammar.  These are
+-- additional common adverbs.
+
+quickly: (NP \ S) \ (NP \ S).
+slowly: (NP \ S) \ (NP \ S).
+carefully: (NP \ S) \ (NP \ S).
+easily: (NP \ S) \ (NP \ S).
+completely: (NP \ S) \ (NP \ S).
+absolutely: (NP \ S) \ (NP \ S).
+exactly: (NP \ S) \ (NP \ S).
+usually: (NP \ S) \ (NP \ S).
+certainly: (NP \ S) \ (NP \ S).
+probably: (NP \ S) \ (NP \ S).
+possibly: (NP \ S) \ (NP \ S).
+
+-- ==========================================================================
+-- Productions — Nouns
+-- ==========================================================================
+
+-- Person
+person, persons, people --> person.
+child, children --> child.
+woman, women --> woman.
+student, students --> student.
+mother, mothers --> mother.
+father, fathers --> father.
+friend, friends --> friend.
+teacher, teachers --> teacher.
+president, presidents --> president.
+doctor, doctors --> doctor.
+kid, kids --> kid.
+girl, girls --> girl.
+boy, boys --> boy.
+parent, parents --> parent.
+member, members --> member.
+officer, officers --> officer.
+author, authors --> author.
+expert, experts --> expert.
+manager, managers --> manager.
+employee, employees --> employee.
+worker, workers --> worker.
+patient, patients --> patient.
+soldier, soldiers --> soldier.
+lawyer, lawyers --> lawyer.
+professor, professors --> professor.
+citizen, citizens --> citizen.
+reporter, reporters --> reporter.
+editor, editors --> editor.
+artist, artists --> artist.
+scientist, scientists --> scientist.
+writer, writers --> writer.
+actor, actors --> actor.
+athlete, athletes --> athlete.
+politician, politicians --> politician.
+governor, governors --> governor.
+minister, ministers --> minister.
+secretary, secretaries --> secretary.
+leader, leaders --> leader.
+neighbor, neighbors --> neighbor.
+partner, partners --> partner.
+colleague, colleagues --> colleague.
+customer, customers --> customer.
+visitor, visitors --> visitor.
+guest, guests --> guest.
+voter, voters --> voter.
+farmer, farmers --> farmer.
+driver, drivers --> driver.
+pilot, pilots --> pilot.
+nurse, nurses --> nurse.
+physician, physicians --> physician.
+prisoner, prisoners --> prisoner.
+teenager, teenagers --> teenager.
+gentleman, gentlemen --> gentleman.
+lady, ladies --> lady.
+candidate, candidates --> candidate.
+director, directors --> director.
+volunteer, volunteers --> volunteer.
+coach, coaches --> coach.
+priest, priests --> priest.
+investigator, investigators --> investigator.
+analyst, analysts --> analyst.
+observer, observers --> observer.
+designer, designers --> designer.
+maker, makers --> maker.
+commander, commanders --> commander.
+educator, educators --> educator.
+supporter, supporters --> supporter.
+
+-- Animal
+horse, horses --> horse.
+fish --> fish.
+sheep --> sheep.
+chicken, chickens --> chicken.
+creature, creatures --> creature.
+
+-- Plant
+tree, trees --> tree.
+flower, flowers --> flower.
+seed, seeds --> seed.
+leaf, leaves --> leaf.
+crop, crops --> crop.
+grass --> grass.
+
+-- BodyPart
+hand, hands --> hand.
+head, heads --> head.
+eye, eyes --> eye.
+foot, feet --> foot.
+arm, arms --> arm.
+face, faces --> face.
+shoulder, shoulders --> shoulder.
+mouth, mouths --> mouth.
+finger, fingers --> finger.
+leg, legs --> leg.
+knee, knees --> knee.
+neck, necks --> neck.
+lip, lips --> lip.
+ear, ears --> ear.
+nose, noses --> nose.
+chest, chests --> chest.
+breast, breasts --> breast.
+tooth, teeth --> tooth.
+throat, throats --> throat.
+bone, bones --> bone.
+muscle, muscles --> muscle.
+brain, brains --> brain.
+heart, hearts --> heart.
+breath, breaths --> breath.
+
+-- Building
+house, houses --> house.
+room, rooms --> room.
+door, doors --> door.
+window, windows --> window.
+hall, halls --> hall.
+floor, floors --> floor.
+wall, walls --> wall.
+roof, roofs --> roof.
+kitchen, kitchens --> kitchen.
+bedroom, bedrooms --> bedroom.
+bathroom, bathrooms --> bathroom.
+
+-- Furniture
+table, tables --> table.
+chair, chairs --> chair.
+bed, beds --> bed.
+desk, desks --> desk.
+
+-- Clothing
+clothes --> clothes.
+shoe, shoes --> shoe.
+shirt, shirts --> shirt.
+jacket, jackets --> jacket.
+coat, coats --> coat.
+hat, hats --> hat.
+suit, suits --> suit.
+dress, dresses --> dress.
+belt, belts --> belt.
+pocket, pockets --> pocket.
+
+-- Tool
+tool, tools --> tool.
+knife, knives --> knife.
+key, keys --> key.
+device, devices --> device.
+
+-- Vehicle
+car, cars --> car.
+bus, buses --> bus.
+truck, trucks --> truck.
+train, trains --> train.
+plane, planes --> plane.
+bike, bikes --> bike.
+boat, boats --> boat.
+ship, ships --> ship.
+
+-- Container
+box, boxes --> box.
+bag, bags --> bag.
+bottle, bottles --> bottle.
+cup, cups --> cup.
+bowl, bowls --> bowl.
+
+-- Food
+food, foods --> food.
+bread --> bread.
+meat --> meat.
+egg, eggs --> egg.
+cheese --> cheese.
+milk --> milk.
+butter --> butter.
+sugar --> sugar.
+salt --> salt.
+wine --> wine.
+coffee --> coffee.
+tea --> tea.
+beer --> beer.
+juice --> juice.
+sauce --> sauce.
+cream --> cream.
+meal, meals --> meal.
+dinner, dinners --> dinner.
+lunch, lunches --> lunch.
+breakfast, breakfasts --> breakfast.
+potato, potatoes --> potato.
+tomato, tomatoes --> tomato.
+bean, beans --> bean.
+corn --> corn.
+rice --> rice.
+fruit, fruits --> fruit.
+vegetable, vegetables --> vegetable.
+
+-- Weapon
+gun, guns --> gun.
+bomb, bombs --> bomb.
+missile, missiles --> missile.
+weapon, weapons --> weapon.
+
+-- Instrument
+camera, cameras --> camera.
+radio, radios --> radio.
+phone, phones --> phone.
+computer, computers --> computer.
+machine, machines --> machine.
+engine, engines --> engine.
+television, televisions --> television.
+tape, tapes --> tape.
+cable, cables --> cable.
+wire, wires --> wire.
+screen, screens --> screen.
+
+-- NaturalObject
+mountain, mountains --> mountain.
+river, rivers --> river.
+lake, lakes --> lake.
+ocean, oceans --> ocean.
+sea, seas --> sea.
+hill, hills --> hill.
+island, islands --> island.
+rock, rocks --> rock.
+stone, stones --> stone.
+star, stars --> star.
+sun --> sun.
+moon --> moon.
+sky --> sky.
+cloud, clouds --> cloud.
+planet, planets --> planet.
+forest, forests --> forest.
+desert, deserts --> desert.
+
+-- Substance
+water --> water.
+air --> air.
+fire --> fire.
+smoke --> smoke.
+oil --> oil.
+gas --> gas.
+ice --> ice.
+snow --> snow.
+rain --> rain.
+wind --> wind.
+sand --> sand.
+soil --> soil.
+dust --> dust.
+
+-- Material
+metal --> metal.
+iron --> iron.
+steel --> steel.
+glass --> glass.
+wood --> wood.
+paper --> paper.
+plastic --> plastic.
+gold --> gold.
+silver --> silver.
+
+-- Location
+place, places --> place.
+city, cities --> city.
+town, towns --> town.
+village, villages --> village.
+street, streets --> street.
+road, roads --> road.
+area, areas --> area.
+region, regions --> region.
+garden, gardens --> garden.
+park, parks --> park.
+beach, beaches --> beach.
+coast, coasts --> coast.
+ground --> ground.
+territory, territories --> territory.
+site, sites --> site.
+campus, campuses --> campus.
+field, fields --> field.
+yard, yards --> yard.
+farm, farms --> farm.
+neighborhood, neighborhoods --> neighborhood.
+
+-- GeographicArea
+country, countries --> country.
+land, lands --> land.
+
+-- Structure_geo
+bridge, bridges --> bridge.
+tower, towers --> tower.
+
+-- Time
+time, times --> time.
+day, days --> day.
+year, years --> year.
+month, months --> month.
+week, weeks --> week.
+hour, hours --> hour.
+minute, minutes --> minute.
+moment, moments --> moment.
+morning, mornings --> morning.
+evening, evenings --> evening.
+night, nights --> night.
+afternoon, afternoons --> afternoon.
+century, centuries --> century.
+decade, decades --> decade.
+period, periods --> period.
+season, seasons --> season.
+summer, summers --> summer.
+winter, winters --> winter.
+spring, springs --> spring.
+weekend, weekends --> weekend.
+holiday, holidays --> holiday.
+era, eras --> era.
+future --> future.
+past --> past.
+
+-- Quantity
+number, numbers --> number.
+amount, amounts --> amount.
+level, levels --> level.
+rate, rates --> rate.
+percentage, percentages --> percentage.
+portion, portions --> portion.
+volume, volumes --> volume.
+total, totals --> total.
+score, scores --> score.
+degree, degrees --> degree.
+limit, limits --> limit.
+capacity, capacities --> capacity.
+
+-- Idea
+idea, ideas --> idea.
+fact, facts --> fact.
+problem, problems --> problem.
+system, systems --> system.
+plan, plans --> plan.
+reason, reasons --> reason.
+theory, theories --> theory.
+concept, concepts --> concept.
+principle, principles --> principle.
+method, methods --> method.
+theme, themes --> theme.
+topic, topics --> topic.
+secret, secrets --> secret.
+truth, truths --> truth.
+mystery, mysteries --> mystery.
+pattern, patterns --> pattern.
+philosophy, philosophies --> philosophy.
+strategy, strategies --> strategy.
+belief, beliefs --> belief.
+faith --> faith.
+knowledge --> knowledge.
+science, sciences --> science.
+purpose, purposes --> purpose.
+goal, goals --> goal.
+objective, objectives --> objective.
+option, options --> option.
+choice, choices --> choice.
+possibility, possibilities --> possibility.
+opportunity, opportunities --> opportunity.
+chance, chances --> chance.
+example, examples --> example.
+evidence --> evidence.
+proof --> proof.
+
+-- Event
+war, wars --> war.
+party, parties --> party.
+game, games --> game.
+meeting, meetings --> meeting.
+accident, accidents --> accident.
+incident, incidents --> incident.
+battle, battles --> battle.
+disaster, disasters --> disaster.
+ceremony, ceremonies --> ceremony.
+wedding, weddings --> wedding.
+birthday, birthdays --> birthday.
+emergency, emergencies --> emergency.
+event, events --> event.
+trip, trips --> trip.
+journey, journeys --> journey.
+tour, tours --> tour.
+visit, visits --> visit.
+show, shows --> show.
+movie, movies --> movie.
+film, films --> film.
+concert, concerts --> concert.
+exercise, exercises --> exercise.
+
+-- Communication
+word, words --> word.
+question, questions --> question.
+answer, answers --> answer.
+story, stories --> story.
+message, messages --> message.
+statement, statements --> statement.
+speech, speeches --> speech.
+conversation, conversations --> conversation.
+discussion, discussions --> discussion.
+argument, arguments --> argument.
+explanation, explanations --> explanation.
+description, descriptions --> description.
+comment, comments --> comment.
+report, reports --> report.
+news --> news.
+language, languages --> language.
+letter, letters --> letter.
+text, texts --> text.
+article, articles --> article.
+document, documents --> document.
+book, books --> book.
+note, notes --> note.
+song, songs --> song.
+music --> music.
+name, names --> name.
+subject, subjects --> subject.
+title, titles --> title.
+instruction, instructions --> instruction.
+definition, definitions --> definition.
+promise, promises --> promise.
+joke, jokes --> joke.
+tale, tales --> tale.
+
+-- State
+state, states --> state.
+condition, conditions --> condition.
+peace --> peace.
+freedom --> freedom.
+health --> health.
+safety --> safety.
+danger, dangers --> danger.
+trouble, troubles --> trouble.
+difficulty, difficulties --> difficulty.
+crisis --> crisis.
+situation, situations --> situation.
+poverty --> poverty.
+silence --> silence.
+disorder, disorders --> disorder.
+
+-- Attribute
+quality, qualities --> quality.
+beauty --> beauty.
+strength --> strength.
+speed, speeds --> speed.
+talent, talents --> talent.
+intelligence --> intelligence.
+skill, skills --> skill.
+ability, abilities --> ability.
+
+-- Emotion
+love --> love.
+fear --> fear.
+anger --> anger.
+joy --> joy.
+passion, passions --> passion.
+hope --> hope.
+emotion, emotions --> emotion.
+anxiety --> anxiety.
+mood, moods --> mood.
+desire, desires --> desire.
+surprise, surprises --> surprise.
+pleasure, pleasures --> pleasure.
+
+-- Relation
+relation, relations --> relation.
+connection, connections --> connection.
+difference, differences --> difference.
+contrast, contrasts --> contrast.
+comparison, comparisons --> comparison.
+combination, combinations --> combination.
+relationship, relationships --> relationship.
+
+-- Shape
+shape, shapes --> shape.
+form, forms --> form.
+circle, circles --> circle.
+edge, edges --> edge.
+line, lines --> line.
+hole, holes --> hole.
+corner, corners --> corner.
+
+-- SocialGroup
+family, families --> family.
+group, groups --> group.
+company, companies --> company.
+government, governments --> government.
+team, teams --> team.
+community, communities --> community.
+organization, organizations --> organization.
+society, societies --> society.
+agency, agencies --> agency.
+army, armies --> army.
+nation, nations --> nation.
+population, populations --> population.
+generation, generations --> generation.
+class, classes --> class.
+club, clubs --> club.
+crowd, crowds --> crowd.
+band, bands --> band.
+committee, committees --> committee.
+jury, juries --> jury.
+union, unions --> union.
+league, leagues --> league.
+crew, crews --> crew.
+staff --> staff.
+minority, minorities --> minority.
+majority, majorities --> majority.
+audience, audiences --> audience.
+troop, troops --> troop.
+
+-- Collection
+collection, collections --> collection.
+set, sets --> set.
+series --> series.
+list, lists --> list.
+supply, supplies --> supply.
+stock, stocks --> stock.
+
+-- ==========================================================================
+-- Productions — Verbs
+-- ==========================================================================
+
+-- Intransitive
+go, goes, went --> go.
+come, comes, came --> come.
+live, lives, lived --> live.
+die, dies, died --> die.
+happen, happens, happened --> happen.
+sit, sits, sat --> sit.
+stand, stands, stood --> stand.
+wait, waits, waited --> wait.
+stay, stays, stayed --> stay.
+fall, falls, fell --> fall.
+remain, remains, remained --> remain.
+arrive, arrives, arrived --> arrive.
+lie, lies, lay --> lie.
+rise, rises, rose --> rise.
+work, works, worked --> work.
+play, plays, played --> play.
+listen, listens, listened --> listen.
+smile, smiles, smiled --> smile.
+laugh, laughs, laughed --> laugh.
+dance, dances, danced --> dance.
+fly, flies, flew --> fly.
+swim, swims, swam --> swim.
+jump, jumps, jumped --> jump.
+climb, climbs, climbed --> climb.
+travel, travels, traveled --> travel.
+return, returns, returned --> return.
+leave, leaves, left --> leave.
+enter, enters, entered --> enter.
+disappear, disappears, disappeared --> disappear.
+appear, appears, appeared --> appear.
+exist, exists, existed --> exist.
+cry, cries, cried --> cry.
+shout, shouts, shouted --> shout.
+scream, screams, screamed --> scream.
+stare, stares, stared --> stare.
+pray, prays, prayed --> pray.
+breathe, breathes, breathed --> breathe.
+retire, retires, retired --> retire.
+recover, recovers, recovered --> recover.
+succeed, succeeds, succeeded --> succeed.
+struggle, struggles, struggled --> struggle.
+vote, votes, voted --> vote.
+graduate, graduates, graduated --> graduate.
+wake, wakes, woke --> wake.
+slip, slips, slipped --> slip.
+slide, slides, slid --> slide.
+bend, bends, bent --> bend.
+nod, nods, nodded --> nod.
+whisper, whispers, whispered --> whisper.
+
+-- Transitive
+take, takes, took --> take.
+give, gives, gave --> give.
+find, finds, found --> find.
+tell, tells, told --> tell.
+want, wants, wanted --> want.
+use, uses, used --> use.
+ask, asks, asked --> ask.
+need, needs, needed --> need.
+feel, feels, felt --> feel.
+put, puts, put --> put.
+keep, keeps, kept --> keep.
+let, lets, let --> let.
+help, helps, helped --> help.
+show, shows, showed --> show.
+hear, hears, heard --> hear.
+hold, holds, held --> hold.
+bring, brings, brought --> bring.
+provide, provides, provided --> provide.
+pay, pays, paid --> pay.
+meet, meets, met --> meet.
+include, includes, included --> include.
+learn, learns, learned --> learn.
+lead, leads, led --> lead.
+follow, follows, followed --> follow.
+stop, stops, stopped --> stop.
+create, creates, created --> create.
+allow, allows, allowed --> allow.
+add, adds, added --> add.
+spend, spends, spent --> spend.
+open, opens, opened --> open.
+win, wins, won --> win.
+offer, offers, offered --> offer.
+remember, remembers, remembered --> remember.
+consider, considers, considered --> consider.
+buy, buys, bought --> buy.
+serve, serves, served --> serve.
+send, sends, sent --> send.
+expect, expects, expected --> expect.
+build, builds, built --> build.
+cut, cuts, cut --> cut.
+reach, reaches, reached --> reach.
+kill, kills, killed --> kill.
+suggest, suggests, suggested --> suggest.
+raise, raises, raised --> raise.
+pass, passes, passed --> pass.
+sell, sells, sold --> sell.
+require, requires, required --> require.
+decide, decides, decided --> decide.
+explain, explains, explained --> explain.
+carry, carries, carried --> carry.
+break, breaks, broke --> break.
+thank, thanks, thanked --> thank.
+receive, receives, received --> receive.
+join, joins, joined --> join.
+agree, agrees, agreed --> agree.
+pick, picks, picked --> pick.
+wear, wears, wore --> wear.
+support, supports, supported --> support.
+hit, hits, hit --> hit.
+produce, produces, produced --> produce.
+cover, covers, covered --> cover.
+describe, describes, described --> describe.
+catch, catches, caught --> catch.
+draw, draws, drew --> draw.
+choose, chooses, chose --> choose.
+cause, causes, caused --> cause.
+involve, involves, involved --> involve.
+increase, increases, increased --> increase.
+seek, seeks, sought --> seek.
+throw, throws, threw --> throw.
+fill, fills, filled --> fill.
+represent, represents, represented --> represent.
+drop, drops, dropped --> drop.
+push, pushes, pushed --> push.
+reduce, reduces, reduced --> reduce.
+save, saves, saved --> save.
+shoot, shoots, shot --> shoot.
+protect, protects, protected --> protect.
+accept, accepts, accepted --> accept.
+identify, identifies, identified --> identify.
+determine, determines, determined --> determine.
+prepare, prepares, prepared --> prepare.
+argue, argues, argued --> argue.
+recognize, recognizes, recognized --> recognize.
+indicate, indicates, indicated --> indicate.
+wonder, wonders, wondered --> wonder.
+fail, fails, failed --> fail.
+name, names, named --> name.
+compare, compares, compared --> compare.
+miss, misses, missed --> miss.
+state, states, stated --> state.
+discuss, discusses, discussed --> discuss.
+check, checks, checked --> check.
+prove, proves, proved --> prove.
+claim, claims, claimed --> claim.
+remove, removes, removed --> remove.
+enjoy, enjoys, enjoyed --> enjoy.
+establish, establishes, established --> establish.
+imagine, imagines, imagined --> imagine.
+avoid, avoids, avoided --> avoid.
+finish, finishes, finished --> finish.
+respond, responds, responded --> respond.
+maintain, maintains, maintained --> maintain.
+reveal, reveals, revealed --> reveal.
+contain, contains, contained --> contain.
+apply, applies, applied --> apply.
+manage, manages, managed --> manage.
+perform, performs, performed --> perform.
+treat, treats, treated --> treat.
+affect, affects, affected --> affect.
+worry, worries, worried --> worry.
+mention, mentions, mentioned --> mention.
+improve, improves, improved --> improve.
+reflect, reflects, reflected --> reflect.
+beat, beats, beat --> beat.
+notice, notices, noticed --> notice.
+wish, wishes, wished --> wish.
+prevent, prevents, prevented --> prevent.
+assume, assumes, assumed --> assume.
+suffer, suffers, suffered --> suffer.
+publish, publishes, published --> publish.
+hurt, hurts, hurt --> hurt.
+achieve, achieves, achieved --> achieve.
+announce, announces, announced --> announce.
+examine, examines, examined --> examine.
+touch, touches, touched --> touch.
+experience, experiences, experienced --> experience.
+replace, replaces, replaced --> replace.
+encourage, encourages, encouraged --> encourage.
+define, defines, defined --> define.
+introduce, introduces, introduced --> introduce.
+handle, handles, handled --> handle.
+refuse, refuses, refused --> refuse.
+gain, gains, gained --> gain.
+express, expresses, expressed --> express.
+deliver, delivers, delivered --> deliver.
+observe, observes, observed --> observe.
+earn, earns, earned --> earn.
+operate, operates, operated --> operate.
+contribute, contributes, contributed --> contribute.
+settle, settles, settled --> settle.
+feed, feeds, fed --> feed.
+collect, collects, collected --> collect.
+promote, promotes, promoted --> promote.
+marry, marries, married --> marry.
+survive, survives, survived --> survive.
+lift, lifts, lifted --> lift.
+gather, gathers, gathered --> gather.
+limit, limits, limited --> limit.
+fit, fits, fitted --> fit.
+associate, associates, associated --> associate.
+spread, spreads, spread --> spread.
+ignore, ignores, ignored --> ignore.
+measure, measures, measured --> measure.
+demonstrate, demonstrates, demonstrated --> demonstrate.
+threaten, threatens, threatened --> threaten.
+commit, commits, committed --> commit.
+deny, denies, denied --> deny.
+destroy, destroys, destroyed --> destroy.
+extend, extends, extended --> extend_v.
+combine, combines, combined --> combine.
+demand, demands, demanded --> demand.
+remind, reminds, reminded --> remind.
+grab, grabs, grabbed --> grab.
+hire, hires, hired --> hire.
+attack, attacks, attacked --> attack.
+welcome, welcomes, welcomed --> welcome.
+expand, expands, expanded --> expand.
+explore, explores, explored --> explore.
+obtain, obtains, obtained --> obtain.
+surround, surrounds, surrounded --> surround.
+invite, invites, invited --> invite.
+repeat, repeats, repeated --> repeat.
+predict, predicts, predicted --> predict.
+belong, belongs, belonged --> belong.
+acknowledge, acknowledges, acknowledged --> acknowledge.
+recommend, recommends, recommended --> recommend.
+generate, generates, generated --> generate.
+propose, proposes, proposed --> propose.
+capture, captures, captured --> capture.
+prefer, prefers, preferred --> prefer.
+select, selects, selected --> select.
+declare, declares, declared --> declare.
+appreciate, appreciates, appreciated --> appreciate.
+defend, defends, defended --> defend.
+ensure, ensures, ensured --> ensure.
+warn, warns, warned --> warn.
+pursue, pursues, pursued --> pursue.
+steal, steals, stole --> steal.
+estimate, estimates, estimated --> estimate.
+investigate, investigates, investigated --> investigate.
+solve, solves, solved --> solve.
+eliminate, eliminates, eliminated --> eliminate.
+confirm, confirms, confirmed --> confirm.
+rely, relies, relied --> rely.
+attract, attracts, attracted --> attract.
+grant, grants, granted --> grant.
+review, reviews, reviewed --> review.
+display, displays, displayed --> display.
+suspect, suspects, suspected --> suspect.
+permit, permits, permitted --> permit.
+arrest, arrests, arrested --> arrest.
+purchase, purchases, purchased --> purchase.
+suppose, supposes, supposed --> suppose.
+perceive, perceives, perceived --> perceive.
+inform, informs, informed --> inform.
+abandon, abandons, abandoned --> abandon.
+transform, transforms, transformed --> transform.
+enable, enables, enabled --> enable.
+preserve, preserves, preserved --> preserve.
+arrange, arranges, arranged --> arrange.
+deserve, deserves, deserved --> deserve.
+resolve, resolves, resolved --> resolve.
+contact, contacts, contacted --> contact.
+quote, quotes, quoted --> quote.
+urge, urges, urged --> urge.
+elect, elects, elected --> elect.
+implement, implements, implemented --> implement.
+resist, resists, resisted --> resist.
+embrace, embraces, embraced --> embrace.
+supply, supplies, supplied --> supply.
+assist, assists, assisted --> assist.
+construct, constructs, constructed --> construct.
+analyze, analyzes, analyzed --> analyze.
+impose, imposes, imposed --> impose.
+evaluate, evaluates, evaluated --> evaluate.
+illustrate, illustrates, illustrated --> illustrate.
+concentrate, concentrates, concentrated --> concentrate.
+transfer, transfers, transferred --> transfer.
+mark, marks, marked --> mark.
+locate, locates, located --> locate.
+file, files, filed --> file.
+record, records, recorded --> record.
+report, reports, reported --> report.
+test, tests, tested --> test.
+design, designs, designed --> design.
+plan, plans, planned --> plan.
+study, studies, studied --> study.
+form, forms, formed --> form.
+base, bases, based --> base.
+charge, charges, charged --> charge.
+search, searches, searched --> search.
+
+-- Ambitransitive
+eat, eats, ate --> eat.
+read, reads, read --> read.
+write, writes, wrote --> write.
+sing, sings, sang --> sing.
+drink, drinks, drank --> drink.
+cook, cooks, cooked --> cook.
+paint, paints, painted --> paint.
+wash, washes, washed --> wash.
+drive, drives, drove --> drive.
+teach, teaches, taught --> teach.
+fight, fights, fought --> fight.
+speak, speaks, spoke --> speak.
+move, moves, moved --> move.
+begin, begins, began --> begin.
+start, starts, started --> start.
+end, ends, ended --> end.
+change, changes, changed --> change.
+turn, turns, turned --> turn.
+burn, burns, burned --> burn.
+hang, hangs, hung --> hang.
+shake, shakes, shook --> shake.
+roll, rolls, rolled --> roll.
+stick, sticks, stuck --> stick.
+blow, blows, blew --> blow.
+cross, crosses, crossed --> cross.
+dress, dresses, dressed --> dress.
+lock, locks, locked --> lock.
+block, blocks, blocked --> block.
+land, lands, landed --> land.
+clean, cleans, cleaned --> clean.
+divide, divides, divided --> divide.
+
+-- Clausal
+think, thinks, thought --> think.
+believe, believes, believed --> believe.
+say, says, said --> say.
+know, knows, knew --> know.
+
+-- ==========================================================================
+-- Productions — Adjectives
+-- ==========================================================================
+
+new --> new.
+other --> other.
+good, better, best --> good.
+high --> high.
+old --> old.
+great --> great.
+big --> big.
+small --> small.
+large --> large.
+national --> national.
+young --> young.
+different --> different.
+black --> black.
+long --> long.
+little --> little.
+important --> important.
+political --> political.
+bad, worse, worst --> bad.
+white --> white.
+real --> real.
+best --> best.
+right --> right.
+social --> social.
+public --> public.
+sure --> sure.
+low --> low.
+early --> early.
+human --> human.
+local --> local.
+late --> late.
+major --> major.
+better --> better.
+economic --> economic.
+strong --> strong.
+possible --> possible.
+whole --> whole.
+free --> free.
+military --> military.
+true --> true.
+federal --> federal.
+international --> international.
+full --> full.
+special --> special.
+easy --> easy.
+clear --> clear.
+recent --> recent.
+certain --> certain.
+personal --> personal.
+open --> open.
+hard --> hard.
+difficult --> difficult.
+available --> available.
+likely --> likely.
+short --> short.
+single --> single.
+wrong --> wrong.
+current --> current.
+past --> past.
+fine --> fine.
+poor --> poor.
+common --> common.
+natural --> natural.
+significant --> significant.
+similar --> similar.
+hot --> hot.
+dead --> dead.
+serious --> serious.
+ready --> ready.
+simple --> simple.
+left --> left.
+general --> general.
+physical --> physical.
+environmental --> environmental.
+financial --> financial.
+dark --> dark.
+various --> various.
+entire --> entire.
+close --> close.
+cold --> cold.
+final --> final.
+green --> green.
+nice --> nice.
+huge --> huge.
+popular --> popular.
+traditional --> traditional.
+wide --> wide.
+particular --> particular.
+top --> top.
+deep --> deep.
+far --> far.
+individual --> individual.
+specific --> specific.
+necessary --> necessary.
+middle --> middle.
+beautiful --> beautiful.
+heavy --> heavy.
+sexual --> sexual.
+tough --> tough.
+commercial --> commercial.
+total --> total.
+modern --> modern.
+positive --> positive.
+civil --> civil.
+safe --> safe.
+interesting --> interesting.
+rich --> rich.
+western --> western.
+senior --> senior.
+professional --> professional.
+successful --> successful.
+fresh --> fresh.
+southern --> southern.
+global --> global.
+critical --> critical.
+concerned --> concerned.
+original --> original.
+basic --> basic.
+powerful --> powerful.
+perfect --> perfect.
+nuclear --> nuclear.
+sorry --> sorry.
+normal --> normal.
+front --> front.
+supposed --> supposed.
+independent --> independent.
+willing --> willing.
+previous --> previous.
+interested --> interested.
+wild --> wild.
+quick --> quick.
+light --> light.
+bright --> bright.
+tiny --> tiny.
+additional --> additional.
+living --> living.
+present --> present.
+warm --> warm.
+annual --> annual.
+responsible --> responsible.
+regular --> regular.
+soft --> soft.
+afraid --> afraid.
+native --> native.
+broad --> broad.
+wonderful --> wonderful.
+growing --> growing.
+quiet --> quiet.
+complete --> complete.
+active --> active.
+chief --> chief.
+cool --> cool.
+dangerous --> dangerous.
+moral --> moral.
+healthy --> healthy.
+negative --> negative.
+following --> following.
+historical --> historical.
+direct --> direct.
+daily --> daily.
+fair --> fair.
+famous --> famous.
+familiar --> familiar.
+appropriate --> appropriate.
+eastern --> eastern.
+primary --> primary.
+clean --> clean.
+male --> male.
+alive --> alive.
+extra --> extra.
+domestic --> domestic.
+northern --> northern.
+dry --> dry.
+sweet --> sweet.
+strange --> strange.
+urban --> urban.
+mental --> mental.
+educational --> educational.
+favorite --> favorite.
+complex --> complex.
+scientific --> scientific.
+impossible --> impossible.
+married --> married.
+alone --> alone.
+emotional --> emotional.
+thin --> thin.
+empty --> empty.
+expensive --> expensive.
+yellow --> yellow.
+prime --> prime.
+obvious --> obvious.
+comfortable --> comfortable.
+angry --> angry.
+thick --> thick.
+unique --> unique.
+internal --> internal.
+ethnic --> ethnic.
+actual --> actual.
+sick --> sick.
+slow --> slow.
+brown --> brown.
+standard --> standard.
+funny --> funny.
+correct --> correct.
+crazy --> crazy.
+just --> just.
+ancient --> ancient.
+golden --> golden.
+equal --> equal.
+typical --> typical.
+conservative --> conservative.
+smart --> smart.
+rare --> rare.
+separate --> separate.
+busy --> busy.
+cheap --> cheap.
+gray --> gray.
+overall --> overall.
+initial --> initial.
+terrible --> terrible.
+multiple --> multiple.
+essential --> essential.
+criminal --> criminal.
+careful --> careful.
+upper --> upper.
+tired --> tired.
+vast --> vast.
+limited --> limited.
+proud --> proud.
+increased --> increased.
+enormous --> enormous.
+liberal --> liberal.
+massive --> massive.
+narrow --> narrow.
+solid --> solid.
+useful --> useful.
+secret --> secret.
+unusual --> unusual.
+sharp --> sharp.
+creative --> creative.
+proper --> proper.
+guilty --> guilty.
+technical --> technical.
+weak --> weak.
+illegal --> illegal.
+fun --> fun.
+spiritual --> spiritual.
+musical --> musical.
+dramatic --> dramatic.
+excellent --> excellent.
+lucky --> lucky.
+unable --> unable.
+sad --> sad.
+brief --> brief.
+violent --> violent.
+silent --> silent.
+immediate --> immediate.
+double --> double.
+formal --> formal.
+joint --> joint.
+opposite --> opposite.
+consistent --> consistent.
+grand --> grand.
+racial --> racial.
+glad --> glad.
+ordinary --> ordinary.
+numerous --> numerous.
+practical --> practical.
+amazing --> amazing.
+intense --> intense.
+visible --> visible.
+competitive --> competitive.
+fundamental --> fundamental.
+severe --> severe.
+usual --> usual.
+psychological --> psychological.
+increasing --> increasing.
+holy --> holy.
+constant --> constant.
+capable --> capable.
+nervous --> nervous.
+crucial --> crucial.
+electronic --> electronic.
+pure --> pure.
+smooth --> smooth.
+nearby --> nearby.
+inner --> inner.
+junior --> junior.
+straight --> straight.
+pretty --> pretty.
+permanent --> permanent.
+wet --> wet.
+
+-- ==========================================================================
+-- Productions — Adverbs
+-- ==========================================================================
+
+quickly --> quickly.
+slowly --> slowly.
+carefully --> carefully.
+easily --> easily.
+completely --> completely.
+absolutely --> absolutely.
+exactly --> exactly.
+usually --> usually.
+certainly --> certainly.
+probably --> probably.
+possibly --> possibly.
