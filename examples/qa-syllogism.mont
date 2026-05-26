@@ -22,7 +22,6 @@ bob: NP.
 
 -- Common nouns
 man: N.
-men: N.
 cat: N.
 dog: N.
 bird: N.
@@ -74,7 +73,7 @@ bob --> bob.
 
 -- Common nouns
 man --> man.
-men --> men.
+men --> man.
 cat --> cat.
 dog --> dog.
 bird --> bird.

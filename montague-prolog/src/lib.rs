@@ -312,6 +312,18 @@ pub fn lower_term_to_prolog(term: &Term<String>) -> Option<Vec<String>> {
                 }
             }
 
+            // If the predicate decomposes into multiple goals (e.g. relative clause),
+            // assert each goal individually.
+            if let Some(goals) = lower_noun_phrase_to_goals(&pred) {
+                if goals.len() > 1 {
+                    let clauses: Vec<String> = goals
+                        .iter()
+                        .map(|g| g.replace("(X)", &format!("({subj})")))
+                        .map(|g| format!("{g}."))
+                        .collect();
+                    return Some(clauses);
+                }
+            }
             let pred_name = term_to_prolog_arg(&pred)?;
             return Some(vec![format!("{pred_name}({subj}).")]);
         }
@@ -518,18 +530,51 @@ fn lower_vp_to_query(term: &Term<String>) -> Option<String> {
 /// Decompose a noun phrase into Prolog goals with free variable X.
 /// - `being` → `["being(X)"]`
 /// - `living_adj(being)` → `["being(X)", "living_adj(X)"]`
+/// - `that_rel(philosopher, is_cop(wise))` → `["philosopher(X)", "wise(X)"]`
 fn lower_noun_phrase_to_goals(term: &Term<String>) -> Option<Vec<String>> {
     match term {
         Term::Atom(name) => Some(vec![format!("{name}(X)")]),
         Term::App(f, args) => {
-            let adj = match f.as_ref() {
+            let fname = match f.as_ref() {
                 Term::Atom(n) => n.clone(),
                 _ => return None,
             };
-            // Strip _adj suffix for the predicate name
-            let adj_pred = adj.strip_suffix("_adj").unwrap_or(&adj);
+            // Relative pronouns: that_rel(N, VP) or who_rel(N, VP)
+            // Skip the pronoun, decompose N + VP. The VP is typically a copula.
+            if (fname == "that_rel" || fname == "who_rel" || fname == "which_rel") && args.len() >= 2
+            {
+                let mut goals = Vec::new();
+                // args: first right-applied is the VP, second left-applied is N
+                // (after apply_partial flattening: right-app first, then left-app)
+                // Actually: that_rel : (N\N)/(NP\S) → right-app to VP, then left-app to N.
+                // After flattening: App(that_rel, [vp, n]). args[0]=VP, args[1]=N.
+                if let Some(inner) = lower_noun_phrase_to_goals(&args[1]) {
+                    goals.extend(inner);
+                }
+                if let Some(inner) = lower_noun_phrase_to_goals(&args[0]) {
+                    goals.extend(inner);
+                }
+                if !goals.is_empty() {
+                    return Some(goals);
+                }
+            }
+            // Copulas inside VP: is_cop(pred) → just the predicate
+            if fname == "is_cop" || fname == "are_cop" || fname == "am_cop" {
+                if let Some(arg) = args.first() {
+                    return lower_noun_phrase_to_goals(arg);
+                }
+                return None;
+            }
+            // Copula identity: is_ident(nominal) → decompose the nominal
+            if fname == "is_ident" || fname == "are_ident" {
+                if let Some(arg) = args.first() {
+                    return lower_noun_phrase_to_goals(arg);
+                }
+                return None;
+            }
+            // Strip _adj suffix for prenominal adjectives
+            let adj_pred = fname.strip_suffix("_adj").unwrap_or(&fname);
             let mut goals = vec![format!("{adj_pred}(X)")];
-            // Recursively decompose the noun argument
             for arg in args {
                 if let Some(inner) = lower_noun_phrase_to_goals(arg) {
                     goals.extend(inner);
