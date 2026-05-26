@@ -117,10 +117,28 @@ pub enum Declaration {
         ty: Spanned<TypeExpr>,
         strips: Vec<SpellingClass>,
     },
-    /// `type A.` — single type declaration (open, incremental).
-    SingleTypeDecl(String),
+    /// `type A[sort1, sort2].` — single type declaration with optional params.
+    /// `params` is empty for 0-arity types. `type A.` → `SingleTypeDecl { name: "A", params: [] }`.
+    SingleTypeDecl { name: String, params: Vec<String> },
     /// `namespace foo.bar.baz.`
     NamespaceDecl(Vec<String>),
+    /// `sort entity.` — declares a new sort namespace.
+    SortDecl(String),
+    /// `entity Person.` or `entity Person, Animate, Inanimate.` — declares
+    /// one or more members of a sort.
+    SortMemberDecl { sort: String, members: Vec<String> },
+}
+
+// ---------------------------------------------------------------------------
+// Type expressions
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TypeArg {
+    /// A concrete sort-member reference: `Nominative`, `Person`.
+    Concrete(String),
+    /// A polymorphic sort variable: `a`, `b`. Lowercase first letter.
+    Var(String),
 }
 
 // ---------------------------------------------------------------------------
@@ -137,6 +155,11 @@ pub enum TypeExpr {
     CustomApp {
         path: Vec<String>,
         args: Vec<Spanned<TypeExpr>>,
+    },
+    /// `Name[arg, arg]` — parametric type application (e.g. `NP[Person, Nominative]`).
+    ParamApp {
+        name: String,
+        args: Vec<Spanned<TypeArg>>,
     },
     /// `a / b` — left arrow
     LeftArrow(Box<Spanned<TypeExpr>>, Box<Spanned<TypeExpr>>),
@@ -221,11 +244,30 @@ impl fmt::Display for Declaration {
                 }
                 write!(f, ".")
             }
-            Declaration::SingleTypeDecl(t) => write!(f, "type {t}."),
+            Declaration::SingleTypeDecl { name, params } => {
+                write!(f, "type {name}")?;
+                if !params.is_empty() {
+                    write!(f, "[{}]", params.join(", "))?;
+                }
+                write!(f, ".")
+            }
             Declaration::NamespaceDecl(parts) => {
                 write!(f, "namespace {}", parts.join("."))?;
                 write!(f, ".")
             }
+            Declaration::SortDecl(name) => write!(f, "sort {name}."),
+            Declaration::SortMemberDecl { sort, members } => {
+                write!(f, "{sort} {}", members.join(", "))?;
+                write!(f, ".")
+            }
+        }
+    }
+}
+
+impl fmt::Display for TypeArg {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TypeArg::Concrete(s) | TypeArg::Var(s) => write!(f, "{s}"),
         }
     }
 }
@@ -244,6 +286,16 @@ impl fmt::Display for TypeExpr {
                     write!(f, "{}", a.item)?;
                 }
                 write!(f, ")")
+            }
+            TypeExpr::ParamApp { name, args } => {
+                write!(f, "{name}[")?;
+                for (i, a) in args.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", a.item)?;
+                }
+                write!(f, "]")
             }
             TypeExpr::LeftArrow(a, b) => write!(f, "({} / {})", a.item, b.item),
             TypeExpr::RightArrow(a, b) => write!(f, "({} \\ {})", a.item, b.item),

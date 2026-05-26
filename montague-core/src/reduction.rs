@@ -12,8 +12,9 @@
 use std::hash::Hash;
 
 use crate::registry::{CustomTag, Registry};
+use crate::sort::SortRegistry;
 use crate::subtyping::SubtypeLattice;
-use crate::types::{AnnotatedTerm, LambekType, Term};
+use crate::types::{AnnotatedTerm, LambekType, SortVarTable, Term, TypeCheck};
 
 // ---------------------------------------------------------------------------
 // Reduction context
@@ -21,26 +22,37 @@ use crate::types::{AnnotatedTerm, LambekType, Term};
 
 /// Per-reduction state threaded through every rule application.
 ///
-/// Holds the subtyping lattice (always required) and optionally the
-/// [`Registry`] (used for diagnostics and, in later milestones, per-tag
-/// variance lookup for `LambekType::Custom`).
+/// Holds the subtyping lattice (always required), optionally a
+/// [`Registry`], optionally a [`SortRegistry`] for sort-variable unification,
+/// and a [`SortVarTable`] for polymorphic parameter resolution.
 pub struct ReductionCtx<'a, T: Hash + Eq + Clone> {
     pub lattice: &'a SubtypeLattice<T>,
     pub registry: Option<&'a Registry>,
+    /// Sort registry — maps sort names to per-sort member lattices.
+    /// When set, reduction rules use sort-aware unification rather than
+    /// plain lattice `leq`.
+    pub sort_registry: Option<&'a SortRegistry>,
 }
 
 impl<'a, T: Hash + Eq + Clone> ReductionCtx<'a, T> {
-    /// Construct a context backed only by a lattice. The registry is unset.
+    /// Construct a context backed only by a lattice.
     pub fn new(lattice: &'a SubtypeLattice<T>) -> Self {
         Self {
             lattice,
             registry: None,
+            sort_registry: None,
         }
     }
 
     /// Attach a registry (enables future diagnostics / variance lookups).
     pub fn with_registry(mut self, reg: &'a Registry) -> Self {
         self.registry = Some(reg);
+        self
+    }
+
+    /// Attach a sort registry (enables sort-variable unification).
+    pub fn with_sort_registry(mut self, sr: &'a SortRegistry) -> Self {
+        self.sort_registry = Some(sr);
         self
     }
 }
@@ -127,7 +139,7 @@ impl RuleApplicability {
 pub trait ReductionRule<A, T>
 where
     A: Clone,
-    T: Hash + Eq + Clone,
+    T: TypeCheck,
 {
     /// Short identifier suitable for diagnostics.
     fn name(&self) -> &'static str;
@@ -161,7 +173,7 @@ use crate::chart::{ChartPostpass, CoordinationPostpass};
 pub struct ReductionEngine<A, T>
 where
     A: Clone,
-    T: Hash + Eq + Clone,
+    T: TypeCheck,
 {
     rules: Vec<Box<dyn ReductionRule<A, T>>>,
     postpasses: Vec<Box<dyn ChartPostpass<A, T>>>,
@@ -170,7 +182,7 @@ where
 impl<A, T> Default for ReductionEngine<A, T>
 where
     A: Clone + Eq + Hash + Send + Sync + 'static,
-    T: Hash + Eq + Clone + Send + Sync + 'static,
+    T: TypeCheck + Send + Sync + 'static,
 {
     fn default() -> Self {
         Self::standard()
@@ -180,7 +192,7 @@ where
 impl<A, T> ReductionEngine<A, T>
 where
     A: Clone + Eq + Hash + Send + Sync + 'static,
-    T: Hash + Eq + Clone + Send + Sync + 'static,
+    T: TypeCheck + Send + Sync + 'static,
 {
     /// Engine with no rules and no post-passes.
     pub fn empty() -> Self {
@@ -279,7 +291,7 @@ pub struct LeftAbsorption;
 impl<A, T> ReductionRule<A, T> for LeftAbsorption
 where
     A: Clone,
-    T: Hash + Eq + Clone,
+    T: TypeCheck,
 {
     fn name(&self) -> &'static str {
         "left-absorption"
@@ -298,7 +310,8 @@ where
         let LambekType::RightArrow(x_prime, y) = &right.ty else {
             return vec![];
         };
-        if !left.ty.leq(x_prime, ctx.lattice) {
+        let mut var_table = SortVarTable::new();
+        if !left.ty.unify_with(x_prime, ctx.lattice, ctx.sort_registry, &mut var_table) {
             return vec![];
         }
         let new_term = if right.term.is_partial_pred() {
@@ -308,7 +321,7 @@ where
         };
         vec![AnnotatedTerm {
             term: new_term,
-            ty: (**y).clone(),
+            ty: y.substitute_vars(&var_table),
         }]
     }
 }
@@ -321,7 +334,7 @@ pub struct RightAbsorption;
 impl<A, T> ReductionRule<A, T> for RightAbsorption
 where
     A: Clone,
-    T: Hash + Eq + Clone,
+    T: TypeCheck,
 {
     fn name(&self) -> &'static str {
         "right-absorption"
@@ -340,7 +353,8 @@ where
         let LambekType::LeftArrow(x, y) = &left.ty else {
             return vec![];
         };
-        if !right.ty.leq(y, ctx.lattice) {
+        let mut var_table = SortVarTable::new();
+        if !right.ty.unify_with(y, ctx.lattice, ctx.sort_registry, &mut var_table) {
             return vec![];
         }
         let new_term = if left.term.is_partial_pred() {
@@ -350,7 +364,7 @@ where
         };
         vec![AnnotatedTerm {
             term: new_term,
-            ty: (**x).clone(),
+            ty: x.substitute_vars(&var_table),
         }]
     }
 }
@@ -367,7 +381,7 @@ pub struct ForwardComposition;
 impl<A, T> ReductionRule<A, T> for ForwardComposition
 where
     A: Clone,
-    T: Hash + Eq + Clone,
+    T: TypeCheck,
 {
     fn name(&self) -> &'static str {
         "forward-composition"
@@ -389,7 +403,8 @@ where
         let LambekType::LeftArrow(x, y) = &left.ty else { return vec![] };
         let LambekType::LeftArrow(y_prime, z) = &right.ty else { return vec![] };
         // The output of the right function must fit the input of the left.
-        if !y_prime.leq(y, ctx.lattice) {
+        let mut var_table = SortVarTable::new();
+        if !y_prime.unify_with(y, ctx.lattice, ctx.sort_registry, &mut var_table) {
             return vec![];
         }
         // λv. left(right(v))
@@ -399,7 +414,10 @@ where
         let sem = Term::Lambda("Vc".into(), Box::new(body));
         vec![AnnotatedTerm {
             term: sem,
-            ty: LambekType::LeftArrow(x.clone(), z.clone()),
+            ty: LambekType::LeftArrow(
+                Box::new(x.substitute_vars(&var_table)),
+                Box::new(z.substitute_vars(&var_table)),
+            ),
         }]
     }
 }
@@ -412,7 +430,7 @@ pub struct BackwardComposition;
 impl<A, T> ReductionRule<A, T> for BackwardComposition
 where
     A: Clone,
-    T: Hash + Eq + Clone,
+    T: TypeCheck,
 {
     fn name(&self) -> &'static str {
         "backward-composition"
@@ -436,7 +454,8 @@ where
         // right: X\Y' = RightArrow(Y', X) — consumes Y', produces X
         let LambekType::RightArrow(y_prime, x) = &right.ty else { return vec![] };
         // The output of the left function must fit the input of the right.
-        if !y.leq(y_prime, ctx.lattice) {
+        let mut var_table = SortVarTable::new();
+        if !y.unify_with(y_prime, ctx.lattice, ctx.sort_registry, &mut var_table) {
             return vec![];
         }
         // λv. right(left(v))
@@ -446,7 +465,10 @@ where
         let sem = Term::Lambda("Vc".into(), Box::new(body));
         vec![AnnotatedTerm {
             term: sem,
-            ty: LambekType::RightArrow(z.clone(), x.clone()),
+            ty: LambekType::RightArrow(
+                Box::new(z.substitute_vars(&var_table)),
+                Box::new(x.substitute_vars(&var_table)),
+            ),
         }]
     }
 }
@@ -464,6 +486,8 @@ mod tests {
         S,
         N,
     }
+
+    crate::impl_type_check_trivial!(BT);
 
     fn basic(t: BT) -> LambekType<BT> {
         LambekType::Basic(t)

@@ -8,10 +8,312 @@
 //! a compile-time `LatticeOrd` trait — this is what makes `.mont`-declared
 //! `Person :< Noun.` first-class (see D0/D1).
 
+use std::collections::HashMap;
 use std::hash::Hash;
 
 use crate::registry::CustomTag;
+use crate::sort::SortRegistry;
 use crate::subtyping::SubtypeLattice;
+
+// ---------------------------------------------------------------------------
+// AtomType — leaf types with sort parameters
+// ---------------------------------------------------------------------------
+
+/// A single sort variable identifier. Fresh IDs are assigned at chart-lexical-
+/// fill time so different occurrences of the same polymorphic variable in a
+/// lexical entry get distinct handles (standard HM freshen-on-use).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct SortVarId(pub u32);
+
+/// An argument in a parametric atom type.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum SortArg {
+    /// A concrete sort-member reference, e.g. `{entity, Person}`.
+    Concrete { sort: String, member: String },
+    /// A polymorphic variable with a fresh handle.
+    Var(SortVarId),
+}
+
+impl SortArg {
+    /// Try to unify `self ≤ other` (subtyping direction), recording variable
+    /// bindings in `var_table`.  Returns `true` on success.
+    pub fn unify_with(
+        &self,
+        other: &SortArg,
+        sort_registry: Option<&SortRegistry>,
+        var_table: &mut SortVarTable,
+    ) -> bool {
+        let a = var_table.resolve(self);
+        let b = var_table.resolve(other);
+        match (&a, &b) {
+            (
+                SortArg::Concrete {
+                    sort: sa,
+                    member: ma,
+                },
+                SortArg::Concrete {
+                    sort: sb,
+                    member: mb,
+                },
+            ) => {
+                if sa != sb {
+                    return false;
+                }
+                if let Some(sr) = sort_registry {
+                    sr.leq(ma, mb)
+                } else {
+                    ma == mb
+                }
+            }
+            (SortArg::Var(id), sup) => var_table.bind(*id, sup.clone()).is_ok(),
+            (sub, SortArg::Var(id)) => var_table.bind(*id, sub.clone()).is_ok(),
+        }
+    }
+
+    /// Substitute any bound variables with their concrete values.
+    pub fn substitute(&self, var_table: &SortVarTable) -> SortArg {
+        match var_table.resolve(self) {
+            SortArg::Var(_) => self.clone(), // unbound — keep as-is
+            concrete => concrete,
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Sort variable table
+// ---------------------------------------------------------------------------
+
+/// Tracks variable bindings during unification. Each `SortVarId` starts
+/// unbound; when a variable is unified with a concrete value, the binding
+/// is recorded here. Chart cells carry the substituted results.
+#[derive(Debug, Clone, Default)]
+pub struct SortVarTable {
+    /// Mapping from variable ID to its binding (may be concrete or another var).
+    bindings: HashMap<SortVarId, SortArg>,
+}
+
+impl SortVarTable {
+    pub fn new() -> Self {
+        SortVarTable {
+            bindings: HashMap::new(),
+        }
+    }
+
+    /// Follow any chain of var-to-var bindings to find the actual value.
+    pub fn resolve(&self, arg: &SortArg) -> SortArg {
+        match arg {
+            SortArg::Var(id) => match self.bindings.get(id) {
+                Some(bound) => {
+                    let resolved = self.resolve(bound);
+                    if resolved == *bound {
+                        resolved
+                    } else {
+                        resolved
+                    }
+                }
+                None => arg.clone(),
+            },
+            _ => arg.clone(),
+        }
+    }
+
+    /// Bind a variable to a value. Returns `Err` on conflict with an existing
+    /// binding.
+    pub fn bind(&mut self, id: SortVarId, val: SortArg) -> Result<(), String> {
+        let resolved = self.resolve(&val);
+        // Prevent binding a var directly to itself
+        if let SortArg::Var(vid) = &resolved {
+            if *vid == id {
+                return Ok(());
+            }
+        }
+        match self.bindings.get(&id) {
+            Some(existing) if self.resolve(existing) != resolved => Err(format!(
+                "sort variable conflict: cannot bind {:?} to {:?}",
+                existing, resolved
+            )),
+            _ => {
+                self.bindings.insert(id, resolved);
+                Ok(())
+            }
+        }
+    }
+
+    /// Look up what a variable is currently bound to (without resolution).
+    pub fn lookup_raw(&self, id: SortVarId) -> Option<&SortArg> {
+        self.bindings.get(&id)
+    }
+}
+
+/// A basic (leaf) type in the Lambek grammar, possibly parameterized by sort
+/// arguments: `NP`, `N[Animal]`, `NP[Person, Nominative]`.
+///
+/// For backward compatibility, `From<String>` produces a 0-arity atom
+/// (`args: vec![]`), which means all existing code that constructs
+/// `LambekType<String>` can mechanically migrate to `LambekType<AtomType>`.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct AtomType {
+    pub name: String,
+    pub args: Vec<SortArg>,
+}
+
+impl AtomType {
+    pub fn new(name: &str) -> Self {
+        AtomType {
+            name: name.to_string(),
+            args: vec![],
+        }
+    }
+
+    pub fn with_args(name: &str, args: Vec<SortArg>) -> Self {
+        AtomType {
+            name: name.to_string(),
+            args,
+        }
+    }
+
+    /// True if this atom and `other` have the same name and arity.
+    pub fn structural_eq(&self, other: &AtomType) -> bool {
+        self.name == other.name && self.args.len() == other.args.len()
+    }
+}
+
+impl From<String> for AtomType {
+    fn from(s: String) -> Self {
+        AtomType {
+            name: s,
+            args: vec![],
+        }
+    }
+}
+
+impl From<&str> for AtomType {
+    fn from(s: &str) -> Self {
+        AtomType {
+            name: s.to_string(),
+            args: vec![],
+        }
+    }
+}
+
+impl std::fmt::Display for AtomType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name)?;
+        if !self.args.is_empty() {
+            write!(f, "[")?;
+            for (i, arg) in self.args.iter().enumerate() {
+                if i > 0 {
+                    write!(f, ", ")?;
+                }
+                match arg {
+                    SortArg::Concrete { member, .. } => write!(f, "{member}")?,
+                    SortArg::Var(_) => write!(f, "?")?,
+                }
+            }
+            write!(f, "]")?;
+        }
+        Ok(())
+    }
+}
+
+// ---------------------------------------------------------------------------
+// TypeCheck — sort-aware atom comparisons
+// ---------------------------------------------------------------------------
+
+/// Trait for basic types that may carry sort information.
+///
+/// [`AtomType`] implements the full sort-aware logic (variable unification,
+/// per-sort lattice lookup).  Other types (e.g. `u8`, `&str`, test enums)
+/// return `None` from `check_atoms`, which causes the fallback to ordinary
+/// lattice-based `leq`.
+pub trait TypeCheck: Hash + Eq + Clone {
+    /// Sort-aware subtype check for two atoms.  Returns `Some(true)` if the
+    /// check passes (possibly after binding variables), `Some(false)` if it
+    /// definitively fails, or `None` to fall back to `SubtypeLattice::leq`.
+    fn check_atoms(
+        &self,
+        other: &Self,
+        sort_registry: Option<&SortRegistry>,
+        var_table: &mut SortVarTable,
+    ) -> Option<bool>;
+
+    /// Substitute sort variables with their concrete bindings.
+    fn substitute_atom(&self, var_table: &SortVarTable) -> Self;
+
+    /// Head name for chart indexing — when `Some`, the chart indexes by this
+    /// string rather than the full `T` value, which lets `NP[Person, Nom]`
+    /// and `NP[Animate, Nom]` share the same index bucket.
+    fn head_name(&self) -> Option<String> {
+        None
+    }
+}
+
+impl TypeCheck for AtomType {
+    fn check_atoms(
+        &self,
+        other: &AtomType,
+        sort_registry: Option<&SortRegistry>,
+        var_table: &mut SortVarTable,
+    ) -> Option<bool> {
+        // 0-arity atoms: defer to the grammatical lattice (e.g. Person :< Noun).
+        if self.args.is_empty() && other.args.is_empty() {
+            return None;
+        }
+        // Parameterized atoms: names must match, then unify args.
+        if self.name != other.name {
+            return Some(false);
+        }
+        if self.args.len() != other.args.len() {
+            return Some(false);
+        }
+        for (a, b) in self.args.iter().zip(other.args.iter()) {
+            if !a.unify_with(b, sort_registry, var_table) {
+                return Some(false);
+            }
+        }
+        Some(true)
+    }
+
+    fn substitute_atom(&self, var_table: &SortVarTable) -> Self {
+        AtomType {
+            name: self.name.clone(),
+            args: self.args.iter().map(|a| a.substitute(var_table)).collect(),
+        }
+    }
+
+    fn head_name(&self) -> Option<String> {
+        Some(self.name.clone())
+    }
+}
+
+/// Macro to generate a trivial `TypeCheck` impl (always defers to lattice).
+#[macro_export]
+macro_rules! impl_type_check_trivial {
+    ($t:ty) => {
+        impl $crate::types::TypeCheck for $t {
+            fn check_atoms(
+                &self,
+                _other: &Self,
+                _sort_registry: Option<&$crate::sort::SortRegistry>,
+                _var_table: &mut $crate::types::SortVarTable,
+            ) -> Option<bool> {
+                None
+            }
+            fn substitute_atom(
+                &self,
+                _var_table: &$crate::types::SortVarTable,
+            ) -> Self {
+                self.clone()
+            }
+        }
+    };
+}
+
+// Trivial impls for test types used in property tests.
+#[cfg(test)]
+impl_type_check_trivial!(u8);
+#[cfg(test)]
+impl_type_check_trivial!(&str);
 
 // ---------------------------------------------------------------------------
 // LambekType
@@ -137,6 +439,177 @@ impl<T: Hash + Eq + Clone> LambekType<T> {
                 let av: Vec<F::Out> = args.iter().map(|a| a.fold(f)).collect();
                 f.custom(*tag, av)
             }
+        }
+    }
+}
+
+impl<T: TypeCheck> LambekType<T> {
+    /// Sort-aware subtyping check.  Like [`leq`](Self::leq) but also unifies
+    /// sort variables via `var_table`.  Variance of arrows is preserved:
+    /// first argument contravariant, second covariant.
+    pub fn unify_with(
+        &self,
+        other: &Self,
+        lattice: &SubtypeLattice<T>,
+        sort_registry: Option<&SortRegistry>,
+        var_table: &mut SortVarTable,
+    ) -> bool {
+        use LambekType::*;
+        match (self, other) {
+            (Basic(a), Basic(b)) => match a.check_atoms(b, sort_registry, var_table) {
+                Some(passed) => passed,
+                None => lattice.leq(a, b),
+            },
+            (LeftArrow(x1, y1), LeftArrow(x2, y2)) => {
+                x2.unify_with(x1, lattice, sort_registry, var_table)
+                    && y1.unify_with(y2, lattice, sort_registry, var_table)
+            }
+            (RightArrow(x1, y1), RightArrow(x2, y2)) => {
+                x2.unify_with(x1, lattice, sort_registry, var_table)
+                    && y1.unify_with(y2, lattice, sort_registry, var_table)
+            }
+            (Extract(x1, y1), Extract(x2, y2)) => {
+                x2.unify_with(x1, lattice, sort_registry, var_table)
+                    && y1.unify_with(y2, lattice, sort_registry, var_table)
+            }
+            (Scoped(x1, y1), Scoped(x2, y2)) => {
+                x2.unify_with(x1, lattice, sort_registry, var_table)
+                    && y1.unify_with(y2, lattice, sort_registry, var_table)
+            }
+            (Conj(x1, y1), Conj(x2, y2)) => {
+                x1.unify_with(x2, lattice, sort_registry, var_table)
+                    && y1.unify_with(y2, lattice, sort_registry, var_table)
+            }
+            (Disj(x1, y1), Disj(x2, y2)) => {
+                x1.unify_with(x2, lattice, sort_registry, var_table)
+                    && y1.unify_with(y2, lattice, sort_registry, var_table)
+            }
+            (
+                Custom {
+                    tag: t1,
+                    args: a1,
+                },
+                Custom {
+                    tag: t2,
+                    args: a2,
+                },
+            ) => {
+                t1 == t2
+                    && a1.len() == a2.len()
+                    && a1.iter().zip(a2).all(|(x, y)| {
+                        x.unify_with(y, lattice, sort_registry, var_table)
+                            && y.unify_with(x, lattice, sort_registry, var_table)
+                    })
+            }
+            _ => false,
+        }
+    }
+
+    /// Substitute sort-variable bindings through this type tree.
+    pub fn substitute_vars(&self, var_table: &SortVarTable) -> Self {
+        use LambekType::*;
+        match self {
+            Basic(a) => Basic(a.substitute_atom(var_table)),
+            LeftArrow(a, b) => LeftArrow(
+                Box::new(a.substitute_vars(var_table)),
+                Box::new(b.substitute_vars(var_table)),
+            ),
+            RightArrow(a, b) => RightArrow(
+                Box::new(a.substitute_vars(var_table)),
+                Box::new(b.substitute_vars(var_table)),
+            ),
+            Extract(a, b) => Extract(
+                Box::new(a.substitute_vars(var_table)),
+                Box::new(b.substitute_vars(var_table)),
+            ),
+            Scoped(a, b) => Scoped(
+                Box::new(a.substitute_vars(var_table)),
+                Box::new(b.substitute_vars(var_table)),
+            ),
+            Conj(a, b) => Conj(
+                Box::new(a.substitute_vars(var_table)),
+                Box::new(b.substitute_vars(var_table)),
+            ),
+            Disj(a, b) => Disj(
+                Box::new(a.substitute_vars(var_table)),
+                Box::new(b.substitute_vars(var_table)),
+            ),
+            Custom { tag, args } => Custom {
+                tag: *tag,
+                args: args.iter().map(|a| a.substitute_vars(var_table)).collect(),
+            },
+        }
+    }
+}
+
+impl LambekType<AtomType> {
+    /// Assign fresh [`SortVarId`]s to every sort variable in this type tree.
+    ///
+    /// Within a single type, the same old ID maps to the same new ID (so
+    /// co-occurrences like `N[a]` and `NP[a]` in one entry stay linked).
+    /// The caller passes a `next_id` counter shared across the entire chart
+    /// fill so that different lexical tokens get disjoint ID ranges.
+    pub fn freshen_vars(&self, next_id: &mut u32) -> Self {
+        let mut mapping: HashMap<SortVarId, SortVarId> = HashMap::new();
+        self.freshen_with(&mut mapping, next_id)
+    }
+
+    fn freshen_with(
+        &self,
+        mapping: &mut HashMap<SortVarId, SortVarId>,
+        next_id: &mut u32,
+    ) -> Self {
+        use LambekType::*;
+        match self {
+            Basic(a) => Basic(AtomType {
+                name: a.name.clone(),
+                args: a
+                    .args
+                    .iter()
+                    .map(|arg| match arg {
+                        SortArg::Var(id) => {
+                            let fresh = *mapping.entry(*id).or_insert_with(|| {
+                                let new_id = SortVarId(*next_id);
+                                *next_id += 1;
+                                new_id
+                            });
+                            SortArg::Var(fresh)
+                        }
+                        other => other.clone(),
+                    })
+                    .collect(),
+            }),
+            LeftArrow(x, y) => LeftArrow(
+                Box::new(x.freshen_with(mapping, next_id)),
+                Box::new(y.freshen_with(mapping, next_id)),
+            ),
+            RightArrow(x, y) => RightArrow(
+                Box::new(x.freshen_with(mapping, next_id)),
+                Box::new(y.freshen_with(mapping, next_id)),
+            ),
+            Extract(x, y) => Extract(
+                Box::new(x.freshen_with(mapping, next_id)),
+                Box::new(y.freshen_with(mapping, next_id)),
+            ),
+            Scoped(x, y) => Scoped(
+                Box::new(x.freshen_with(mapping, next_id)),
+                Box::new(y.freshen_with(mapping, next_id)),
+            ),
+            Conj(x, y) => Conj(
+                Box::new(x.freshen_with(mapping, next_id)),
+                Box::new(y.freshen_with(mapping, next_id)),
+            ),
+            Disj(x, y) => Disj(
+                Box::new(x.freshen_with(mapping, next_id)),
+                Box::new(y.freshen_with(mapping, next_id)),
+            ),
+            Custom { tag, args } => Custom {
+                tag: *tag,
+                args: args
+                    .iter()
+                    .map(|a| a.freshen_with(mapping, next_id))
+                    .collect(),
+            },
         }
     }
 }

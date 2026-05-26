@@ -1,46 +1,57 @@
--- Selectional restriction via subtype hierarchy.
--- Demonstrates that "the idea sleeps" is rejected while "the cat sleeps" parses,
--- using only the standard Type and :< declarations — no special machinery.
+-- Selectional restriction via parametric polymorphism + sort hierarchy.
+-- Demonstrates entity-restricted adjectives, verbs, and adverbs rejecting
+-- nonsense productions while accepting sensible ones.
+--
+-- Adj[entity], Adv modifiers, and verbs all carry entity-sort parameters;
+-- the copula links subject entity to adjective entity through a shared variable.
 
 namespace montague.sorts.
 
-type Sentence.
-type Noun.
-type Animate.
-type Inanimate.
-type Person.
-type Adjective.
+sort entity.
 
--- Subtype hierarchy: Person < Animate < Noun, Inanimate < Noun.
-Animate :< Noun.
-Inanimate :< Noun.
-Person :< Animate.
+entity Person, Animate, Inanimate.
+
+Person :< Animate.  -- sort-internal edge (both are entity members)
+
+type NP[entity], S, Adj[entity].
 
 -- Proper names
-socrates: Person.
+socrates: NP[Person].
 
 -- Animate nouns
-cat: Animate.
-dog: Animate.
+cat: NP[Animate].
+dog: NP[Animate].
 
 -- Inanimate nouns
-idea: Inanimate.
-rock: Inanimate.
+idea: NP[Inanimate].
+rock: NP[Inanimate].
+apple: NP[Inanimate].
 
--- Adjective for copula predication
-mortal: Adjective.
+-- Adjectives — entity-specific predicate forms (copula complement)
+mortal: Adj[Animate].         -- only Animate beings are mortal
+happy: Adj[Animate].          -- only Animate beings can be happy
+colorless_adj: Adj[Inanimate]. -- only Inanimate things are colorless
+green_adj: Adj[Inanimate].     -- only Inanimate things are green (simplified)
 
--- Copula
-is_cop: (Noun \ Sentence) / Adjective.
+-- Copula — polymorphic, entity-linked: subject sort = adjective sort
+is_cop: (NP[a] \ S) / Adj[a].
 
 -- Intransitive verb: only accepts Animate subjects.
--- (In .mont, `A \ B` = RightArrow(A,B) = `B \ A` in std notation,
---  so `Animate \ Sentence` = takes Animate from LEFT, produces Sentence.)
-sleeps: Animate \ Sentence.
+sleeps: NP[Animate] \ S.
 
--- Intersective adjectives (Noun-modifying)
-green_adj: Noun / Noun.
-colorless_adj: Noun / Noun.
+-- Polymorphic intransitive verb — any entity can exist.
+exists: NP[a] \ S.
+
+-- Transitive verb: Animate subject, Inanimate object.
+eats: (NP[Animate] \ S) / NP[Inanimate].
+
+-- Attributive adjectives (NP modifiers) — entity-restricted
+colorless_nmod: NP[Inanimate] / NP[Inanimate].
+green_nmod: NP[Inanimate] / NP[Inanimate].
+
+-- Adverbs — pre-verbal VP modifiers
+quickly: (NP[a] \ S) / (NP[a] \ S).                   -- polymorphic over entity
+angrily: (NP[Animate] \ S) / (NP[Animate] \ S).       -- only Animate-subject VPs
 
 -- Productions
 socrates --> socrates.
@@ -48,8 +59,20 @@ cat --> cat.
 dog --> dog.
 idea --> idea.
 rock --> rock.
+apple --> apple.
 mortal --> mortal.
+happy --> happy.
 is, are --> is_cop.
 sleep, sleeps --> sleeps.
-green --> green_adj.
+exist, exists --> exists.
+eat, eats --> eats.
+
+-- "colorless" and "green": ambiguous — can be predicate Adj or attributive NMod
 colorless --> colorless_adj.
+colorless --> colorless_nmod.
+green --> green_adj.
+green --> green_nmod.
+
+-- Adverbs
+quickly --> quickly.
+angrily --> angrily.

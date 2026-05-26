@@ -3,15 +3,15 @@
 //! Produces a top-down tree with Lambek types at every interior node
 //! and surface words at the leaves in left-to-right sentence order.
 
-use montague_core::types::{LambekType, Term};
+use montague_core::types::{AtomType, LambekType, Term};
 
 // ---------------------------------------------------------------------------
 // Type formatting
 // ---------------------------------------------------------------------------
 
-pub fn format_type<T: std::fmt::Debug>(ty: &LambekType<T>) -> String {
+pub fn format_type<T: std::fmt::Display + std::fmt::Debug>(ty: &LambekType<T>) -> String {
     match ty {
-        LambekType::Basic(t) => format!("{t:?}").trim_matches('"').to_string(),
+        LambekType::Basic(t) => format!("{t}"),
         LambekType::RightArrow(a, b) => {
             let aa = format_type(a);
             let bb = format_type(b);
@@ -39,11 +39,11 @@ pub fn format_type<T: std::fmt::Debug>(ty: &LambekType<T>) -> String {
         }
         LambekType::Conj(a, b) => format!("{}∧{}", format_type(a), format_type(b)),
         LambekType::Disj(a, b) => format!("{}∨{}", format_type(a), format_type(b)),
-        _ => format!("{ty:?}"),
+        other => format!("?({other:?})?"),
     }
 }
 
-fn needs_paren<T: std::fmt::Debug>(ty: &LambekType<T>) -> bool {
+fn needs_paren<T>(ty: &LambekType<T>) -> bool {
     !matches!(ty, LambekType::Basic(_))
 }
 
@@ -58,12 +58,12 @@ pub struct TypedTree {
     pub subtype_note: Option<String>,
 }
 
-pub type TypeLookup<'a> = dyn Fn(&str) -> Option<LambekType<String>> + 'a;
+pub type TypeLookup<'a> = dyn Fn(&str) -> Option<LambekType<AtomType>> + 'a;
 
 /// Build a typed parse tree from a reduced Term and a type lookup.
 pub fn build_typed_tree<A: std::fmt::Display>(
     term: &Term<A>,
-    root_ty: &LambekType<String>,
+    root_ty: &LambekType<AtomType>,
     type_of: &TypeLookup,
 ) -> TypedTree {
     let (tree, _) = build_node(term, root_ty, type_of);
@@ -73,7 +73,7 @@ pub fn build_typed_tree<A: std::fmt::Display>(
 fn term_type<A: std::fmt::Display>(
     term: &Term<A>,
     type_of: &TypeLookup,
-) -> Option<LambekType<String>> {
+) -> Option<LambekType<AtomType>> {
     match term {
         Term::Atom(a) => type_of(&format!("{a}")),
         Term::App(f, _) => {
@@ -92,9 +92,9 @@ fn term_type<A: std::fmt::Display>(
 fn build_app_chain<A: std::fmt::Display>(
     f: &Term<A>,
     args: &[Term<A>],
-    f_ty: &LambekType<String>,
+    f_ty: &LambekType<AtomType>,
     type_of: &TypeLookup,
-) -> (TypedTree, LambekType<String>) {
+) -> (TypedTree, LambekType<AtomType>) {
     let mut current_ty = f_ty.clone();
     let (mut current_tree, _) = build_node(f, &current_ty, type_of);
 
@@ -142,9 +142,9 @@ fn build_app_chain<A: std::fmt::Display>(
 
 fn build_node<A: std::fmt::Display>(
     term: &Term<A>,
-    result_ty: &LambekType<String>,
+    result_ty: &LambekType<AtomType>,
     type_of: &TypeLookup,
-) -> (TypedTree, LambekType<String>) {
+) -> (TypedTree, LambekType<AtomType>) {
     match term {
         Term::Atom(a) => {
             let name = format!("{a}");
@@ -480,10 +480,10 @@ mod tests {
     use super::*;
     use std::collections::HashMap;
 
-    type SType = LambekType<String>;
+    type SType = LambekType<AtomType>;
 
     fn basic(s: &str) -> SType {
-        LambekType::Basic(s.to_string())
+        LambekType::Basic(AtomType::new(s))
     }
     fn slash(a: SType, b: SType) -> SType {
         LambekType::LeftArrow(Box::new(a), Box::new(b))

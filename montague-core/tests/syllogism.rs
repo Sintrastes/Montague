@@ -34,6 +34,8 @@ enum BT {
     Person,
 }
 
+montague_core::impl_type_check_trivial!(BT);
+
 /// Build the lattice used by the syllogism: Person :< Noun.
 fn syllogism_lattice() -> SubtypeLattice<BT> {
     let mut lat = SubtypeLattice::new();

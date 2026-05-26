@@ -3,14 +3,15 @@
 //! Takes a [`MontFile`] AST plus a [`Registry`] and produces a typed lexicon
 //! with populated subtype lattice.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use montague_core::registry::Registry;
 use montague_core::subtyping::SubtypeLattice;
-use montague_core::types::LambekType;
+use montague_core::types::{AtomType, LambekType, SortArg, SortVarId};
 
 use crate::ast::{AtomEntry, Declaration, Directive, MontFile, MorphemeEntry, ProductionEntry, Span, TypeExpr};
 use crate::error::ResolveError;
+use crate::sort::SortRegistry;
 
 /// The output of name resolution — a typed lexicon ready for parsing.
 ///
@@ -18,14 +19,18 @@ use crate::error::ResolveError;
 /// `LambekType<String>` values.
 #[derive(Debug, Clone)]
 pub struct ResolvedLexicon {
-    pub atoms: Vec<AtomEntry<LambekType<String>>>,
+    pub atoms: Vec<AtomEntry<LambekType<AtomType>>>,
     pub productions: Vec<ProductionEntry>,
-    pub morphemes: Vec<MorphemeEntry<LambekType<String>>>,
-    pub lattice: SubtypeLattice<String>,
+    pub morphemes: Vec<MorphemeEntry<LambekType<AtomType>>>,
+    pub lattice: SubtypeLattice<AtomType>,
     /// Namespace declared in this file (if any).
     pub namespace: Option<Vec<String>>,
     /// Type names declared in this file (via `type A.` or `Type = A | B.`).
     pub type_names: HashSet<String>,
+    /// Sort registry — per-sort members and subtyping lattices.
+    pub sorts: SortRegistry,
+    /// Type parameter arities: type name → list of sort names per parameter.
+    pub type_arity: HashMap<String, Vec<String>>,
 }
 
 impl ResolvedLexicon {
@@ -56,6 +61,38 @@ impl ResolvedLexicon {
         self.productions.extend(other.productions);
         self.morphemes.extend(other.morphemes);
         self.lattice.union(&other.lattice);
+
+        // Merge sort registries
+        if let Err(sort_errs) = self.sorts.extend(&other.sorts) {
+            for msg in sort_errs {
+                errors.push(ResolveError::UnknownNamespace {
+                    name: msg,
+                    span: Span::new(0, 0),
+                });
+            }
+        }
+
+        // Merge type arity maps — check for conflicts
+        for (name, params) in &other.type_arity {
+            if let Some(existing) = self.type_arity.get(name) {
+                if existing != params {
+                    errors.push(ResolveError::UnknownNamespace {
+                        name: format!(
+                            "conflicting arity for type `{name}`: {:?} vs {:?}",
+                            existing, params
+                        ),
+                        span: Span::new(0, 0),
+                    });
+                }
+            } else {
+                self.type_arity.insert(name.clone(), params.clone());
+            }
+        }
+
+        if !errors.is_empty() {
+            return Err(errors);
+        }
+
         Ok(())
     }
 }
@@ -195,15 +232,19 @@ pub fn resolve_with_resolver(
         }
     }
 
-    // -- Pass 1: collect known types (local + extended) --
+    // -- Pass 1: collect known types + type arities (local + extended) --
     let mut known_types: HashSet<String> = HashSet::new();
+    let mut type_arity: HashMap<String, Vec<String>> = HashMap::new();
     for decl in &file.declarations {
         match &decl.item {
             Declaration::TypeDecl(types) => {
                 for t in types { known_types.insert(t.clone()); }
             }
-            Declaration::SingleTypeDecl(t) => {
-                known_types.insert(t.clone());
+            Declaration::SingleTypeDecl { name, params } => {
+                known_types.insert(name.clone());
+                if !params.is_empty() {
+                    type_arity.insert(name.clone(), params.clone());
+                }
             }
             _ => {}
         }
@@ -213,24 +254,105 @@ pub fn resolve_with_resolver(
         for t in &el.type_names {
             known_types.insert(t.clone());
         }
-        // Also collect types from extended lattice
+        // Also collect type names from extended lattice (keys are AtomType)
         for (sub, sups) in el.lattice.direct_supertypes_iter() {
-            if !known_types.contains(sub) { known_types.insert(sub.clone()); }
+            let sub_name = sub.name.clone();
+            if !known_types.contains(&sub_name) { known_types.insert(sub_name); }
             for s in sups {
-                if !known_types.contains(s) { known_types.insert(s.clone()); }
+                let s_name = s.name.clone();
+                if !known_types.contains(&s_name) { known_types.insert(s_name); }
             }
         }
     }
 
-    // -- Pass 2: subtype lattice --
+    // -- Pass 1.5: sort declarations --
+    let mut sorts = SortRegistry::new();
+    // Start with extended sorts
+    for el in &extended_lexicons {
+        if let Err(sort_errs) = sorts.extend(&el.sorts) {
+            for msg in sort_errs {
+                errors.push(ResolveError::UnknownNamespace {
+                    name: msg,
+                    span: Span::new(0, 0),
+                });
+            }
+        }
+        // Merge extended type arities
+        for (name, params) in &el.type_arity {
+            if let Some(existing) = type_arity.get(name) {
+                if existing != params {
+                    errors.push(ResolveError::UnknownNamespace {
+                        name: format!("type `{name}` redeclared with different arity"),
+                        span: Span::new(0, 0),
+                    });
+                }
+            } else {
+                type_arity.insert(name.clone(), params.clone());
+            }
+        }
+    }
+    // Collect local sort declarations
+    for decl in &file.declarations {
+        match &decl.item {
+            Declaration::SortDecl(name) => {
+                if let Err(msg) = sorts.add_sort(name.clone()) {
+                    errors.push(ResolveError::UnknownNamespace {
+                        name: msg,
+                        span: decl.span,
+                    });
+                }
+            }
+            Declaration::SortMemberDecl { sort, members } => {
+                for member in members {
+                    if let Err(msg) = sorts.add_member(sort, member.clone()) {
+                        errors.push(ResolveError::UnknownNamespace {
+                            name: msg,
+                            span: decl.span,
+                        });
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    // -- Pass 2: subtype lattice + sort-internal edges --
     let mut lattice = SubtypeLattice::new();
     // Start with extended lattices
     for el in &extended_lexicons {
         lattice.union(&el.lattice);
     }
-    // Add local subtype declarations
+    // Classify and add local subtype declarations
     for decl in &file.declarations {
         if let Declaration::SubtypeDecl { sub, sup } = &decl.item {
+            // Check if both are sort members of the same sort → sort-internal edge
+            match (sorts.member_of(sub), sorts.member_of(sup)) {
+                (Some(sa), Some(sb)) if sa == sb => {
+                    if let Err(msg) = sorts.add_subtype(sub, sup) {
+                        errors.push(ResolveError::UnknownNamespace {
+                            name: msg,
+                            span: decl.span,
+                        });
+                    }
+                    continue;
+                }
+                (Some(_), Some(_)) => {
+                    errors.push(ResolveError::UnknownNamespace {
+                        name: format!("`{sub}` and `{sup}` belong to different sorts — cross-sort subtyping is not allowed"),
+                        span: decl.span,
+                    });
+                    continue;
+                }
+                (Some(_), None) | (None, Some(_)) => {
+                    errors.push(ResolveError::UnknownNamespace {
+                        name: format!("`{sub}` or `{sup}` is a sort member while the other is a grammatical type — mixed edges are not allowed"),
+                        span: decl.span,
+                    });
+                    continue;
+                }
+                _ => {}
+            }
+            // Both are grammatical types — add to grammatical lattice
             if !known_types.contains(sub) {
                 errors.push(ResolveError::SubtypeUnknownType {
                     name: sub.clone(),
@@ -245,15 +367,17 @@ pub fn resolve_with_resolver(
                 });
                 continue;
             }
-            lattice.add_subtype(sub.clone(), sup.clone());
+            lattice.add_subtype(AtomType::new(sub), AtomType::new(sup));
         }
     }
 
     // -- Pass 3: atom declarations --
     let mut atoms = Vec::new();
+    let mut entry_var_counter: u32 = 0;
     for decl in &file.declarations {
         if let Declaration::AtomDecl { doc, entity, ty } = &decl.item {
-            match resolve_type_expr(&ty.item, &known_types, reg, &mut errors, ty.span) {
+            let mut var_map: HashMap<String, SortVarId> = HashMap::new();
+            match resolve_type_expr(&ty.item, &known_types, &type_arity, &sorts, reg, &mut errors, ty.span, &mut var_map, &mut entry_var_counter) {
                 Some(resolved) => {
                     atoms.push(AtomEntry {
                         entity: entity.clone(),
@@ -273,7 +397,8 @@ pub fn resolve_with_resolver(
     let mut morphemes = Vec::new();
     for decl in &file.declarations {
         if let Declaration::MorphemeDecl { surface, ty, strips } = &decl.item {
-            match resolve_type_expr(&ty.item, &known_types, reg, &mut errors, ty.span) {
+            let mut var_map: HashMap<String, SortVarId> = HashMap::new();
+            match resolve_type_expr(&ty.item, &known_types, &type_arity, &sorts, reg, &mut errors, ty.span, &mut var_map, &mut entry_var_counter) {
                 Some(resolved) => {
                     let entity = morpheme_entity_name(surface);
                     let strips = if strips.is_empty() {
@@ -321,6 +446,8 @@ pub fn resolve_with_resolver(
         lattice,
         namespace: namespace.clone(),
         type_names: known_types.clone(),
+        sorts,
+        type_arity,
     };
 
     // -- Pass 5: merge pre-resolved extended lexicons --
@@ -358,7 +485,7 @@ fn morpheme_entity_name(surface: &str) -> String {
 
 /// Ensure entity names are unique across morphemes. Appends `_N` to
 /// duplicates.
-fn dedup_morpheme_entities(morphemes: &mut [MorphemeEntry<LambekType<String>>]) {
+fn dedup_morpheme_entities(morphemes: &mut [MorphemeEntry<LambekType<AtomType>>]) {
     let mut seen: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
     for m in morphemes.iter_mut() {
         let count = seen.entry(m.entity.clone()).or_insert(0);
@@ -387,19 +514,94 @@ fn default_strips(surface: &str) -> Vec<crate::ast::SpellingClass> {
     vec![]
 }
 
-/// Resolve a type expression AST node to a `LambekType<String>`.
+/// Resolve a type expression AST node to a `LambekType<AtomType>`.
+///
+/// Flat (non-parametric) types like `NP` become `LambekType::Basic(AtomType::new("NP"))`.
+/// Parametric types like `NP[Person, Nominative]` become
+/// `LambekType::Basic(AtomType { name: "NP", args: [...] })`.
 #[allow(clippy::only_used_in_recursion)]
 fn resolve_type_expr(
     expr: &TypeExpr,
     known_types: &HashSet<String>,
+    type_arity: &HashMap<String, Vec<String>>,
+    sorts: &SortRegistry,
     reg: &Registry,
     errors: &mut Vec<ResolveError>,
     span: Span,
-) -> Option<LambekType<String>> {
+    var_map: &mut HashMap<String, SortVarId>,
+    next_var_id: &mut u32,
+) -> Option<LambekType<AtomType>> {
     match expr {
+        TypeExpr::ParamApp { name, args } => {
+            if !known_types.contains(name) {
+                errors.push(ResolveError::UnknownType {
+                    name: name.clone(),
+                    span,
+                });
+                return None;
+            }
+            let expected_sorts = type_arity.get(name).cloned().unwrap_or_default();
+            if args.len() != expected_sorts.len() {
+                errors.push(ResolveError::UnknownType {
+                    name: format!(
+                        "type `{name}` expects {} args (sorts {:?}), got {}",
+                        expected_sorts.len(),
+                        expected_sorts,
+                        args.len()
+                    ),
+                    span,
+                });
+                return None;
+            }
+            let mut resolved_args = Vec::new();
+            for (i, arg) in args.iter().enumerate() {
+                match &arg.item {
+                    crate::ast::TypeArg::Concrete(member) => {
+                        let expected_sort = &expected_sorts[i];
+                        match sorts.member_of(member) {
+                            Some(s) if s == expected_sort => {
+                                resolved_args.push(SortArg::Concrete {
+                                    sort: expected_sort.clone(),
+                                    member: member.clone(),
+                                });
+                            }
+                            Some(s) => {
+                                errors.push(ResolveError::UnknownType {
+                                    name: format!(
+                                        "`{member}` is in sort `{s}`, expected sort `{expected_sort}`"
+                                    ),
+                                    span: arg.span,
+                                });
+                                return None;
+                            }
+                            None => {
+                                errors.push(ResolveError::UnknownType {
+                                    name: format!(
+                                        "`{member}` is not a declared sort member of `{expected_sort}`"
+                                    ),
+                                    span: arg.span,
+                                });
+                                return None;
+                            }
+                        }
+                    }
+                    crate::ast::TypeArg::Var(v) => {
+                        // Variable sort is inferred from the position's declared sort.
+                        // Multiple occurrences of the same var name in one entry share an ID.
+                        let id = *var_map.entry(v.clone()).or_insert_with(|| {
+                            let fresh = SortVarId(*next_var_id);
+                            *next_var_id += 1;
+                            fresh
+                        });
+                        resolved_args.push(SortArg::Var(id));
+                    }
+                }
+            }
+            Some(LambekType::Basic(AtomType::with_args(name, resolved_args)))
+        }
         TypeExpr::TypeIdent(name) => {
             if known_types.contains(name) {
-                Some(LambekType::Basic(name.clone()))
+                Some(LambekType::Basic(AtomType::new(name)))
             } else {
                 errors.push(ResolveError::UnknownType {
                     name: name.clone(),
@@ -409,31 +611,28 @@ fn resolve_type_expr(
             }
         }
         TypeExpr::Qualified(path) => {
-            // Qualified name — try to find in registry as a custom connective
             let name = path.join(".");
-            // For now, treat qualified names as unresolved
             errors.push(ResolveError::UnresolvedConnective { name, span });
             None
         }
         TypeExpr::CustomApp { path, args: _ } => {
-            // Custom connective application — v2 feature (deferred).
             let name = path.join(".");
             errors.push(ResolveError::UnresolvedConnective { name, span });
             None
         }
         TypeExpr::LeftArrow(a, b) => {
-            let a = resolve_type_expr(&a.item, known_types, reg, errors, a.span)?;
-            let b = resolve_type_expr(&b.item, known_types, reg, errors, b.span)?;
+            let a = resolve_type_expr(&a.item, known_types, type_arity, sorts, reg, errors, a.span, var_map, next_var_id)?;
+            let b = resolve_type_expr(&b.item, known_types, type_arity, sorts, reg, errors, b.span, var_map, next_var_id)?;
             Some(LambekType::LeftArrow(Box::new(a), Box::new(b)))
         }
         TypeExpr::RightArrow(a, b) => {
-            let a = resolve_type_expr(&a.item, known_types, reg, errors, a.span)?;
-            let b = resolve_type_expr(&b.item, known_types, reg, errors, b.span)?;
+            let a = resolve_type_expr(&a.item, known_types, type_arity, sorts, reg, errors, a.span, var_map, next_var_id)?;
+            let b = resolve_type_expr(&b.item, known_types, type_arity, sorts, reg, errors, b.span, var_map, next_var_id)?;
             Some(LambekType::RightArrow(Box::new(a), Box::new(b)))
         }
         TypeExpr::Union(a, b) => {
-            let a = resolve_type_expr(&a.item, known_types, reg, errors, a.span)?;
-            let b = resolve_type_expr(&b.item, known_types, reg, errors, b.span)?;
+            let a = resolve_type_expr(&a.item, known_types, type_arity, sorts, reg, errors, a.span, var_map, next_var_id)?;
+            let b = resolve_type_expr(&b.item, known_types, type_arity, sorts, reg, errors, b.span, var_map, next_var_id)?;
             Some(LambekType::Disj(Box::new(a), Box::new(b)))
         }
     }
@@ -447,7 +646,7 @@ use montague_core::morph::{MorphemeInfo, MorphSegmenter, SpellingClass as CoreSp
 use montague_core::semantics::Semantics;
 use montague_core::types::{AnnotatedTerm, NonDet, Term};
 
-/// Build a [`Semantics`] from a resolved lexicon using `String` atoms and types.
+/// Build a [`Semantics`] from a resolved lexicon using `String` atoms and `AtomType` types.
 ///
 /// - `type_of_atom`: looks up each entity in the atom list and returns its type.
 /// - `parse_term`: for each surface word, looks up productions and returns
@@ -455,15 +654,15 @@ use montague_core::types::{AnnotatedTerm, NonDet, Term};
 /// - `interp`: identity (return the annotated term as-is).
 pub fn build_semantics(
     lexicon: &ResolvedLexicon,
-) -> Semantics<String, String, AnnotatedTerm<String, String>> {
+) -> Semantics<String, AtomType, AnnotatedTerm<String, AtomType>> {
     let atoms = lexicon.atoms.clone();
     let productions = lexicon.productions.clone();
     let morphemes = lexicon.morphemes.clone();
     let morphemes2 = morphemes.clone();
 
     Semantics::new(
-        // type_of_atom: entity name → its LambekType
-        move |entity: &String| -> NonDet<LambekType<String>> {
+        // type_of_atom: entity name → its LambekType<AtomType>
+        move |entity: &String| -> NonDet<LambekType<AtomType>> {
             let from_atoms: Vec<_> = atoms
                 .iter()
                 .filter(|a| &a.entity == entity)
@@ -554,20 +753,20 @@ mod tests {
         assert_eq!(lex.atoms[0].entity, "socrates");
         assert_eq!(
             lex.atoms[0].type_expr,
-            LambekType::Basic("Person".to_string())
+            LambekType::Basic(AtomType::new("Person"))
         );
         assert_eq!(lex.atoms[1].entity, "mortal");
         assert_eq!(
             lex.atoms[1].type_expr,
-            LambekType::Basic("Adjective".to_string())
+            LambekType::Basic(AtomType::new("Adjective"))
         );
 
         assert_eq!(lex.productions.len(), 1);
         assert_eq!(lex.productions[0].words, vec!["man", "men"]);
         assert_eq!(lex.productions[0].entity, "Man");
 
-        assert!(lex.lattice.leq(&"Person".to_string(), &"Noun".to_string()));
-        assert!(!lex.lattice.leq(&"Noun".to_string(), &"Person".to_string()));
+        assert!(lex.lattice.leq(&AtomType::new("Person"), &AtomType::new("Noun")));
+        assert!(!lex.lattice.leq(&AtomType::new("Noun"), &AtomType::new("Person")));
     }
 
     #[test]
@@ -580,8 +779,8 @@ mod tests {
         assert_eq!(
             lex.atoms[0].type_expr,
             LambekType::RightArrow(
-                Box::new(LambekType::Basic("NP".to_string())),
-                Box::new(LambekType::Basic("S".to_string())),
+                Box::new(LambekType::Basic(AtomType::new("NP"))),
+                Box::new(LambekType::Basic(AtomType::new("S"))),
             )
         );
     }
@@ -604,8 +803,8 @@ mod tests {
         let lex = resolve_str(src).unwrap();
         // The lattice handles cycles gracefully — the DFS has cycle protection.
         // All three become mutually ≤ each other, which is the conservative answer.
-        assert!(lex.lattice.leq(&"A".to_string(), &"B".to_string()));
-        assert!(lex.lattice.leq(&"C".to_string(), &"A".to_string()));
+        assert!(lex.lattice.leq(&AtomType::new("A"), &AtomType::new("B")));
+        assert!(lex.lattice.leq(&AtomType::new("C"), &AtomType::new("A")));
     }
 
     #[test]
@@ -617,8 +816,8 @@ mod tests {
         assert_eq!(
             lex.atoms[0].type_expr,
             LambekType::LeftArrow(
-                Box::new(LambekType::Basic("NP".to_string())),
-                Box::new(LambekType::Basic("N".to_string())),
+                Box::new(LambekType::Basic(AtomType::new("NP"))),
+                Box::new(LambekType::Basic(AtomType::new("N"))),
             )
         );
     }

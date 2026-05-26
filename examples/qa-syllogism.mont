@@ -1,99 +1,79 @@
 -- Q&A syllogism — supports assertions and questions for Prolog inference.
--- Extends the basic English grammar with content vocabulary for testing.
--- Test with:
---   montague ask examples/qa-syllogism.mont
---   > Socrates is a man.
---   > all men are mortal.
---   > Socrates is mortal?
+-- Extends en_grammar_basic with content vocabulary for testing.
 
 namespace montague.qa_syllogism.
 
 extend montague.en_grammar_basic.
 
 -- ==========================================================================
--- Content Vocabulary (moved from en_grammar_basic to keep grammar pure)
+-- Content Vocabulary
 -- ==========================================================================
 
 -- Proper names
-socrates: NP.
-plato: NP.
-alice: NP.
-bob: NP.
+socrates: NP[Person].
+plato: NP[Person].
+alice: NP[Person].
+bob: NP[Person].
 
 -- Common nouns
-man: N.
-cat: N.
-dog: N.
-bird: N.
-animal: N.
-philosopher: N.
-
--- Additional nouns (qa-syllogism specific)
-man_noun: N.
-being: N.
+man: N[Animate].
+cat: N[Animate].
+dog: N[Animate].
+bird: N[Animate].
+animal: N[Animate].
+philosopher: N[Animate].
+man_noun: N[Animate].
+being: N[Animate].
 
 -- Adjectives
-mortal: Adj.
-happy: Adj.
-wise: Adj.
-tall: Adj.
-good: Adj.
-red: Adj.
-living: Adj.
+mortal: Adj[Animate].
+happy: Adj[Animate].
+wise: Adj[Animate].
+tall: Adj[a].
+good: Adj[a].
+red: Adj[a].
+living: Adj[Animate].
 
--- Intransitive verbs (bare VP: NP\S)
-runs: NP \ S.
-sleeps: NP \ S.
-talks: NP \ S.
-thinks: NP \ S.
-walks: NP \ S.
+-- Intransitive verbs
+runs: NP[Animate] \ S.
+sleeps: NP[Animate] \ S.
+talks: NP[Animate] \ S.
+thinks: NP[Animate] \ S.
+walks: NP[Animate] \ S.
 
--- Transitive verbs ((NP\S)/NP)
-likes: (NP \ S) / NP.
-sees: (NP \ S) / NP.
-knows: (NP \ S) / NP.
-eats: (NP \ S) / NP.
+-- Transitive verbs
+likes: (NP[Animate] \ S) / NP[b].
+sees: (NP[Animate] \ S) / NP[b].
+knows: (NP[Animate] \ S) / NP[b].
+eats: (NP[Animate] \ S) / NP[b].
 
--- ==========================================================================
--- Prenominal adjective modifiers & focus particles
--- ==========================================================================
-
-mortal_adj: N / N.
-living_adj: N / N.
+-- Prenominal adjective modifiers
+mortal_adj: N[a] / N[a].
+living_adj: N[a] / N[a].
 
 -- ==========================================================================
 -- Productions
 -- ==========================================================================
 
--- Proper names
 socrates --> socrates.
 plato --> plato.
 alice --> alice.
 bob --> bob.
 
--- Common nouns
-man --> man.
-men --> man.
-cat --> cat.
-dog --> dog.
-bird --> bird.
-animal --> animal.
+man --> man.        men --> man.
+cat --> cat.        dog --> dog.
+bird --> bird.      animal --> animal.
 philosopher --> philosopher.
 man, men --> man_noun.
 being, beings --> being.
 
--- Adjectives
-mortal --> mortal.
-happy --> happy.
-wise --> wise.
-tall --> tall.
-good --> good.
-red --> red.
+mortal --> mortal.     happy --> happy.
+wise --> wise.         tall --> tall.
+good --> good.         red --> red.
 living --> living.
 mortal --> mortal_adj.
 living --> living_adj.
 
--- Verbs
 run, runs --> runs.
 sleep, sleeps --> sleeps.
 talk, talks --> talks.
@@ -103,5 +83,3 @@ like, likes --> likes.
 see, sees --> sees.
 know, knows --> knows.
 eat, eats --> eats.
-
--- Conjunction

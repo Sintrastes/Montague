@@ -10,7 +10,7 @@ use montague_core::{
     reduction::{ReductionCtx, ReductionEngine},
     registry::Registry,
     subtyping::SubtypeLattice,
-    types::AnnotatedTerm,
+    types::{AnnotatedTerm, TypeCheck},
     Semantics,
 };
 use montague_fol::Fol;
@@ -21,7 +21,7 @@ use montague_standard::Standard;
 pub struct Engine<A, T>
 where
     A: Clone + Eq + Hash + Send + Sync + 'static,
-    T: Hash + Eq + Clone + Send + Sync + 'static,
+    T: TypeCheck + Send + Sync + 'static,
 {
     pub registry: Registry,
     pub lattice: SubtypeLattice<T>,
@@ -33,7 +33,7 @@ where
 impl<A, T> Default for Engine<A, T>
 where
     A: Clone + Eq + Hash + Send + Sync + 'static,
-    T: Hash + Eq + Clone + Send + Sync + 'static,
+    T: TypeCheck + Send + Sync + 'static,
 {
     fn default() -> Self {
         let mut registry = Registry::empty();
@@ -57,7 +57,7 @@ where
 impl<A, T> Engine<A, T>
 where
     A: Clone + Eq + Hash + Send + Sync + 'static,
-    T: Hash + Eq + Clone + Send + Sync + 'static,
+    T: TypeCheck + Send + Sync + 'static,
 {
     /// Build an engine from existing components.
     pub fn new(

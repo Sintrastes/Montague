@@ -445,11 +445,11 @@ fn extract_conjunction(term: &Term<String>) -> Option<(Vec<Term<String>>, ConjKi
                 _ => return None,
             };
             let kind = match fname.as_str() {
-                "and" | "and_adj" | "and_np" | "and_vp" | "and_s"
-                | "but" | "but_adj" | "but_s"
+                "and" | "and_conj" | "and_adj" | "and_np" | "and_vp" | "and_s"
+                | "but" | "but_conj" | "but_adj" | "but_s"
                 | "as_well_as" | "but_also" => ConjKind::And,
-                "or" | "or_adj" | "or_np" | "or_vp" | "or_s" => ConjKind::Or,
-                "nor" | "nor_adj" | "nor_np" | "nor_vp" | "nor_s" => ConjKind::Nor,
+                "or" | "or_conj" | "or_adj" | "or_np" | "or_vp" | "or_s" => ConjKind::Or,
+                "nor" | "nor_conj" | "nor_adj" | "nor_np" | "nor_vp" | "nor_s" => ConjKind::Nor,
                 _ => return None,
             };
             if args.len() >= 2 {

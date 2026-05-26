@@ -15,7 +15,7 @@ use std::hash::Hash;
 
 use crate::reduction::{ReductionCtx, ReductionEngine, RuleApplicability, TypeShape};
 use crate::subtyping::SubtypeLattice;
-use crate::types::{AnnotatedTerm, LambekType, Term};
+use crate::types::{AnnotatedTerm, LambekType, Term, TypeCheck};
 
 /// Maximum category depth allowed in the chart.  Composition rules can build
 /// unboundedly deep categories; this guard keeps the chart finite.
@@ -51,16 +51,17 @@ pub struct Cell<A, T> {
     all: Vec<Derivation<A, T>>,
     /// `by_type[ty]` = list of derivation indices into `all`.
     by_type: HashMap<LambekType<T>, Vec<DerivationId>>,
-    /// `by_basic_head[T::name]` = list of `LambekType<T>` values in this cell
-    /// whose top-level constructor is `Basic(name)`. Used for subtype lookup
-    /// via the lattice.
-    by_basic_head: HashMap<T, Vec<LambekType<T>>>,
+    /// `by_basic_head[name]` = list of `LambekType<T>` values in this cell
+    /// whose top-level constructor is `Basic` with that head name.
+    /// Keyed by [`TypeCheck::head_name`] so that `NP[Person]` and `NP[Animate]`
+    /// share the same bucket.
+    by_basic_head: HashMap<String, Vec<LambekType<T>>>,
 }
 
 impl<A, T> Cell<A, T>
 where
     A: Clone + Eq + Hash,
-    T: Hash + Eq + Clone,
+    T: TypeCheck,
 {
     fn new() -> Self {
         Cell {
@@ -76,7 +77,9 @@ where
         let ty = d.ty.clone();
         self.by_type.entry(ty.clone()).or_default().push(id);
         if let LambekType::Basic(ref b) = &ty {
-            self.by_basic_head.entry(b.clone()).or_default().push(ty);
+            if let Some(name) = b.head_name() {
+                self.by_basic_head.entry(name).or_default().push(ty);
+            }
         }
         self.all.push(d);
         id
@@ -126,7 +129,7 @@ pub struct Chart<A, T> {
 impl<A, T> Chart<A, T>
 where
     A: Clone + Eq + Hash + Send + Sync + 'static,
-    T: Hash + Eq + Clone + Send + Sync + 'static,
+    T: TypeCheck + Send + Sync + 'static,
 {
     /// Build a chart of size `n` from per-word lexical entries.
     ///
@@ -352,7 +355,7 @@ impl ConnectiveSet {
 /// handled by the bottom-up sweep alone.
 pub trait ChartPostpass<A, T>: Send + Sync
 where
-    T: Hash + Eq + Clone,
+    T: TypeCheck,
 {
     fn name(&self) -> &'static str;
 
@@ -370,7 +373,7 @@ where
 /// Returns `true` if `ty` has the shape of a coordinator: `(X\X)/X` or
 /// `(X/X)\X` — i.e., it takes two arguments of the same (joinable) category
 /// and returns that category.
-fn is_coordinator_type<T: Hash + Eq + Clone>(ty: &LambekType<T>) -> bool {
+fn is_coordinator_type<T: TypeCheck>(ty: &LambekType<T>) -> bool {
     // (X\X)/X = LeftArrow(RightArrow(x1, x2), x3) where x1 ≈ x2 ≈ x3
     if let LambekType::LeftArrow(inner, arg) = ty {
         if let LambekType::RightArrow(x1, x2) = inner.as_ref() {
@@ -389,7 +392,7 @@ fn is_coordinator_type<T: Hash + Eq + Clone>(ty: &LambekType<T>) -> bool {
 /// Join two Lambek types using the lattice.  Equal types trivially join.
 /// Both `Basic` → delegates to `SubtypeLattice::join`.  Function types with
 /// matching structure join component-wise.  Returns `None` otherwise.
-fn join_types<T: Hash + Eq + Clone>(
+fn join_types<T: TypeCheck>(
     lat: &SubtypeLattice<T>,
     a: &LambekType<T>,
     b: &LambekType<T>,
@@ -425,7 +428,7 @@ pub struct CoordinationPostpass;
 impl<A, T> ChartPostpass<A, T> for CoordinationPostpass
 where
     A: Clone + Eq + Hash + Send + Sync + 'static,
-    T: Hash + Eq + Clone + Send + Sync + 'static,
+    T: TypeCheck + Send + Sync + 'static,
 {
     fn name(&self) -> &'static str {
         "coordination"
@@ -530,7 +533,7 @@ pub struct ExtractionPostpass;
 impl<A, T> ChartPostpass<A, T> for ExtractionPostpass
 where
     A: Clone + Send + Sync + 'static,
-    T: Hash + Eq + Clone + Send + Sync + 'static,
+    T: TypeCheck + Send + Sync + 'static,
 {
     fn name(&self) -> &'static str {
         "extraction"
@@ -550,7 +553,7 @@ pub struct ScopingPostpass;
 impl<A, T> ChartPostpass<A, T> for ScopingPostpass
 where
     A: Clone + Send + Sync + 'static,
-    T: Hash + Eq + Clone + Send + Sync + 'static,
+    T: TypeCheck + Send + Sync + 'static,
 {
     fn name(&self) -> &'static str {
         "scoping"
@@ -580,6 +583,8 @@ mod tests {
         S,
         N,
     }
+
+    crate::impl_type_check_trivial!(BT);
 
     fn basic(t: BT) -> LambekType<BT> {
         LambekType::Basic(t)

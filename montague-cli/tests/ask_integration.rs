@@ -689,6 +689,215 @@ fn sort_copula_predication() {
     );
 }
 
+// ---- Entity-restricted adjective tests ----
+
+/// "rock is mortal" → rejected: rock (Inanimate) can't satisfy mortal (Adj[Animate]).
+#[test]
+fn sort_rock_is_mortal_rejected() {
+    let output = ask_example("sorts.mont", &["rock is mortal."]);
+    assert!(
+        output.contains("no parse"),
+        "expected rejection of 'rock is mortal':\n{output}"
+    );
+}
+
+/// "cat is mortal" → parses: cat (Animate) satisfies mortal (Adj[Animate]).
+#[test]
+fn sort_cat_is_mortal() {
+    let output = ask_example("sorts.mont", &["cat is mortal."]);
+    assert!(
+        output.contains("mortal(cat)"),
+        "expected mortal(cat) assertion:\n{output}"
+    );
+}
+
+/// "idea is happy" → rejected: idea (Inanimate) can't satisfy happy (Adj[Animate]).
+#[test]
+fn sort_idea_is_happy_rejected() {
+    let output = ask_example("sorts.mont", &["idea is happy."]);
+    assert!(
+        output.contains("no parse"),
+        "expected rejection of 'idea is happy':\n{output}"
+    );
+}
+
+/// "cat is happy" → parses: cat (Animate) satisfies happy (Adj[Animate]).
+#[test]
+fn sort_cat_is_happy() {
+    let output = ask_example("sorts.mont", &["cat is happy."]);
+    assert!(
+        output.contains("happy(cat)"),
+        "expected happy(cat) assertion:\n{output}"
+    );
+}
+
+/// "Socrates is colorless" → rejected: Socrates (Person:Animate) can't satisfy
+/// colorless_adj (Adj[Inanimate]).
+#[test]
+fn sort_socrates_is_colorless_rejected() {
+    let output = ask_example("sorts.mont", &["Socrates is colorless."]);
+    assert!(
+        output.contains("no parse"),
+        "expected rejection of 'Socrates is colorless':\n{output}"
+    );
+}
+
+/// "rock is colorless" → parses: rock (Inanimate) satisfies colorless_adj (Adj[Inanimate]).
+#[test]
+fn sort_rock_is_colorless() {
+    let output = ask_example("sorts.mont", &["rock is colorless."]);
+    assert!(
+        !output.contains("no parse"),
+        "expected 'rock is colorless' to parse:\n{output}"
+    );
+}
+
+// ---- Verb entity-restriction tests ----
+
+/// "cat eats apple" → parses: cat (Animate subject), apple (Inanimate object).
+#[test]
+fn sort_cat_eats_apple() {
+    let output = ask_example("sorts.mont", &["cat eats apple."]);
+    assert!(
+        !output.contains("no parse"),
+        "expected 'cat eats apple' to parse:\n{output}"
+    );
+}
+
+/// "apple eats cat" → rejected: apple (Inanimate) fails Animate subject of eats.
+#[test]
+fn sort_apple_eats_cat_rejected() {
+    let output = ask_example("sorts.mont", &["apple eats cat."]);
+    assert!(
+        output.contains("no parse"),
+        "expected rejection of 'apple eats cat':\n{output}"
+    );
+}
+
+/// "Socrates eats apple" → parses: Person :< Animate satisfies subject restriction.
+#[test]
+fn sort_socrates_eats_apple() {
+    let output = ask_example("sorts.mont", &["Socrates eats apple."]);
+    assert!(
+        !output.contains("no parse"),
+        "expected 'Socrates eats apple' to parse:\n{output}"
+    );
+}
+
+/// "rock eats apple" → rejected: rock (Inanimate) fails Animate subject of eats.
+#[test]
+fn sort_rock_eats_apple_rejected() {
+    let output = ask_example("sorts.mont", &["rock eats apple."]);
+    assert!(
+        output.contains("no parse"),
+        "expected rejection of 'rock eats apple':\n{output}"
+    );
+}
+
+// ---- Adverb entity-restriction tests ----
+
+/// "rock quickly exists" → parses: quickly (polymorphic), exists (polymorphic),
+/// rock (Inanimate).
+#[test]
+fn sort_rock_quickly_exists() {
+    let output = ask_example("sorts.mont", &["rock quickly exists."]);
+    assert!(
+        !output.contains("no parse"),
+        "expected 'rock quickly exists' to parse:\n{output}"
+    );
+}
+
+/// "rock angrily exists" → rejected: angrily restricts VP to Animate, but rock is
+/// Inanimate — the adverb forces entity restriction onto the otherwise
+/// polymorphic verb.
+#[test]
+fn sort_rock_angrily_exists_rejected() {
+    let output = ask_example("sorts.mont", &["rock angrily exists."]);
+    assert!(
+        output.contains("no parse"),
+        "expected rejection of 'rock angrily exists':\n{output}"
+    );
+}
+
+/// "cat angrily exists" → parses: angrily (Animate VP) + exists (polymorphic) →
+/// Animate VP; cat (Animate) satisfies it.
+#[test]
+fn sort_cat_angrily_exists() {
+    let output = ask_example("sorts.mont", &["cat angrily exists."]);
+    assert!(
+        !output.contains("no parse"),
+        "expected 'cat angrily exists' to parse:\n{output}"
+    );
+}
+
+/// "dog quickly sleeps" → parses: quickly (polymorphic) + sleeps (Animate VP) →
+/// Animate VP; dog (Animate) satisfies it.
+#[test]
+fn sort_dog_quickly_sleeps() {
+    let output = ask_example("sorts.mont", &["dog quickly sleeps."]);
+    assert!(
+        !output.contains("no parse"),
+        "expected 'dog quickly sleeps' to parse:\n{output}"
+    );
+}
+
+/// "idea quickly sleeps" → rejected: quickly is polymorphic but sleeps still
+/// requires Animate subject, and idea is Inanimate.
+#[test]
+fn sort_idea_quickly_sleeps_rejected() {
+    let output = ask_example("sorts.mont", &["idea quickly sleeps."]);
+    assert!(
+        output.contains("no parse"),
+        "expected rejection of 'idea quickly sleeps':\n{output}"
+    );
+}
+
+/// "cat angrily sleeps" → parses: angrily (Animate VP) + sleeps (Animate VP) →
+/// Animate VP; cat (Animate) satisfies it.
+#[test]
+fn sort_cat_angrily_sleeps() {
+    let output = ask_example("sorts.mont", &["cat angrily sleeps."]);
+    assert!(
+        !output.contains("no parse"),
+        "expected 'cat angrily sleeps' to parse:\n{output}"
+    );
+}
+
+/// "rock angrily sleeps" → rejected: angrily and sleeps both require Animate VP;
+/// rock is Inanimate.
+#[test]
+fn sort_rock_angrily_sleeps_rejected() {
+    let output = ask_example("sorts.mont", &["rock angrily sleeps."]);
+    assert!(
+        output.contains("no parse"),
+        "expected rejection of 'rock angrily sleeps':\n{output}"
+    );
+}
+
+// ---- Attributive modifier restriction tests ----
+
+/// "colorless green rock is colorless" → parses: modifiers restrict to
+/// Inanimate, rock is Inanimate, predicate adjective is Inanimate.
+#[test]
+fn sort_colorless_green_rock_is_colorless() {
+    let output = ask_example("sorts.mont", &["colorless green rock is colorless."]);
+    assert!(
+        !output.contains("no parse"),
+        "expected 'colorless green rock is colorless' to parse:\n{output}"
+    );
+}
+
+/// "colorless green cat is colorless" → rejected: colorless_nmod and green_nmod
+/// restrict to Inanimate NPs, but cat is Animate.
+#[test]
+fn sort_colorless_green_cat_is_colorless_rejected() {
+    let output = ask_example("sorts.mont", &["colorless green cat is colorless."]);
+    assert!(
+        output.contains("no parse"),
+        "expected rejection of 'colorless green cat is colorless':\n{output}"
+    );
+}
+
 // ---------------------------------------------------------------------------
 // Basic English grammar tests (en_grammar_basic.mont)
 // ---------------------------------------------------------------------------

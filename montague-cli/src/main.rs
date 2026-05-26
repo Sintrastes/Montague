@@ -16,6 +16,7 @@ use std::process;
 use montague::core::{
     self,
     reduction::{ReductionCtx, ReductionEngine},
+    types::AtomType,
     Semantics,
 };
 use montague::mont::{parser, resolver};
@@ -122,11 +123,12 @@ fn cmd_lower(args: &[String]) {
 
     // If a sentence was provided, lower the parsed sentence instead of the lexicon.
     if let Some(ref sent) = sentence {
-        let sem: Semantics<String, String, core::AnnotatedTerm<String, String>> =
+        let sem: Semantics<String, AtomType, core::AnnotatedTerm<String, AtomType>> =
             resolver::build_semantics(&lex);
         let segmenter = resolver::build_segmenter(&lex);
         let engine = ReductionEngine::standard();
-        let ctx = ReductionCtx::new(&lex.lattice);
+        let core_sorts = lex.sorts.to_core();
+    let ctx = ReductionCtx::new(&lex.lattice).with_sort_registry(&core_sorts);
         let parses = core::get_all_parses_with_morphology(&engine, &ctx, &sem, &segmenter, sent);
 
         if parses.is_empty() {
@@ -193,7 +195,7 @@ fn lower_lexicon_sexp(lex: &resolver::ResolvedLexicon) {
 fn lower_lexicon_prolog(lex: &resolver::ResolvedLexicon) {
     for a in &lex.atoms {
         if let montague::core::LambekType::Basic(ref t) = a.type_expr {
-            let type_name = t.to_lowercase();
+            let type_name = t.name.to_lowercase();
             println!("typeOf({}, {}).", a.entity, type_name);
         }
     }
@@ -231,11 +233,12 @@ fn cmd_tree(args: &[String]) {
         }
     };
 
-    let sem: Semantics<String, String, core::AnnotatedTerm<String, String>> =
+    let sem: Semantics<String, AtomType, core::AnnotatedTerm<String, AtomType>> =
         resolver::build_semantics(&lex);
     let segmenter = resolver::build_segmenter(&lex);
     let engine = ReductionEngine::standard();
-    let ctx = ReductionCtx::new(&lex.lattice);
+    let core_sorts = lex.sorts.to_core();
+    let ctx = ReductionCtx::new(&lex.lattice).with_sort_registry(&core_sorts);
 
     let parses = core::get_all_parses_with_morphology(&engine, &ctx, &sem, &segmenter, &sentence);
 
@@ -244,7 +247,7 @@ fn cmd_tree(args: &[String]) {
         process::exit(1);
     }
 
-    let atom_types: std::collections::HashMap<String, montague::core::LambekType<String>> = lex
+    let atom_types: std::collections::HashMap<String, montague::core::LambekType<AtomType>> = lex
         .atoms
         .iter()
         .map(|a| (a.entity.clone(), a.type_expr.clone()))
@@ -339,7 +342,7 @@ fn cmd_ask(args: &[String]) {
         process::exit(1);
     }
     let reg = core::registry::Registry::empty();
-    let mut lex = match resolver::resolve_with_resolver(&ast, &reg, &resolver::FsFileResolver, &base_dir_of(&flags.file)) {
+    let lex = match resolver::resolve_with_resolver(&ast, &reg, &resolver::FsFileResolver, &base_dir_of(&flags.file)) {
         Ok(lex) => lex,
         Err(errs) => {
             for e in &errs {
@@ -348,15 +351,16 @@ fn cmd_ask(args: &[String]) {
             process::exit(1);
         }
     };
-    let mut sem: Semantics<String, String, core::AnnotatedTerm<String, String>> =
+    let sem: Semantics<String, AtomType, core::AnnotatedTerm<String, AtomType>> =
         resolver::build_semantics(&lex);
-    let mut segmenter = resolver::build_segmenter(&lex);
+    let segmenter = resolver::build_segmenter(&lex);
     let engine = if flags.compose {
         ReductionEngine::with_composition()
     } else {
         ReductionEngine::standard()
     };
-    let mut ctx = ReductionCtx::new(&lex.lattice);
+    let core_sorts = lex.sorts.to_core();
+    let ctx = ReductionCtx::new(&lex.lattice).with_sort_registry(&core_sorts);
 
     // 2. Initialize Scryer Prolog with a session knowledge base.
     let mut machine = MachineBuilder::default().build();
@@ -498,8 +502,12 @@ fn cmd_ask(args: &[String]) {
             // Keep only Sentence / Question derivations — discard partial
             // parses like who_rel (N\N) that don't form complete utterances.
             parses.retain(|p| {
-                let dbg = format!("{:?}", p.ty);
-                dbg.contains("Sentence") || dbg.contains("Question") || dbg == r#"Basic("S")"# || dbg == r#"Basic("Q")"#
+                // Check if the type name indicates a sentence-level category.
+                let type_name = match &p.ty {
+                    montague::core::LambekType::Basic(a) => &a.name,
+                    _ => return false,
+                };
+                type_name == "Sentence" || type_name == "Question" || type_name == "S" || type_name == "Q"
             });
 
             if parses.is_empty() {
@@ -901,8 +909,9 @@ fn format_lexicon_summary(lex: &resolver::ResolvedLexicon) -> String {
     let mut basic_types: Vec<String> = Vec::new();
     for a in &lex.atoms {
         if let montague::core::LambekType::Basic(ref t) = a.type_expr {
-            if !basic_types.contains(t) {
-                basic_types.push(t.clone());
+            let name = t.name.clone();
+            if !basic_types.contains(&name) {
+                basic_types.push(name);
             }
         }
     }

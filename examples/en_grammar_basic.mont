@@ -1,220 +1,252 @@
 -- ==========================================================================
--- Basic English Grammar — Closed-Class Words & Minimal Content Lexicon
+-- Basic English Grammar — Closed-Class Words & Type System
 -- ==========================================================================
--- Covers the ~150 most frequent grammatical English words plus ~25 content
--- words for testing.  Uses only constructions validated in existing examples.
--- ==========================================================================
-
--- ==========================================================================
--- Type Hierarchy
+-- Defines the full entity-sort hierarchy (WordNet-based noun subtypes),
+-- parameterized types NP[entity], N[entity], Adj[entity], Adv[entity],
+-- and all ~150 closed-class English words.
 -- ==========================================================================
 
 namespace montague.en_grammar_basic.
 
-type S.     -- Sentence (proposition)
-type Q.     -- Question
-type NP.    -- Noun Phrase (argument)
-type N.     -- Common Noun (predicate, sortal)
-type Adj.   -- Adjective (predicative + modifier)
-type Adv.   -- Adverb
-type PP.    -- Prepositional Phrase
-type Aux.   -- Auxiliary / Modal
-type Comp.  -- Complementizer
-type Rel.   -- Relative pronoun (used for Rel type)
-type Conj.  -- Conjunction (marker type, not used for individual coordinators)
+-- ==========================================================================
+-- Sort: entity — semantic noun hierarchy (max 4 levels deep)
+-- ==========================================================================
+
+sort entity.
+
+-- Top-level branches
+entity Animate, Inanimate, Abstract, Group.
+
+-- Animate branch
+entity Person, Animal, Plant, BodyPart.
+Person   :< Animate.
+Animal   :< Animate.
+Plant    :< Animate.
+BodyPart :< Animate.
+
+-- Inanimate branch
+entity Artifact, NaturalObject, Substance, Location.
+Artifact      :< Inanimate.
+NaturalObject :< Inanimate.
+Substance     :< Inanimate.
+Location      :< Inanimate.
+
+-- Artifact subtypes
+entity Building, Furniture, Clothing, Tool, Vehicle,
+       Container, Food, Weapon, Instrument.
+Building   :< Artifact.
+Furniture  :< Artifact.
+Clothing   :< Artifact.
+Tool       :< Artifact.
+Vehicle    :< Artifact.
+Container  :< Artifact.
+Food       :< Artifact.
+Weapon     :< Artifact.
+Instrument :< Artifact.
+
+-- Substance subtypes
+entity Material, Liquid.
+Material :< Substance.
+Liquid   :< Substance.
+
+-- Location subtypes
+entity GeographicArea, Structure.
+GeographicArea :< Location.
+Structure      :< Location.
+
+-- Abstract branch
+entity Time, Quantity, Idea, Event, State,
+       Communication, Attribute, Emotion, Relation, Shape.
+Time          :< Abstract.
+Quantity      :< Abstract.
+Idea          :< Abstract.
+Event         :< Abstract.
+State         :< Abstract.
+Communication :< Abstract.
+Attribute     :< Abstract.
+Emotion       :< Abstract.
+Relation      :< Abstract.
+Shape         :< Abstract.
+
+-- Group branch
+entity SocialGroup, Collection.
+SocialGroup :< Group.
+Collection  :< Group.
+
+-- ==========================================================================
+-- Types
+-- ==========================================================================
+
+type S.             -- Sentence (proposition)
+type Q.             -- Question
+type NP[entity].    -- Noun Phrase (carries entity sort)
+type N[entity].     -- Common Noun (carries entity sort)
+type Adj[entity].   -- Adjective (entity-linked for copula predication)
+type Adv[entity].   -- Adverb (entity-linked via +ly morpheme)
+type PP.            -- Prepositional Phrase
+type Aux.           -- Auxiliary / Modal
+type Comp.          -- Complementizer
+type Rel.           -- Relative pronoun
+
+-- Expletive "it"
+type Expletive.
 
 -- ==========================================================================
 -- §0  Expletive Subject & Predicative Article
 -- ==========================================================================
 
--- Expletive "it" (dummy subject for weather expressions etc.)
--- Subtype of NP so regular copulas work with it too.
-type Expletive.
-Expletive :< NP.
-
 it_subj: Expletive.
-
--- Copula for expletive subjects: "it is raining"
-is_cop_expletive: (Expletive \ S) / Adj.
+is_cop_expletive: (Expletive \ S) / Adj[a].
 
 -- Predicative article "a" — produces Adjective from Noun for copula predication
--- ("Socrates is a man" via is_cop(a_art(man))(socrates)).
-a_art: Adj / N.
+a_art: Adj[a] / N[a].
 
 -- ==========================================================================
 -- §1  Determiners & Quantifiers
 -- ==========================================================================
 
--- Definite article: the cat → the(cat) : NP
-the: NP / N.
-
--- Indefinite article: a cat → a_det(cat) : NP
-a_det: NP / N.
-
--- Universal quantifier: every cat → S/(NP\S)  then + sleeps → S
-every: (S / (NP \ S)) / N.
-
--- Universal: all cats
-all: (S / (NP \ S)) / N.
-
--- Existential: some cats / a cat (quantifier reading)
-some: (S / (NP \ S)) / N.
-a_quant: (S / (NP \ S)) / N.
-
--- Negative quantifier: no cat
-no_det: (S / (NP \ S)) / N.
-
--- Demonstratives
-this_det: NP / N.
-that_det: NP / N.
-these_det: NP / N.
-those_det: NP / N.
+the:       NP[a] / N[a].
+a_det:     NP[a] / N[a].
+every:     (S / (NP[a] \ S)) / N[a].
+all:       (S / (NP[a] \ S)) / N[a].
+some:      (S / (NP[a] \ S)) / N[a].
+a_quant:   (S / (NP[a] \ S)) / N[a].
+no_det:    (S / (NP[a] \ S)) / N[a].
+this_det:  NP[a] / N[a].
+that_det:  NP[a] / N[a].
+these_det: NP[a] / N[a].
+those_det: NP[a] / N[a].
 
 -- ==========================================================================
 -- §2  Pronouns — Subject, Object, Possessive, Reflexive
 -- ==========================================================================
+-- Sort variable [a] means entity is inferred from context.
 
--- Subject pronouns
-i: NP.       you_sg: NP.   he: NP.     she: NP.
-it: NP.      we: NP.       they: NP.
+i:  NP[a].   you_sg: NP[a].  he:  NP[a].  she: NP[a].
+it: NP[a].   we:     NP[a].  they: NP[a].
 
--- Object pronouns
-me: NP.      him: NP.      her: NP.    us: NP.    them: NP.
+me: NP[a].   him: NP[a].   her: NP[a].   us: NP[a].   them: NP[a].
 
--- Possessive determiners: my cat → my(cat) : NP
-my: NP / N.  your: NP / N.  his_det: NP / N.
-her_det: NP / N.  its: NP / N.  our: NP / N.  their: NP / N.
+my:      NP[a] / N[a].  your:    NP[a] / N[a].
+his_det: NP[a] / N[a].  her_det: NP[a] / N[a].
+its:     NP[a] / N[a].  our:     NP[a] / N[a].
+their:   NP[a] / N[a].
 
--- Possessive pronouns (standalone NP: "it is mine")
-mine: NP.    yours: NP.    his_pron: NP.  hers: NP.
-ours: NP.    theirs: NP.
+mine:    NP[a].  yours:   NP[a].  his_pron: NP[a].
+hers:    NP[a].  ours:    NP[a].  theirs:   NP[a].
 
--- Reflexive pronouns
-myself: NP.    yourself: NP.   himself: NP.   herself: NP.
-itself: NP.    ourselves: NP.  yourselves: NP. themselves: NP.
+myself:     NP[a].  yourself:   NP[a].  himself:     NP[a].
+herself:    NP[a].  itself:     NP[a].  ourselves:   NP[a].
+yourselves: NP[a].  themselves: NP[a].
 
 -- ==========================================================================
 -- §3  Copulas — Predicative, Identity, Question-Inversion
 -- ==========================================================================
 
--- Predicative (Adj → VP):  is happy, are happy, am happy
-is_cop:  (NP \ S) / Adj.
-are_cop: (NP \ S) / Adj.
-am_cop:  (NP \ S) / Adj.
+-- Predicative copula: adjective binds entity first (via /Adj[a]), then
+-- subject checks NP[subj] ≤ NP[adj] — works because Adj comes first.
+is_cop:    (NP[a] \ S) / Adj[a].
+are_cop:   (NP[a] \ S) / Adj[a].
+am_cop:    (NP[a] \ S) / Adj[a].
 
--- Identity (NP → VP):  is a cat, are cats, am a cat
-is_ident:  (NP \ S) / NP.
-are_ident: (NP \ S) / NP.
-am_ident:  (NP \ S) / NP.
+-- Identity copula: separate entity variables — the subject binds first in
+-- word order, so entity-linking would overly restrict the identifier NP.
+is_ident:  (NP[a] \ S) / NP[b].
+are_ident: (NP[a] \ S) / NP[b].
+am_ident:  (NP[a] \ S) / NP[b].
 
--- Subject-aux inversion (polar question): Is he happy?
-is_q:  (Q / Adj) / NP.
-are_q: (Q / Adj) / NP.
-
--- ==========================================================================
--- §4  Auxiliaries & Modals — (NP\S)/(NP\S): take bare VP, return VP
--- ==========================================================================
-
--- Modals
-can:    (NP \ S) / (NP \ S).
-will:   (NP \ S) / (NP \ S).
-would:  (NP \ S) / (NP \ S).
-should: (NP \ S) / (NP \ S).
-may:    (NP \ S) / (NP \ S).
-might:  (NP \ S) / (NP \ S).
-must:   (NP \ S) / (NP \ S).
-
--- Do-support: do/does/did + bare VP (no inflection in .mont)
-do_aux:  (NP \ S) / (NP \ S).
-does:    (NP \ S) / (NP \ S).
-did:     (NP \ S) / (NP \ S).
-
--- Perfect have: have/has/had + past participle (VP)
-have_aux: (NP \ S) / (NP \ S).
-has_aux:  (NP \ S) / (NP \ S).
-had_aux:  (NP \ S) / (NP \ S).
+-- Subject-aux inversion: "Is Socrates mortal?" — separate variables because
+-- the subject binds first in word order; entity-linking would overly restrict
+-- the adjective position.
+is_q:  (Q / Adj[a]) / NP[b].
+are_q: (Q / Adj[a]) / NP[b].
 
 -- ==========================================================================
--- §5  Conjunctions — Coordinators for NP, Adj, VP, S
+-- §4  Auxiliaries & Modals
 -- ==========================================================================
 
--- NP coordination (Φ rule): Tom and Jerry
-and_np: (NP \ NP) / NP.
-or_np:  (NP \ NP) / NP.
+can:    (NP[a] \ S) / (NP[a] \ S).
+will:   (NP[a] \ S) / (NP[a] \ S).
+would:  (NP[a] \ S) / (NP[a] \ S).
+should: (NP[a] \ S) / (NP[a] \ S).
+may:    (NP[a] \ S) / (NP[a] \ S).
+might:  (NP[a] \ S) / (NP[a] \ S).
+must:   (NP[a] \ S) / (NP[a] \ S).
 
--- Adj coordination: tall and strong
-and_adj: (Adj \ Adj) / Adj.
-or_adj:  (Adj \ Adj) / Adj.
-but_adj: (Adj \ Adj) / Adj.
+do_aux:  (NP[a] \ S) / (NP[a] \ S).
+does:    (NP[a] \ S) / (NP[a] \ S).
+did:     (NP[a] \ S) / (NP[a] \ S).
 
--- VP coordination: runs and jumps
-and_vp: ((NP \ S) \ (NP \ S)) / (NP \ S).
-or_vp:  ((NP \ S) \ (NP \ S)) / (NP \ S).
-
--- S coordination: he runs and she jumps
-and_s: (S \ S) / S.
-or_s:  (S \ S) / S.
-but_s: (S \ S) / S.
-
--- Correlative focus particles (decorative, N/N identity)
-both: NP / NP.
-either: NP / NP.
-neither: NP / NP.
-
--- Negated conjunction: "nor" — same shape as and/or/but
-nor_np:  (NP \ NP) / NP.
-nor_adj: (Adj \ Adj) / Adj.
-nor_vp:  ((NP \ S) \ (NP \ S)) / (NP \ S).
-nor_s:   (S \ S) / S.
-
--- Adj-focused variants of both/either/neither for "both a man and mortal"
-both_focus:  (Adj / N) / (Adj / N).
-either_focus: (Adj / N) / (Adj / N).
-neither_focus: (Adj / N) / (Adj / N).
-
--- Paired conjunction particles
-not_only:   (Adj / N) / (Adj / N).
-but_also:   (Adj \ Adj) / Adj.
-as_well_as: (Adj \ Adj) / Adj.
+have_aux: (NP[a] \ S) / (NP[a] \ S).
+has_aux:  (NP[a] \ S) / (NP[a] \ S).
+had_aux:  (NP[a] \ S) / (NP[a] \ S).
 
 -- ==========================================================================
--- §6  Prepositions — Nominal Modifier (N\N)/NP + VP Modifier
+-- §5  Conjunctions — polymorphic coordinators
 -- ==========================================================================
 
--- Nominal modifiers: book of poems, cat in the hat
-of:   (N \ N) / NP.
-in:   (N \ N) / NP.
-on:   (N \ N) / NP.
-at:   (N \ N) / NP.
-to:   (N \ N) / NP.
-for:  (N \ N) / NP.
-with: (N \ N) / NP.
-from: (N \ N) / NP.
-by:   (N \ N) / NP.
-about:(N \ N) / NP.
+and_conj: (NP[a] \ NP[a]) / NP[a].
+and_conj: (Adj[a] \ Adj[a]) / Adj[a].
+and_conj: ((NP[a] \ S) \ (NP[a] \ S)) / (NP[a] \ S).
+and_conj: (S \ S) / S.
 
--- VP modifiers: sleeps in the garden
-in_vp:   ((NP \ S) \ (NP \ S)) / NP.
-on_vp:   ((NP \ S) \ (NP \ S)) / NP.
-at_vp:   ((NP \ S) \ (NP \ S)) / NP.
-to_vp:   ((NP \ S) \ (NP \ S)) / NP.
-for_vp:  ((NP \ S) \ (NP \ S)) / NP.
-with_vp: ((NP \ S) \ (NP \ S)) / NP.
-from_vp: ((NP \ S) \ (NP \ S)) / NP.
-by_vp:   ((NP \ S) \ (NP \ S)) / NP.
+or_conj:  (NP[a] \ NP[a]) / NP[a].
+or_conj:  (Adj[a] \ Adj[a]) / Adj[a].
+or_conj:  ((NP[a] \ S) \ (NP[a] \ S)) / (NP[a] \ S).
+or_conj:  (S \ S) / S.
+
+but_conj: (Adj[a] \ Adj[a]) / Adj[a].
+but_conj: (S \ S) / S.
+
+nor_conj: (NP[a] \ NP[a]) / NP[a].
+nor_conj: (Adj[a] \ Adj[a]) / Adj[a].
+nor_conj: ((NP[a] \ S) \ (NP[a] \ S)) / (NP[a] \ S).
+nor_conj: (S \ S) / S.
+
+both:    NP[a] / NP[a].
+either:  NP[a] / NP[a].
+neither: NP[a] / NP[a].
+
+both_focus:    (Adj[a] / N[a]) / (Adj[a] / N[a]).
+either_focus:  (Adj[a] / N[a]) / (Adj[a] / N[a]).
+neither_focus: (Adj[a] / N[a]) / (Adj[a] / N[a]).
+
+not_only:   (Adj[a] / N[a]) / (Adj[a] / N[a]).
+but_also:   (Adj[a] \ Adj[a]) / Adj[a].
+as_well_as: (Adj[a] \ Adj[a]) / Adj[a].
+
+-- ==========================================================================
+-- §6  Prepositions — Nominal Modifier + VP Modifier
+-- ==========================================================================
+
+of:    (N[a] \ N[a]) / NP[b].
+in:    (N[a] \ N[a]) / NP[b].
+on:    (N[a] \ N[a]) / NP[b].
+at:    (N[a] \ N[a]) / NP[b].
+to:    (N[a] \ N[a]) / NP[b].
+for:   (N[a] \ N[a]) / NP[b].
+with:  (N[a] \ N[a]) / NP[b].
+from:  (N[a] \ N[a]) / NP[b].
+by:    (N[a] \ N[a]) / NP[b].
+about: (N[a] \ N[a]) / NP[b].
+
+in_vp:   ((NP[a] \ S) \ (NP[a] \ S)) / NP[b].
+on_vp:   ((NP[a] \ S) \ (NP[a] \ S)) / NP[b].
+at_vp:   ((NP[a] \ S) \ (NP[a] \ S)) / NP[b].
+to_vp:   ((NP[a] \ S) \ (NP[a] \ S)) / NP[b].
+for_vp:  ((NP[a] \ S) \ (NP[a] \ S)) / NP[b].
+with_vp: ((NP[a] \ S) \ (NP[a] \ S)) / NP[b].
+from_vp: ((NP[a] \ S) \ (NP[a] \ S)) / NP[b].
+by_vp:   ((NP[a] \ S) \ (NP[a] \ S)) / NP[b].
 
 -- ==========================================================================
 -- §7  Complementizers & Subordinators
 -- ==========================================================================
 
--- that-clause: I know that he runs
 that_comp: Comp / S.
+whether:   Comp / S.
+if_comp:   Comp / S.
 
--- whether/if: I wonder whether he runs
-whether: Comp / S.
-if_comp: Comp / S.
-
--- Adverbial subordinators: S\S / S
 because:  (S \ S) / S.
 although: (S \ S) / S.
 while:    (S \ S) / S.
@@ -223,121 +255,89 @@ unless:   (S \ S) / S.
 when:     (S \ S) / S.
 after:    (S \ S) / S.
 before:   (S \ S) / S.
-if_sub:   (S \ S) / S.     -- "if it rains" as adverbial
+if_sub:   (S \ S) / S.
 
 -- ==========================================================================
 -- §8  Wh-words — Questions
 -- ==========================================================================
 
--- Wh-pronouns: Who sleeps? → who_q + VP → Q
-who_q:  Q / (NP \ S).
-what_q: Q / (NP \ S).
-
--- Wh-determiner: Which cat sleeps?
-which_det: Q / N.
-
--- Wh-adverbs: Where does he sleep? → Q/(NP\S)
-where_q: Q / (NP \ S).
-when_q:  Q / (NP \ S).
-why_q:   Q / (NP \ S).
-how_q:   Q / (NP \ S).
+who_q:   Q / (NP[a] \ S).
+what_q:  Q / (NP[a] \ S).
+which_det: Q / N[a].
+where_q: Q / (NP[a] \ S).
+when_q:  Q / (NP[a] \ S).
+why_q:   Q / (NP[a] \ S).
+how_q:   Q / (NP[a] \ S).
 
 -- ==========================================================================
--- §9  Relative Pronouns — Subject Extraction (N\N)/(NP\S)
+-- §9  Relative Pronouns — Subject Extraction
 -- ==========================================================================
 
-that_rel:  (N \ N) / (NP \ S).
-who_rel:   (N \ N) / (NP \ S).
-which_rel: (N \ N) / (NP \ S).
+that_rel:  (N[a] \ N[a]) / (NP[a] \ S).
+who_rel:   (N[a] \ N[a]) / (NP[a] \ S).
+which_rel: (N[a] \ N[a]) / (NP[a] \ S).
 
 -- ==========================================================================
 -- §10  Negation
 -- ==========================================================================
 
--- Sentential / VP negation
--- Post-copula adjective negation: is not happy → is(not(happy))
-not_adj: Adj / Adj.
--- Pre-verbal VP negation: does not sleep → does(not(sleep))
-not_vp: (NP \ S) / (NP \ S).
+not_adj: Adj[a] / Adj[a].
+not_vp:  (NP[a] \ S) / (NP[a] \ S).
 
 -- ==========================================================================
 -- §11  Adverbs — Degree, Frequency, Manner
 -- ==========================================================================
 
--- Degree adverbs modifying adjectives: very tall
-very: Adj / Adj.
-too:  Adj / Adj.
+very: Adj[a] / Adj[a].
+too:  Adj[a] / Adj[a].
 
--- VP adverbs (post-verbal): runs quickly → VP\VP
-always_post:    (NP \ S) \ (NP \ S).
-never_post:     (NP \ S) \ (NP \ S).
-often_post:     (NP \ S) \ (NP \ S).
-sometimes_post: (NP \ S) \ (NP \ S).
-already_post:   (NP \ S) \ (NP \ S).
-still_post:     (NP \ S) \ (NP \ S).
+always_post:    (NP[a] \ S) \ (NP[a] \ S).
+never_post:     (NP[a] \ S) \ (NP[a] \ S).
+often_post:     (NP[a] \ S) \ (NP[a] \ S).
+sometimes_post: (NP[a] \ S) \ (NP[a] \ S).
+already_post:   (NP[a] \ S) \ (NP[a] \ S).
+still_post:     (NP[a] \ S) \ (NP[a] \ S).
 
--- VP adverbs (pre-verbal): always runs → VP/VP
-always_pre:    (NP \ S) / (NP \ S).
-never_pre:     (NP \ S) / (NP \ S).
-often_pre:     (NP \ S) / (NP \ S).
-sometimes_pre: (NP \ S) / (NP \ S).
-already_pre:   (NP \ S) / (NP \ S).
-still_pre:     (NP \ S) / (NP \ S).
+always_pre:    (NP[a] \ S) / (NP[a] \ S).
+never_pre:     (NP[a] \ S) / (NP[a] \ S).
+often_pre:     (NP[a] \ S) / (NP[a] \ S).
+sometimes_pre: (NP[a] \ S) / (NP[a] \ S).
+already_pre:   (NP[a] \ S) / (NP[a] \ S).
+still_pre:     (NP[a] \ S) / (NP[a] \ S).
 
--- Focus adverbs (pre-verbal): he only runs
-just_pre: (NP \ S) / (NP \ S).
-only_pre: (NP \ S) / (NP \ S).
-also_pre: (NP \ S) / (NP \ S).
+just_pre: (NP[a] \ S) / (NP[a] \ S).
+only_pre: (NP[a] \ S) / (NP[a] \ S).
+also_pre: (NP[a] \ S) / (NP[a] \ S).
 
 -- ==========================================================================
--- §12  The verb "have" as main verb (transitive)
+-- §12  The verb "have" as main verb
 -- ==========================================================================
 
-have_main: (NP \ S) / NP.
-has_main:  (NP \ S) / NP.
+have_main: (NP[a] \ S) / NP[b].
+has_main:  (NP[a] \ S) / NP[b].
 
 -- ==========================================================================
--- §13  Question operator & expletive
+-- §13  Question operator
 -- ==========================================================================
 
--- Question operator: "Socrates is mortal?" → ask_op(S) : Q
--- Used for polar questions with statement syntax + "?".
 ask_op: Q / S.
 
 -- ==========================================================================
 -- §14  Inflectional Morphemes
 -- ==========================================================================
--- Morphemes are bound suffixes that attach to stems.  The segmenter produces
--- ambiguous stem+suffix splits that compete with whole-word productions in
--- the chart, so morphology never overrides stored (irregular/opaque) forms.
--- ==========================================================================
 
--- Third-singular verb agreement: "he run+s" → runs
-MORPH +s : (NP \ S) \ (NP \ S).
-
--- Plural noun: "cat+s" → cats
-MORPH +s : NP \ N.
-
--- Past tense / past participle: "walk+ed", "us+ed" (e-deletion)
-MORPH +ed : (NP \ S) \ (NP \ S) STRIPS e, CC.
-
--- Gerund (VP → N): "run+ing" (as in "running is fun")
-MORPH +ing : N \ (NP \ S) STRIPS e, CC.
-
--- Progressive participle (VP → VP): "is run+ing"
-MORPH +ing : (NP \ S) \ (NP \ S) STRIPS e, CC.
-
--- Adverb from adjective: "happy+ly" → happily, "quick+ly" → quickly
-MORPH +ly : Adv \ Adj STRIPS y_i.
-
--- Genitive / possessive: "Socrates+'s" → Socrates's / Socrates'
-MORPH +'s : (NP / N) \ NP STRIPS poss.
+MORPH +s   : (NP[a] \ S) \ (NP[a] \ S).
+MORPH +s   : NP[a] \ N[a].
+MORPH +ed  : (NP[a] \ S) \ (NP[a] \ S) STRIPS e, CC.
+MORPH +ing : N[a] \ (NP[a] \ S) STRIPS e, CC.
+MORPH +ing : (NP[a] \ S) \ (NP[a] \ S) STRIPS e, CC.
+MORPH +ly  : Adv[a] \ Adj[a] STRIPS y_i.
+MORPH +'s  : (NP[a] / N[a]) \ NP[a] STRIPS poss.
 
 -- ==========================================================================
 -- Productions — Closed-Class Words
 -- ==========================================================================
 
--- Determiners
 the --> the.
 a, an --> a_det.
 a, an --> a_quant.
@@ -350,174 +350,67 @@ that --> that_det.
 these --> these_det.
 those --> those_det.
 
--- Subject pronouns
-i --> i.
-you --> you_sg.
-he --> he.
-she --> she.
-it --> it.
-we --> we.
-they --> they.
+i --> i.        you --> you_sg.   he --> he.      she --> she.
+it --> it.      we --> we.        they --> they.
+me --> me.      him --> him.      her --> her.    us --> us.     them --> them.
 
--- Object pronouns
-me --> me.
-him --> him.
-her --> her.
-us --> us.
-them --> them.
+my --> my.       your --> your.    his --> his_det.
+her --> her_det. its --> its.      our --> our.     their --> their.
 
--- Possessive determiners
-my --> my.
-your --> your.
-his --> his_det.
-her --> her_det.
-its --> its.
-our --> our.
-their --> their.
+mine --> mine.    yours --> yours.  his --> his_pron.  hers --> hers.
+ours --> ours.    theirs --> theirs.
 
--- Possessive pronouns
-mine --> mine.
-yours --> yours.
-his --> his_pron.
-hers --> hers.
-ours --> ours.
-theirs --> theirs.
+myself --> myself.       yourself --> yourself.     himself --> himself.
+herself --> herself.     itself --> itself.         ourselves --> ourselves.
+yourselves --> yourselves.  themselves --> themselves.
 
--- Reflexives
-myself --> myself.
-yourself --> yourself.
-himself --> himself.
-herself --> herself.
-itself --> itself.
-ourselves --> ourselves.
-yourselves --> yourselves.
-themselves --> themselves.
+is --> is_cop.    is --> is_ident.   is --> is_q.
+are --> are_cop.  are --> are_ident. are --> are_q.
+am --> am_cop.    am --> am_ident.
 
--- Copulas
-is --> is_cop.
-is --> is_ident.
-is --> is_q.
-are --> are_cop.
-are --> are_ident.
-are --> are_q.
-am --> am_cop.
-am --> am_ident.
-
--- Modals / auxiliaries
-can --> can.
-will --> will.
-would --> would.
-should --> should.
-may --> may.
-might --> might.
-must --> must.
-do --> do_aux.
-does --> does.
-did --> did.
-have --> have_aux.
-have --> have_main.
-has --> has_aux.
-has --> has_main.
+can --> can.     will --> will.     would --> would.
+should --> should.  may --> may.    might --> might.   must --> must.
+do --> do_aux.   does --> does.     did --> did.
+have --> have_aux.  have --> have_main.
+has --> has_aux.    has --> has_main.
 had --> had_aux.
 
--- Conjunctions
-and --> and_np.
-and --> and_adj.
-and --> and_vp.
-and --> and_s.
-or --> or_np.
-or --> or_adj.
-or --> or_vp.
-or --> or_s.
-but --> but_adj.
-but --> but_s.
-both --> both.
-either --> either.
-neither --> neither.
-nor --> nor_np.
-nor --> nor_adj.
-nor --> nor_vp.
-nor --> nor_s.
-both --> both_focus.
-either --> either_focus.
-neither --> neither_focus.
+and --> and_conj.   or --> or_conj.
+but --> but_conj.   nor --> nor_conj.
+both --> both.      either --> either.    neither --> neither.
+both --> both_focus.  either --> either_focus.  neither --> neither_focus.
 "not only" --> not_only.
 "but also" --> but_also.
 "as well as" --> as_well_as.
 
--- Prepositions (nominal)
-of --> of.
-in --> in.
-on --> on.
-at --> at.
-to --> to.
-for --> for.
-with --> with.
-from --> from.
-by --> by.
-about --> about.
--- VP-modifier readings
-in --> in_vp.
-on --> on_vp.
-at --> at_vp.
-to --> to_vp.
-for --> for_vp.
-with --> with_vp.
-from --> from_vp.
-by --> by_vp.
+of --> of.     in --> in.     on --> on.     at --> at.     to --> to.
+for --> for.   with --> with. from --> from. by --> by.     about --> about.
+in --> in_vp.  on --> on_vp.  at --> at_vp.  to --> to_vp.
+for --> for_vp.  with --> with_vp.  from --> from_vp.  by --> by_vp.
 
--- Complementizers
-that --> that_comp.
-that --> that_rel.
-whether --> whether.
-if --> if_comp.
-if --> if_sub.
-because --> because.
-although --> although.
-while --> while.
-since --> since.
-unless --> unless.
-when --> when.
-after --> after.
-before --> before.
+that --> that_comp.   that --> that_rel.
+whether --> whether.   if --> if_comp.   if --> if_sub.
+because --> because.   although --> although.  while --> while.
+since --> since.       unless --> unless.      when --> when.
+after --> after.       before --> before.
 
--- Wh-words
-who --> who_q.
-who --> who_rel.
-what --> what_q.
-which --> which_det.
-which --> which_rel.
-where --> where_q.
-when --> when_q.
-why --> why_q.
-how --> how_q.
+who --> who_q.      who --> who_rel.
+what --> what_q.    which --> which_det.   which --> which_rel.
+where --> where_q.  when --> when_q.
+why --> why_q.      how --> how_q.
 
--- Negation
-not --> not_vp.
-not --> not_adj.
+not --> not_vp.     not --> not_adj.
 
--- Adverbs
-very --> very.
-too --> too.
-always --> always_pre.
-always --> always_post.
-never --> never_pre.
-never --> never_post.
-often --> often_pre.
-often --> often_post.
-sometimes --> sometimes_pre.
-sometimes --> sometimes_post.
-already --> already_pre.
-already --> already_post.
-still --> still_pre.
-still --> still_post.
-just --> just_pre.
-only --> only_pre.
-also --> also_pre.
+very --> very.      too --> too.
+always --> always_pre.    always --> always_post.
+never --> never_pre.      never --> never_post.
+often --> often_pre.      often --> often_post.
+sometimes --> sometimes_pre.  sometimes --> sometimes_post.
+already --> already_pre.  already --> already_post.
+still --> still_pre.      still --> still_post.
+just --> just_pre.        only --> only_pre.        also --> also_pre.
 
--- Expletive
 it --> it_subj.
 is --> is_cop_expletive.
 
--- Predicative article
 a, an --> a_art.

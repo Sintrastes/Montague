@@ -12,962 +12,923 @@ extend montague.en_grammar_basic.
 
 -- ==========================================================================
 -- Noun Subtyping Hierarchy (WordNet-based, max 4 levels deep)
--- ==========================================================================
-
--- Root — never used directly
-type N_animate.       type N_inanimate.     type N_abstract.      type N_group.
-N_animate   :< N.     N_inanimate :< N.     N_abstract :< N.     N_group :< N.
-
--- Animate branch
-type Person.      type Animal.      type Plant.       type BodyPart.
-Person  :< N_animate.   Animal :< N_animate.   Plant  :< N_animate.   BodyPart :< N_animate.
-
--- Inanimate branch
-type Artifact.       type NaturalObject.  type Substance.      type Location.
-Artifact :< N_inanimate.  NaturalObject :< N_inanimate.  Substance :< N_inanimate.  Location :< N_inanimate.
-
-type Building.    type Furniture.   type Clothing.    type Tool.       type Vehicle.
-Building  :< Artifact.  Furniture :< Artifact.  Clothing :< Artifact.  Tool :< Artifact.  Vehicle :< Artifact.
-
-type Container.   type Food.        type Weapon.      type Instrument.
-Container :< Artifact.  Food :< Artifact.  Weapon :< Artifact.  Instrument :< Artifact.
-
-type Material.    type Liquid.
-Material :< Substance.  Liquid :< Substance.
-
-type GeographicArea.  type Structure_geo.
-GeographicArea :< Location.  Structure_geo :< Location.
-
--- Abstract branch
-type Time.        type Quantity.     type Idea.         type Event.
-Time     :< N_abstract.  Quantity :< N_abstract.  Idea :< N_abstract.  Event :< N_abstract.
-
-type State.       type Communication.  type Attribute.    type Emotion.
-State  :< N_abstract.  Communication :< N_abstract.  Attribute :< N_abstract.  Emotion :< N_abstract.
-
-type Relation.    type Shape.
-Relation :< N_abstract.  Shape :< N_abstract.
-
--- Group branch
-type SocialGroup.  type Collection.
-SocialGroup :< N_group.  Collection :< N_group.
 
 -- ==========================================================================
 -- Nouns — Animate > Person
 -- ==========================================================================
 
-person: Person.
-child: Person.    children: Person.
-woman: Person.    women: Person.
-student: Person.
-mother: Person.
-father: Person.
-friend: Person.
-teacher: Person.
-president: Person.
-doctor: Person.
-kid: Person.
-girl: Person.
-boy: Person.
-parent: Person.
-member: Person.
-officer: Person.
-author: Person.
-expert: Person.
-manager: Person.
-employee: Person.
-worker: Person.
-patient: Person.
-soldier: Person.
-lawyer: Person.
-professor: Person.
-citizen: Person.
-reporter: Person.
-editor: Person.
-artist: Person.
-scientist: Person.
-writer: Person.
-actor: Person.
-athlete: Person.
-politician: Person.
-governor: Person.
-minister: Person.
-secretary: Person.
-leader: Person.
-neighbor: Person.
-partner: Person.
-colleague: Person.
-customer: Person.
-visitor: Person.
-guest: Person.
-voter: Person.
-farmer: Person.
-driver: Person.
-pilot: Person.
-nurse: Person.
-physician: Person.
-prisoner: Person.
-teenager: Person.
-gentleman: Person.
-lady: Person.
-human_n: Person.
-candidate: Person.
-director: Person.
-volunteer: Person.
-coach: Person.
-priest: Person.
-investigator: Person.
-analyst: Person.
-observer: Person.
-designer: Person.
-maker: Person.
-commander: Person.
-educator: Person.
-supporter: Person.
-husband: Person.
-wife: Person.
-brother: Person.
-sister: Person.
-daughter: Person.
-son: Person.
-baby: Person.
-adult: Person.
-guy: Person.
-hero: Person.
-king: Person.
-victim: Person.
-prisoner: Person.
+person: N[Person].
+child: N[Person].    children: N[Person].
+woman: N[Person].    women: N[Person].
+student: N[Person].
+mother: N[Person].
+father: N[Person].
+friend: N[Person].
+teacher: N[Person].
+president: N[Person].
+doctor: N[Person].
+kid: N[Person].
+girl: N[Person].
+boy: N[Person].
+parent: N[Person].
+member: N[Person].
+officer: N[Person].
+author: N[Person].
+expert: N[Person].
+manager: N[Person].
+employee: N[Person].
+worker: N[Person].
+patient: N[Person].
+soldier: N[Person].
+lawyer: N[Person].
+professor: N[Person].
+citizen: N[Person].
+reporter: N[Person].
+editor: N[Person].
+artist: N[Person].
+scientist: N[Person].
+writer: N[Person].
+actor: N[Person].
+athlete: N[Person].
+politician: N[Person].
+governor: N[Person].
+minister: N[Person].
+secretary: N[Person].
+leader: N[Person].
+neighbor: N[Person].
+partner: N[Person].
+colleague: N[Person].
+customer: N[Person].
+visitor: N[Person].
+guest: N[Person].
+voter: N[Person].
+farmer: N[Person].
+driver: N[Person].
+pilot: N[Person].
+nurse: N[Person].
+physician: N[Person].
+prisoner: N[Person].
+teenager: N[Person].
+gentleman: N[Person].
+lady: N[Person].
+human_n: N[Person].
+candidate: N[Person].
+director: N[Person].
+volunteer: N[Person].
+coach: N[Person].
+priest: N[Person].
+investigator: N[Person].
+analyst: N[Person].
+observer: N[Person].
+designer: N[Person].
+maker: N[Person].
+commander: N[Person].
+educator: N[Person].
+supporter: N[Person].
+husband: N[Person].
+wife: N[Person].
+brother: N[Person].
+sister: N[Person].
+daughter: N[Person].
+son: N[Person].
+baby: N[Person].
+adult: N[Person].
+guy: N[Person].
+hero: N[Person].
+king: N[Person].
+victim: N[Person].
+prisoner: N[Person].
 
 -- ==========================================================================
 -- Nouns — Animate > Animal
 -- ==========================================================================
 
-horse: Animal.
-fish: Animal.
-sheep: Animal.
-chicken: Animal.
-creature: Animal.
+horse: N[Animal].
+fish: N[Animal].
+sheep: N[Animal].
+chicken: N[Animal].
+creature: N[Animal].
 
 -- ==========================================================================
 -- Nouns — Animate > Plant
 -- ==========================================================================
 
-tree: Plant.
-flower: Plant.
-grass: Plant.
-seed: Plant.
-leaf: Plant.
-crop: Plant.
+tree: N[Plant].
+flower: N[Plant].
+grass: N[Plant].
+seed: N[Plant].
+leaf: N[Plant].
+crop: N[Plant].
 
 -- ==========================================================================
 -- Nouns — Animate > BodyPart
 -- ==========================================================================
 
-hand: BodyPart.
-head: BodyPart.
-eye: BodyPart.
-foot: BodyPart.
-arm: BodyPart.
-face: BodyPart.
-shoulder: BodyPart.
-mouth: BodyPart.
-finger: BodyPart.
-leg: BodyPart.
-knee: BodyPart.
-neck: BodyPart.
-lip: BodyPart.
-ear: BodyPart.
-nose: BodyPart.
-chest: BodyPart.
-breast: BodyPart.
-tooth: BodyPart.
-throat: BodyPart.
-bone: BodyPart.
-muscle: BodyPart.
-skin: BodyPart.
-brain: BodyPart.
-heart: BodyPart.
-blood: BodyPart.
-breath: BodyPart.
+hand: N[BodyPart].
+head: N[BodyPart].
+eye: N[BodyPart].
+foot: N[BodyPart].
+arm: N[BodyPart].
+face: N[BodyPart].
+shoulder: N[BodyPart].
+mouth: N[BodyPart].
+finger: N[BodyPart].
+leg: N[BodyPart].
+knee: N[BodyPart].
+neck: N[BodyPart].
+lip: N[BodyPart].
+ear: N[BodyPart].
+nose: N[BodyPart].
+chest: N[BodyPart].
+breast: N[BodyPart].
+tooth: N[BodyPart].
+throat: N[BodyPart].
+bone: N[BodyPart].
+muscle: N[BodyPart].
+skin: N[BodyPart].
+brain: N[BodyPart].
+heart: N[BodyPart].
+blood: N[BodyPart].
+breath: N[BodyPart].
 
 -- ==========================================================================
 -- Nouns — Inanimate > Artifact > Building
 -- ==========================================================================
 
-house: Building.
-room: Building.
-door: Building.
-window: Building.
-hall: Building.
-floor: Building.
-wall: Building.
-roof: Building.
-kitchen: Building.
-bedroom: Building.
-bathroom: Building.
-hospital: Building.
-church: Building.
-library: Building.
-museum: Building.
-restaurant: Building.
-hotel: Building.
-store: Building.
-station: Building.
-airport: Building.
-prison: Building.
-college: Building.
-university: Building.
-factory: Building.
-apartment: Building.
-building: Building.
+house: N[Building].
+room: N[Building].
+door: N[Building].
+window: N[Building].
+hall: N[Building].
+floor: N[Building].
+wall: N[Building].
+roof: N[Building].
+kitchen: N[Building].
+bedroom: N[Building].
+bathroom: N[Building].
+hospital: N[Building].
+church: N[Building].
+library: N[Building].
+museum: N[Building].
+restaurant: N[Building].
+hotel: N[Building].
+store: N[Building].
+station: N[Building].
+airport: N[Building].
+prison: N[Building].
+college: N[Building].
+university: N[Building].
+factory: N[Building].
+apartment: N[Building].
+building: N[Building].
 
 -- ==========================================================================
 -- Nouns — Inanimate > Artifact > Furniture
 -- ==========================================================================
 
-table: Furniture.
-chair: Furniture.
-bed: Furniture.
-desk: Furniture.
+table: N[Furniture].
+chair: N[Furniture].
+bed: N[Furniture].
+desk: N[Furniture].
 
 -- ==========================================================================
 -- Nouns — Inanimate > Artifact > Clothing
 -- ==========================================================================
 
-clothes: Clothing.
-shoe: Clothing.
-shirt: Clothing.
-jacket: Clothing.
-coat: Clothing.
-hat: Clothing.
-suit: Clothing.
-dress: Clothing.
-belt: Clothing.
-pocket: Clothing.
+clothes: N[Clothing].
+shoe: N[Clothing].
+shirt: N[Clothing].
+jacket: N[Clothing].
+coat: N[Clothing].
+hat: N[Clothing].
+suit: N[Clothing].
+dress: N[Clothing].
+belt: N[Clothing].
+pocket: N[Clothing].
 
 -- ==========================================================================
 -- Nouns — Inanimate > Artifact > Tool
 -- ==========================================================================
 
-tool: Tool.
-knife: Tool.
-key: Tool.
-device: Tool.
+tool: N[Tool].
+knife: N[Tool].
+key: N[Tool].
+device: N[Tool].
 
 -- ==========================================================================
 -- Nouns — Inanimate > Artifact > Vehicle
 -- ==========================================================================
 
-car: Vehicle.
-bus: Vehicle.
-truck: Vehicle.
-train: Vehicle.
-plane: Vehicle.
-bike: Vehicle.
-boat: Vehicle.
-ship: Vehicle.
+car: N[Vehicle].
+bus: N[Vehicle].
+truck: N[Vehicle].
+train: N[Vehicle].
+plane: N[Vehicle].
+bike: N[Vehicle].
+boat: N[Vehicle].
+ship: N[Vehicle].
 
 -- ==========================================================================
 -- Nouns — Inanimate > Artifact > Container
 -- ==========================================================================
 
-box: Container.
-bag: Container.
-bottle: Container.
-cup: Container.
-bowl: Container.
+box: N[Container].
+bag: N[Container].
+bottle: N[Container].
+cup: N[Container].
+bowl: N[Container].
 
 -- ==========================================================================
 -- Nouns — Inanimate > Artifact > Food
 -- ==========================================================================
 
-food: Food.
-bread: Food.
-meat: Food.
-egg: Food.
-cheese: Food.
-milk: Food.
-butter: Food.
-sugar: Food.
-salt: Food.
-wine: Food.
-coffee: Food.
-tea: Food.
-beer: Food.
-juice: Food.
-sauce: Food.
-cream: Food.
-meal: Food.
-dinner: Food.
-lunch: Food.
-breakfast: Food.
-potato: Food.
-tomato: Food.
-bean: Food.
-corn: Food.
-rice: Food.
-fruit: Food.
-vegetable: Food.
+food: N[Food].
+bread: N[Food].
+meat: N[Food].
+egg: N[Food].
+cheese: N[Food].
+milk: N[Food].
+butter: N[Food].
+sugar: N[Food].
+salt: N[Food].
+wine: N[Food].
+coffee: N[Food].
+tea: N[Food].
+beer: N[Food].
+juice: N[Food].
+sauce: N[Food].
+cream: N[Food].
+meal: N[Food].
+dinner: N[Food].
+lunch: N[Food].
+breakfast: N[Food].
+potato: N[Food].
+tomato: N[Food].
+bean: N[Food].
+corn: N[Food].
+rice: N[Food].
+fruit: N[Food].
+vegetable: N[Food].
 
 -- ==========================================================================
 -- Nouns — Inanimate > Artifact > Weapon
 -- ==========================================================================
 
-gun: Weapon.
-bomb: Weapon.
-missile: Weapon.
-weapon: Weapon.
+gun: N[Weapon].
+bomb: N[Weapon].
+missile: N[Weapon].
+weapon: N[Weapon].
 
 -- ==========================================================================
 -- Nouns — Inanimate > Artifact > Instrument
 -- ==========================================================================
 
-camera: Instrument.
-radio: Instrument.
-phone: Instrument.
-computer: Instrument.
-machine: Instrument.
-engine: Instrument.
-television: Instrument.
-tape: Instrument.
-cable: Instrument.
-wire: Instrument.
-screen: Instrument.
+camera: N[Instrument].
+radio: N[Instrument].
+phone: N[Instrument].
+computer: N[Instrument].
+machine: N[Instrument].
+engine: N[Instrument].
+television: N[Instrument].
+tape: N[Instrument].
+cable: N[Instrument].
+wire: N[Instrument].
+screen: N[Instrument].
 
 -- ==========================================================================
 -- Nouns — Inanimate > NaturalObject
 -- ==========================================================================
 
-mountain: NaturalObject.
-river: NaturalObject.
-lake: NaturalObject.
-ocean: NaturalObject.
-sea: NaturalObject.
-hill: NaturalObject.
-island: NaturalObject.
-rock: NaturalObject.
-stone: NaturalObject.
-star: NaturalObject.
-sun: NaturalObject.
-moon: NaturalObject.
-sky: NaturalObject.
-cloud: NaturalObject.
-planet: NaturalObject.
-earth: NaturalObject.
-forest: NaturalObject.
-desert: NaturalObject.
+mountain: N[NaturalObject].
+river: N[NaturalObject].
+lake: N[NaturalObject].
+ocean: N[NaturalObject].
+sea: N[NaturalObject].
+hill: N[NaturalObject].
+island: N[NaturalObject].
+rock: N[NaturalObject].
+stone: N[NaturalObject].
+star: N[NaturalObject].
+sun: N[NaturalObject].
+moon: N[NaturalObject].
+sky: N[NaturalObject].
+cloud: N[NaturalObject].
+planet: N[NaturalObject].
+earth: N[NaturalObject].
+forest: N[NaturalObject].
+desert: N[NaturalObject].
 
 -- ==========================================================================
 -- Nouns — Inanimate > Substance
 -- ==========================================================================
 
-water: Substance.
-air: Substance.
-fire: Substance.
-smoke: Substance.
-oil: Substance.
-gas: Substance.
-ice: Substance.
-snow: Substance.
-rain: Substance.
-wind: Substance.
-sand: Substance.
-soil: Substance.
-dust: Substance.
+water: N[Substance].
+air: N[Substance].
+fire: N[Substance].
+smoke: N[Substance].
+oil: N[Substance].
+gas: N[Substance].
+ice: N[Substance].
+snow: N[Substance].
+rain: N[Substance].
+wind: N[Substance].
+sand: N[Substance].
+soil: N[Substance].
+dust: N[Substance].
 
 -- Material
-metal: Material.
-iron: Material.
-steel: Material.
-glass: Material.
-wood: Material.
-paper: Material.
-plastic: Material.
-gold: Material.
-silver: Material.
+metal: N[Material].
+iron: N[Material].
+steel: N[Material].
+glass: N[Material].
+wood: N[Material].
+paper: N[Material].
+plastic: N[Material].
+gold: N[Material].
+silver: N[Material].
 
 -- ==========================================================================
 -- Nouns — Inanimate > Location
 -- ==========================================================================
 
-place: Location.
-city: Location.
-town: Location.
-village: Location.
-street: Location.
-road: Location.
-area: Location.
-region: Location.
-garden: Location.
-park: Location.
-beach: Location.
-coast: Location.
-ground: Location.
-territory: Location.
-site: Location.
-campus: Location.
-field: Location.
-yard: Location.
-farm: Location.
-neighborhood: Location.
+place: N[Location].
+city: N[Location].
+town: N[Location].
+village: N[Location].
+street: N[Location].
+road: N[Location].
+area: N[Location].
+region: N[Location].
+garden: N[Location].
+park: N[Location].
+beach: N[Location].
+coast: N[Location].
+ground: N[Location].
+territory: N[Location].
+site: N[Location].
+campus: N[Location].
+field: N[Location].
+yard: N[Location].
+farm: N[Location].
+neighborhood: N[Location].
 
 -- GeographicArea
-country: GeographicArea.
-land: GeographicArea.
-island: GeographicArea.
+country: N[GeographicArea].
+land: N[GeographicArea].
+island: N[GeographicArea].
 
 -- Structure
-bridge: Structure_geo.
-tower: Structure_geo.
+bridge: N[Structure].
+tower: N[Structure].
 
 -- ==========================================================================
 -- Nouns — Abstract > Time
 -- ==========================================================================
 
-time: Time.
-day: Time.
-year: Time.
-month: Time.
-week: Time.
-hour: Time.
-minute: Time.
-moment: Time.
-morning: Time.
-evening: Time.
-night: Time.
-afternoon: Time.
-century: Time.
-decade: Time.
-period: Time.
-season: Time.
-summer: Time.
-winter: Time.
-spring: Time.
-weekend: Time.
-holiday: Time.
-era: Time.
-future: Time.
-past: Time.
-date: Time.
-calendar: Time.
+time: N[Time].
+day: N[Time].
+year: N[Time].
+month: N[Time].
+week: N[Time].
+hour: N[Time].
+minute: N[Time].
+moment: N[Time].
+morning: N[Time].
+evening: N[Time].
+night: N[Time].
+afternoon: N[Time].
+century: N[Time].
+decade: N[Time].
+period: N[Time].
+season: N[Time].
+summer: N[Time].
+winter: N[Time].
+spring: N[Time].
+weekend: N[Time].
+holiday: N[Time].
+era: N[Time].
+future: N[Time].
+past: N[Time].
+date: N[Time].
+calendar: N[Time].
 
 -- ==========================================================================
 -- Nouns — Abstract > Quantity
 -- ==========================================================================
 
-number: Quantity.
-amount: Quantity.
-level: Quantity.
-rate: Quantity.
-percentage: Quantity.
-portion: Quantity.
-volume: Quantity.
-total: Quantity.
-score: Quantity.
-degree: Quantity.
-limit: Quantity.
-capacity: Quantity.
+number: N[Quantity].
+amount: N[Quantity].
+level: N[Quantity].
+rate: N[Quantity].
+percentage: N[Quantity].
+portion: N[Quantity].
+volume: N[Quantity].
+total: N[Quantity].
+score: N[Quantity].
+degree: N[Quantity].
+limit: N[Quantity].
+capacity: N[Quantity].
 
 -- ==========================================================================
 -- Nouns — Abstract > Idea
 -- ==========================================================================
 
-idea: Idea.
-fact: Idea.
-problem: Idea.
-system: Idea.
-plan: Idea.
-reason: Idea.
-theory: Idea.
-concept: Idea.
-principle: Idea.
-method: Idea.
-theme: Idea.
-topic: Idea.
-secret: Idea.
-truth: Idea.
-mystery: Idea.
-pattern: Idea.
-philosophy: Idea.
-strategy: Idea.
-belief: Idea.
-faith: Idea.
-knowledge: Idea.
-science: Idea.
-purpose: Idea.
-goal: Idea.
-objective: Idea.
-option: Idea.
-choice: Idea.
-possibility: Idea.
-opportunity: Idea.
-chance: Idea.
-example: Idea.
-evidence: Idea.
-proof: Idea.
-action: Idea.
-practice: Idea.
-process: Idea.
-policy: Idea.
-law: Idea.
-rule: Idea.
-program: Idea.
-project: Idea.
-design: Idea.
-model: Idea.
-type_n: Idea.
-sort: Idea.
-kind: Idea.
-part: Idea.
-section: Idea.
-unit: Idea.
-structure: Idea.
-function: Idea.
-role: Idea.
-context: Idea.
-case: Idea.
-issue: Idea.
-matter: Idea.
-subject: Idea.
-term: Idea.
-standard: Idea.
-resource: Idea.
-source: Idea.
-data: Idea.
-information: Idea.
-detail: Idea.
-factor: Idea.
-element: Idea.
-aspect: Idea.
-feature: Idea.
-focus: Idea.
-direction: Idea.
-approach: Idea.
-technique: Idea.
-technology: Idea.
-industry: Idea.
-economy: Idea.
-market: Idea.
-business: Idea.
-service: Idea.
-benefit: Idea.
-advantage: Idea.
-result: Idea.
-effect: Idea.
-impact: Idea.
-outcome: Idea.
-risk: Idea.
-concern: Idea.
-challenge: Idea.
-solution: Idea.
-candidate: Idea.
+idea: N[Idea].
+fact: N[Idea].
+problem: N[Idea].
+system: N[Idea].
+plan: N[Idea].
+reason: N[Idea].
+theory: N[Idea].
+concept: N[Idea].
+principle: N[Idea].
+method: N[Idea].
+theme: N[Idea].
+topic: N[Idea].
+secret: N[Idea].
+truth: N[Idea].
+mystery: N[Idea].
+pattern: N[Idea].
+philosophy: N[Idea].
+strategy: N[Idea].
+belief: N[Idea].
+faith: N[Idea].
+knowledge: N[Idea].
+science: N[Idea].
+purpose: N[Idea].
+goal: N[Idea].
+objective: N[Idea].
+option: N[Idea].
+choice: N[Idea].
+possibility: N[Idea].
+opportunity: N[Idea].
+chance: N[Idea].
+example: N[Idea].
+evidence: N[Idea].
+proof: N[Idea].
+action: N[Idea].
+practice: N[Idea].
+process: N[Idea].
+policy: N[Idea].
+law: N[Idea].
+rule: N[Idea].
+program: N[Idea].
+project: N[Idea].
+design: N[Idea].
+model: N[Idea].
+type_n: N[Idea].
+sort: N[Idea].
+kind: N[Idea].
+part: N[Idea].
+section: N[Idea].
+unit: N[Idea].
+structure: N[Idea].
+function: N[Idea].
+role: N[Idea].
+context: N[Idea].
+case: N[Idea].
+issue: N[Idea].
+matter: N[Idea].
+subject: N[Idea].
+term: N[Idea].
+standard: N[Idea].
+resource: N[Idea].
+source: N[Idea].
+data: N[Idea].
+information: N[Idea].
+detail: N[Idea].
+factor: N[Idea].
+element: N[Idea].
+aspect: N[Idea].
+feature: N[Idea].
+focus: N[Idea].
+direction: N[Idea].
+approach: N[Idea].
+technique: N[Idea].
+technology: N[Idea].
+industry: N[Idea].
+economy: N[Idea].
+market: N[Idea].
+business: N[Idea].
+service: N[Idea].
+benefit: N[Idea].
+advantage: N[Idea].
+result: N[Idea].
+effect: N[Idea].
+impact: N[Idea].
+outcome: N[Idea].
+risk: N[Idea].
+concern: N[Idea].
+challenge: N[Idea].
+solution: N[Idea].
+candidate: N[Idea].
 
 -- ==========================================================================
 -- Nouns — Abstract > Event
 -- ==========================================================================
 
-war: Event.
-party: Event.
-game: Event.
-meeting: Event.
-accident: Event.
-incident: Event.
-battle: Event.
-disaster: Event.
-ceremony: Event.
-wedding: Event.
-birthday: Event.
-emergency: Event.
-event: Event.
-trip: Event.
-journey: Event.
-tour: Event.
-visit: Event.
-show: Event.
-movie: Event.
-film: Event.
-concert: Event.
-exercise: Event.
-campaign: Event.
-election: Event.
-conference: Event.
-trial: Event.
-operation: Event.
-crisis: Event.
-conflict: Event.
-competition: Event.
-performance: Event.
-interview: Event.
+war: N[Event].
+party: N[Event].
+game: N[Event].
+meeting: N[Event].
+accident: N[Event].
+incident: N[Event].
+battle: N[Event].
+disaster: N[Event].
+ceremony: N[Event].
+wedding: N[Event].
+birthday: N[Event].
+emergency: N[Event].
+event: N[Event].
+trip: N[Event].
+journey: N[Event].
+tour: N[Event].
+visit: N[Event].
+show: N[Event].
+movie: N[Event].
+film: N[Event].
+concert: N[Event].
+exercise: N[Event].
+campaign: N[Event].
+election: N[Event].
+conference: N[Event].
+trial: N[Event].
+operation: N[Event].
+crisis: N[Event].
+conflict: N[Event].
+competition: N[Event].
+performance: N[Event].
+interview: N[Event].
 
 -- ==========================================================================
 -- Nouns — Abstract > Communication
 -- ==========================================================================
 
-word: Communication.
-question: Communication.
-answer: Communication.
-story: Communication.
-message: Communication.
-statement: Communication.
-speech: Communication.
-conversation: Communication.
-discussion: Communication.
-argument: Communication.
-explanation: Communication.
-description: Communication.
-comment: Communication.
-report: Communication.
-news: Communication.
-language: Communication.
-letter: Communication.
-text: Communication.
-article: Communication.
-document: Communication.
-book: Communication.
-note: Communication.
-song: Communication.
-music: Communication.
-name: Communication.
-subject: Communication.
-title: Communication.
-instruction: Communication.
-definition: Communication.
-promise: Communication.
-joke: Communication.
-tale: Communication.
-image: Communication.
-picture: Communication.
-sign: Communication.
-signal: Communication.
-data: Communication.
-network: Communication.
-press: Communication.
-publication: Communication.
-culture: Communication.
-tradition: Communication.
+word: N[Communication].
+question: N[Communication].
+answer: N[Communication].
+story: N[Communication].
+message: N[Communication].
+statement: N[Communication].
+speech: N[Communication].
+conversation: N[Communication].
+discussion: N[Communication].
+argument: N[Communication].
+explanation: N[Communication].
+description: N[Communication].
+comment: N[Communication].
+report: N[Communication].
+news: N[Communication].
+language: N[Communication].
+letter: N[Communication].
+text: N[Communication].
+article: N[Communication].
+document: N[Communication].
+book: N[Communication].
+note: N[Communication].
+song: N[Communication].
+music: N[Communication].
+name: N[Communication].
+subject: N[Communication].
+title: N[Communication].
+instruction: N[Communication].
+definition: N[Communication].
+promise: N[Communication].
+joke: N[Communication].
+tale: N[Communication].
+image: N[Communication].
+picture: N[Communication].
+sign: N[Communication].
+signal: N[Communication].
+data: N[Communication].
+network: N[Communication].
+press: N[Communication].
+publication: N[Communication].
+culture: N[Communication].
+tradition: N[Communication].
 
 -- ==========================================================================
 -- Nouns — Abstract > State
 -- ==========================================================================
 
-state: State.
-condition: State.
-peace: State.
-freedom: State.
-health: State.
-safety: State.
-danger: State.
-trouble: State.
-difficulty: State.
-crisis: State.
-situation: State.
-poverty: State.
-silence: State.
-disorder: State.
-death: State.
-conflict: State.
-pressure: State.
-stress: State.
-success: State.
-failure: State.
-loss: State.
-growth: State.
-progress: State.
-treatment: State.
-protection: State.
-security: State.
-defense: State.
-education: State.
-training: State.
-employment: State.
-crime: State.
-violence: State.
-pollution: State.
-disease: State.
-injury: State.
+state: N[State].
+condition: N[State].
+peace: N[State].
+freedom: N[State].
+health: N[State].
+safety: N[State].
+danger: N[State].
+trouble: N[State].
+difficulty: N[State].
+crisis: N[State].
+situation: N[State].
+poverty: N[State].
+silence: N[State].
+disorder: N[State].
+death: N[State].
+conflict: N[State].
+pressure: N[State].
+stress: N[State].
+success: N[State].
+failure: N[State].
+loss: N[State].
+growth: N[State].
+progress: N[State].
+treatment: N[State].
+protection: N[State].
+security: N[State].
+defense: N[State].
+education: N[State].
+training: N[State].
+employment: N[State].
+crime: N[State].
+violence: N[State].
+pollution: N[State].
+disease: N[State].
+injury: N[State].
 
 -- ==========================================================================
 -- Nouns — Abstract > Attribute
 -- ==========================================================================
 
-quality: Attribute.
-beauty: Attribute.
-strength: Attribute.
-speed: Attribute.
-talent: Attribute.
-intelligence: Attribute.
-skill: Attribute.
-ability: Attribute.
-power: Attribute.
-force: Attribute.
-energy: Attribute.
-weight: Attribute.
-size: Attribute.
-scale: Attribute.
-length: Attribute.
-depth: Attribute.
-color: Attribute.
-tone: Attribute.
-style: Attribute.
-nature: Attribute.
-character: Attribute.
-personality: Attribute.
-status: Attribute.
-reputation: Attribute.
-significance: Attribute.
-importance: Attribute.
-value: Attribute.
-cost: Attribute.
-price: Attribute.
+quality: N[Attribute].
+beauty: N[Attribute].
+strength: N[Attribute].
+speed: N[Attribute].
+talent: N[Attribute].
+intelligence: N[Attribute].
+skill: N[Attribute].
+ability: N[Attribute].
+power: N[Attribute].
+force: N[Attribute].
+energy: N[Attribute].
+weight: N[Attribute].
+size: N[Attribute].
+scale: N[Attribute].
+length: N[Attribute].
+depth: N[Attribute].
+color: N[Attribute].
+tone: N[Attribute].
+style: N[Attribute].
+nature: N[Attribute].
+character: N[Attribute].
+personality: N[Attribute].
+status: N[Attribute].
+reputation: N[Attribute].
+significance: N[Attribute].
+importance: N[Attribute].
+value: N[Attribute].
+cost: N[Attribute].
+price: N[Attribute].
 
 -- ==========================================================================
 -- Nouns — Abstract > Emotion
 -- ==========================================================================
 
-love: Emotion.
-fear: Emotion.
-anger: Emotion.
-joy: Emotion.
-passion: Emotion.
-hope: Emotion.
-emotion: Emotion.
-anxiety: Emotion.
-mood: Emotion.
-desire: Emotion.
-surprise: Emotion.
-pleasure: Emotion.
+love: N[Emotion].
+fear: N[Emotion].
+anger: N[Emotion].
+joy: N[Emotion].
+passion: N[Emotion].
+hope: N[Emotion].
+emotion: N[Emotion].
+anxiety: N[Emotion].
+mood: N[Emotion].
+desire: N[Emotion].
+surprise: N[Emotion].
+pleasure: N[Emotion].
 
 -- ==========================================================================
 -- Nouns — Abstract > Relation
 -- ==========================================================================
 
-relation: Relation.
-connection: Relation.
-difference: Relation.
-contrast: Relation.
-comparison: Relation.
-combination: Relation.
-relationship: Relation.
+relation: N[Relation].
+connection: N[Relation].
+difference: N[Relation].
+contrast: N[Relation].
+comparison: N[Relation].
+combination: N[Relation].
+relationship: N[Relation].
 
 -- ==========================================================================
 -- Nouns — Abstract > Shape
 -- ==========================================================================
 
-shape: Shape.
-form: Shape.
-circle: Shape.
-edge: Shape.
-line: Shape.
-hole: Shape.
-corner: Shape.
+shape: N[Shape].
+form: N[Shape].
+circle: N[Shape].
+edge: N[Shape].
+line: N[Shape].
+hole: N[Shape].
+corner: N[Shape].
 
 -- ==========================================================================
 -- Nouns — Group > SocialGroup
 -- ==========================================================================
 
-family: SocialGroup.
-group: SocialGroup.
-company: SocialGroup.
-government: SocialGroup.
-team: SocialGroup.
-community: SocialGroup.
-organization: SocialGroup.
-society: SocialGroup.
-agency: SocialGroup.
-army: SocialGroup.
-nation: SocialGroup.
-population: SocialGroup.
-generation: SocialGroup.
-class: SocialGroup.
-club: SocialGroup.
-crowd: SocialGroup.
-band: SocialGroup.
-committee: SocialGroup.
-jury: SocialGroup.
-union: SocialGroup.
-league: SocialGroup.
-crew: SocialGroup.
-staff: SocialGroup.
-minority: SocialGroup.
-majority: SocialGroup.
-audience: SocialGroup.
-troop: SocialGroup.
+family: N[SocialGroup].
+group: N[SocialGroup].
+company: N[SocialGroup].
+government: N[SocialGroup].
+team: N[SocialGroup].
+community: N[SocialGroup].
+organization: N[SocialGroup].
+society: N[SocialGroup].
+agency: N[SocialGroup].
+army: N[SocialGroup].
+nation: N[SocialGroup].
+population: N[SocialGroup].
+generation: N[SocialGroup].
+class: N[SocialGroup].
+club: N[SocialGroup].
+crowd: N[SocialGroup].
+band: N[SocialGroup].
+committee: N[SocialGroup].
+jury: N[SocialGroup].
+union: N[SocialGroup].
+league: N[SocialGroup].
+crew: N[SocialGroup].
+staff: N[SocialGroup].
+minority: N[SocialGroup].
+majority: N[SocialGroup].
+audience: N[SocialGroup].
+troop: N[SocialGroup].
 
 -- ==========================================================================
 -- Nouns — Group > Collection
 -- ==========================================================================
 
-collection: Collection.
-set: Collection.
-series: Collection.
-list: Collection.
-supply: Collection.
-stock: Collection.
+collection: N[Collection].
+set: N[Collection].
+series: N[Collection].
+list: N[Collection].
+supply: N[Collection].
+stock: N[Collection].
 
 -- ==========================================================================
 -- Nouns — Inanimate > Artifact > Container (additions)
 -- ==========================================================================
 
-plate: Container.
-dish: Container.
-pot: Container.
-pan: Container.
+plate: N[Container].
+dish: N[Container].
+pot: N[Container].
+pan: N[Container].
 
 -- ==========================================================================
 -- Nouns — Inanimate > Artifact > Instrument (additions)
 -- ==========================================================================
 
-bell: Instrument.
-clock: Instrument.
-watch_n: Instrument.
-lamp: Instrument.
-wheel: Instrument.
-motor: Instrument.
-pump: Instrument.
+bell: N[Instrument].
+clock: N[Instrument].
+watch_n: N[Instrument].
+lamp: N[Instrument].
+wheel: N[Instrument].
+motor: N[Instrument].
+pump: N[Instrument].
 
 -- ==========================================================================
 -- Nouns — Inanimate > Artifact > Furniture (additions)
 -- ==========================================================================
 
-shelf: Furniture.
-couch: Furniture.
-bench: Furniture.
-mirror: Furniture.
-curtain: Furniture.
+shelf: N[Furniture].
+couch: N[Furniture].
+bench: N[Furniture].
+mirror: N[Furniture].
+curtain: N[Furniture].
 
 -- ==========================================================================
 -- Nouns — Inanimate > Artifact > Clothing (additions)
 -- ==========================================================================
 
-boot: Clothing.
-glove: Clothing.
-sock: Clothing.
-skirt: Clothing.
-ring_n: Clothing.
-jewelry: Clothing.
-button: Clothing.
+boot: N[Clothing].
+glove: N[Clothing].
+sock: N[Clothing].
+skirt: N[Clothing].
+ring_n: N[Clothing].
+jewelry: N[Clothing].
+button: N[Clothing].
 
 -- ==========================================================================
 -- Nouns — Inanimate > Artifact > Tool (additions)
 -- ==========================================================================
 
-hammer: Tool.
-rope: Tool.
-chain: Tool.
-ladder: Tool.
-brush: Tool.
-needle: Tool.
+hammer: N[Tool].
+rope: N[Tool].
+chain: N[Tool].
+ladder: N[Tool].
+brush: N[Tool].
+needle: N[Tool].
 
 -- ==========================================================================
 -- Nouns — Inanimate > NaturalObject (additions)
 -- ==========================================================================
 
-wave: NaturalObject.
-cave: NaturalObject.
-volcano: NaturalObject.
-valley: NaturalObject.
+wave: N[NaturalObject].
+cave: N[NaturalObject].
+volcano: N[NaturalObject].
+valley: N[NaturalObject].
 
 -- ==========================================================================
 -- Nouns — Inanimate > Substance (additions)
 -- ==========================================================================
 
-steam: Substance.
-powder: Substance.
-flame: Substance.
-mud: Substance.
+steam: N[Substance].
+powder: N[Substance].
+flame: N[Substance].
+mud: N[Substance].
 
 -- ==========================================================================
 -- Nouns — Abstract > Time (additions)
 -- ==========================================================================
 
-birthday: Time.
-dawn: Time.
-noon: Time.
-midnight: Time.
-deadline: Time.
+birthday: N[Time].
+dawn: N[Time].
+noon: N[Time].
+midnight: N[Time].
+deadline: N[Time].
 
 -- ==========================================================================
 -- Nouns — Abstract > Quantity (additions)
 -- ==========================================================================
 
-distance: Quantity.
-depth: Quantity.
-width: Quantity.
-height: Quantity.
-length_n: Quantity.
-measurement: Quantity.
+distance: N[Quantity].
+depth: N[Quantity].
+width: N[Quantity].
+height: N[Quantity].
+length_n: N[Quantity].
+measurement: N[Quantity].
 
 -- ==========================================================================
 -- Nouns — Abstract > Event (additions)
 -- ==========================================================================
 
-celebration: Event.
-funeral: Event.
-festival: Event.
-parade: Event.
-protest: Event.
-revolution: Event.
-explosion: Event.
-crash: Event.
-storm: Event.
-flood: Event.
-earthquake: Event.
+celebration: N[Event].
+funeral: N[Event].
+festival: N[Event].
+parade: N[Event].
+protest: N[Event].
+revolution: N[Event].
+explosion: N[Event].
+crash: N[Event].
+storm: N[Event].
+flood: N[Event].
+earthquake: N[Event].
 
 -- ==========================================================================
 -- Nouns — Group > SocialGroup (additions)
 -- ==========================================================================
 
-tribe: SocialGroup.
-clan: SocialGroup.
-gang: SocialGroup.
-council: SocialGroup.
-assembly: SocialGroup.
-brigade: SocialGroup.
-squad: SocialGroup.
+tribe: N[SocialGroup].
+clan: N[SocialGroup].
+gang: N[SocialGroup].
+council: N[SocialGroup].
+assembly: N[SocialGroup].
+brigade: N[SocialGroup].
+squad: N[SocialGroup].
 
 -- ==========================================================================
 -- Nouns — Abstract > Idea (additions)
 -- ==========================================================================
 
-mind: Idea.
-memory: Idea.
-imagination: Idea.
-opinion: Idea.
-attitude: Idea.
-perspective: Idea.
-tradition: Idea.
-ritual: Idea.
-habit: Idea.
-custom: Idea.
-religion: Idea.
-faith: Idea.
-dream: Idea.
-nightmare: Idea.
-fantasy: Idea.
-vision: Idea.
-mission: Idea.
-career: Idea.
-profession: Idea.
-occupation: Idea.
-task: Idea.
-duty: Idea.
-responsibility: Idea.
-mistake: Idea.
-error: Idea.
-tragedy: Idea.
-miracle: Idea.
-coincidence: Idea.
-category: Idea.
-phase: Idea.
-step: Idea.
-stage: Idea.
-trend: Idea.
-background: Idea.
-foundation: Idea.
-basis: Idea.
-theme: Idea.
-version: Idea.
-alternative: Idea.
+mind: N[Idea].
+memory: N[Idea].
+imagination: N[Idea].
+opinion: N[Idea].
+attitude: N[Idea].
+perspective: N[Idea].
+tradition: N[Idea].
+ritual: N[Idea].
+habit: N[Idea].
+custom: N[Idea].
+religion: N[Idea].
+faith: N[Idea].
+dream: N[Idea].
+nightmare: N[Idea].
+fantasy: N[Idea].
+vision: N[Idea].
+mission: N[Idea].
+career: N[Idea].
+profession: N[Idea].
+occupation: N[Idea].
+task: N[Idea].
+duty: N[Idea].
+responsibility: N[Idea].
+mistake: N[Idea].
+error: N[Idea].
+tragedy: N[Idea].
+miracle: N[Idea].
+coincidence: N[Idea].
+category: N[Idea].
+phase: N[Idea].
+step: N[Idea].
+stage: N[Idea].
+trend: N[Idea].
+background: N[Idea].
+foundation: N[Idea].
+basis: N[Idea].
+theme: N[Idea].
+version: N[Idea].
+alternative: N[Idea].
 
 -- ==========================================================================
 -- Proper Names
@@ -979,411 +940,411 @@ alternative: Idea.
 -- Verbs — Intransitive (NP \ S)
 -- ==========================================================================
 
-go: NP \ S.
-come: NP \ S.
-live: NP \ S.
-die: NP \ S.
-happen: NP \ S.
-sit: NP \ S.
-stand: NP \ S.
-wait: NP \ S.
-stay: NP \ S.
-fall: NP \ S.
-remain: NP \ S.
-arrive: NP \ S.
-lie: NP \ S.
-rise: NP \ S.
-work: NP \ S.
-play: NP \ S.
-listen: NP \ S.
-smile: NP \ S.
-laugh: NP \ S.
-dance: NP \ S.
-fly: NP \ S.
-swim: NP \ S.
-jump: NP \ S.
-climb: NP \ S.
-travel: NP \ S.
-return: NP \ S.
-leave: NP \ S.
-enter: NP \ S.
-disappear: NP \ S.
-appear: NP \ S.
-exist: NP \ S.
-grow: NP \ S.
-continue: NP \ S.
-hurry: NP \ S.
-rest: NP \ S.
-hide: NP \ S.
-escape: NP \ S.
-relax: NP \ S.
-complain: NP \ S.
-cry: NP \ S.
-shout: NP \ S.
-scream: NP \ S.
-stare: NP \ S.
-pray: NP \ S.
-breathe: NP \ S.
-retire: NP \ S.
-recover: NP \ S.
-succeed: NP \ S.
-struggle: NP \ S.
-vote: NP \ S.
-graduate: NP \ S.
-wake: NP \ S.
-slip: NP \ S.
-slide: NP \ S.
-bend: NP \ S.
-nod: NP \ S.
-whisper: NP \ S.
+go: NP[a] \ S.
+come: NP[a] \ S.
+live: NP[a] \ S.
+die: NP[a] \ S.
+happen: NP[a] \ S.
+sit: NP[a] \ S.
+stand: NP[a] \ S.
+wait: NP[a] \ S.
+stay: NP[a] \ S.
+fall: NP[a] \ S.
+remain: NP[a] \ S.
+arrive: NP[a] \ S.
+lie: NP[a] \ S.
+rise: NP[a] \ S.
+work: NP[a] \ S.
+play: NP[a] \ S.
+listen: NP[a] \ S.
+smile: NP[a] \ S.
+laugh: NP[a] \ S.
+dance: NP[a] \ S.
+fly: NP[a] \ S.
+swim: NP[a] \ S.
+jump: NP[a] \ S.
+climb: NP[a] \ S.
+travel: NP[a] \ S.
+return: NP[a] \ S.
+leave: NP[a] \ S.
+enter: NP[a] \ S.
+disappear: NP[a] \ S.
+appear: NP[a] \ S.
+exist: NP[a] \ S.
+grow: NP[a] \ S.
+continue: NP[a] \ S.
+hurry: NP[a] \ S.
+rest: NP[a] \ S.
+hide: NP[a] \ S.
+escape: NP[a] \ S.
+relax: NP[a] \ S.
+complain: NP[a] \ S.
+cry: NP[a] \ S.
+shout: NP[a] \ S.
+scream: NP[a] \ S.
+stare: NP[a] \ S.
+pray: NP[a] \ S.
+breathe: NP[a] \ S.
+retire: NP[a] \ S.
+recover: NP[a] \ S.
+succeed: NP[a] \ S.
+struggle: NP[a] \ S.
+vote: NP[a] \ S.
+graduate: NP[a] \ S.
+wake: NP[a] \ S.
+slip: NP[a] \ S.
+slide: NP[a] \ S.
+bend: NP[a] \ S.
+nod: NP[a] \ S.
+whisper: NP[a] \ S.
 
 -- ==========================================================================
 -- Verbs — Transitive ((NP \ S) / NP)
 -- ==========================================================================
 
-take: (NP \ S) / NP.
-give: (NP \ S) / NP.
-find: (NP \ S) / NP.
-tell: (NP \ S) / NP.
-want: (NP \ S) / NP.
-use: (NP \ S) / NP.
-ask: (NP \ S) / NP.
-need: (NP \ S) / NP.
-feel: (NP \ S) / NP.
-put: (NP \ S) / NP.
-keep: (NP \ S) / NP.
-let: (NP \ S) / NP.
-help: (NP \ S) / NP.
-show: (NP \ S) / NP.
-hear: (NP \ S) / NP.
-hold: (NP \ S) / NP.
-bring: (NP \ S) / NP.
-provide: (NP \ S) / NP.
-pay: (NP \ S) / NP.
-meet: (NP \ S) / NP.
-include: (NP \ S) / NP.
-learn: (NP \ S) / NP.
-lead: (NP \ S) / NP.
-follow: (NP \ S) / NP.
-stop: (NP \ S) / NP.
-create: (NP \ S) / NP.
-allow: (NP \ S) / NP.
-add: (NP \ S) / NP.
-spend: (NP \ S) / NP.
-open: (NP \ S) / NP.
-win: (NP \ S) / NP.
-offer: (NP \ S) / NP.
-remember: (NP \ S) / NP.
-consider: (NP \ S) / NP.
-buy: (NP \ S) / NP.
-serve: (NP \ S) / NP.
-send: (NP \ S) / NP.
-expect: (NP \ S) / NP.
-build: (NP \ S) / NP.
-cut: (NP \ S) / NP.
-reach: (NP \ S) / NP.
-kill: (NP \ S) / NP.
-suggest: (NP \ S) / NP.
-raise: (NP \ S) / NP.
-pass: (NP \ S) / NP.
-sell: (NP \ S) / NP.
-require: (NP \ S) / NP.
-decide: (NP \ S) / NP.
-explain: (NP \ S) / NP.
-carry: (NP \ S) / NP.
-break: (NP \ S) / NP.
-thank: (NP \ S) / NP.
-receive: (NP \ S) / NP.
-join: (NP \ S) / NP.
-agree: (NP \ S) / NP.
-pick: (NP \ S) / NP.
-wear: (NP \ S) / NP.
-support: (NP \ S) / NP.
-hit: (NP \ S) / NP.
-produce: (NP \ S) / NP.
-cover: (NP \ S) / NP.
-describe: (NP \ S) / NP.
-catch: (NP \ S) / NP.
-draw: (NP \ S) / NP.
-choose: (NP \ S) / NP.
-cause: (NP \ S) / NP.
-involve: (NP \ S) / NP.
-increase: (NP \ S) / NP.
-seek: (NP \ S) / NP.
-throw: (NP \ S) / NP.
-fill: (NP \ S) / NP.
-represent: (NP \ S) / NP.
-drop: (NP \ S) / NP.
-push: (NP \ S) / NP.
-reduce: (NP \ S) / NP.
-save: (NP \ S) / NP.
-shoot: (NP \ S) / NP.
-protect: (NP \ S) / NP.
-accept: (NP \ S) / NP.
-identify: (NP \ S) / NP.
-determine: (NP \ S) / NP.
-prepare: (NP \ S) / NP.
-argue: (NP \ S) / NP.
-recognize: (NP \ S) / NP.
-indicate: (NP \ S) / NP.
-wonder: (NP \ S) / NP.
-fail: (NP \ S) / NP.
-name: (NP \ S) / NP.
-compare: (NP \ S) / NP.
-miss: (NP \ S) / NP.
-state: (NP \ S) / NP.
-discuss: (NP \ S) / NP.
-check: (NP \ S) / NP.
-prove: (NP \ S) / NP.
-claim: (NP \ S) / NP.
-remove: (NP \ S) / NP.
-enjoy: (NP \ S) / NP.
-establish: (NP \ S) / NP.
-imagine: (NP \ S) / NP.
-avoid: (NP \ S) / NP.
-finish: (NP \ S) / NP.
-respond: (NP \ S) / NP.
-maintain: (NP \ S) / NP.
-reveal: (NP \ S) / NP.
-contain: (NP \ S) / NP.
-apply: (NP \ S) / NP.
-manage: (NP \ S) / NP.
-perform: (NP \ S) / NP.
-treat: (NP \ S) / NP.
-affect: (NP \ S) / NP.
-worry: (NP \ S) / NP.
-mention: (NP \ S) / NP.
-improve: (NP \ S) / NP.
-reflect: (NP \ S) / NP.
-beat: (NP \ S) / NP.
-notice: (NP \ S) / NP.
-wish: (NP \ S) / NP.
-prevent: (NP \ S) / NP.
-assume: (NP \ S) / NP.
-suffer: (NP \ S) / NP.
-publish: (NP \ S) / NP.
-hurt: (NP \ S) / NP.
-achieve: (NP \ S) / NP.
-announce: (NP \ S) / NP.
-examine: (NP \ S) / NP.
-touch: (NP \ S) / NP.
-experience: (NP \ S) / NP.
-replace: (NP \ S) / NP.
-encourage: (NP \ S) / NP.
-define: (NP \ S) / NP.
-introduce: (NP \ S) / NP.
-handle: (NP \ S) / NP.
-refuse: (NP \ S) / NP.
-gain: (NP \ S) / NP.
-express: (NP \ S) / NP.
-deliver: (NP \ S) / NP.
-observe: (NP \ S) / NP.
-earn: (NP \ S) / NP.
-operate: (NP \ S) / NP.
-contribute: (NP \ S) / NP.
-settle: (NP \ S) / NP.
-feed: (NP \ S) / NP.
-collect: (NP \ S) / NP.
-promote: (NP \ S) / NP.
-marry: (NP \ S) / NP.
-survive: (NP \ S) / NP.
-lift: (NP \ S) / NP.
-gather: (NP \ S) / NP.
-limit: (NP \ S) / NP.
-fit: (NP \ S) / NP.
-associate: (NP \ S) / NP.
-spread: (NP \ S) / NP.
-ignore: (NP \ S) / NP.
-measure: (NP \ S) / NP.
-demonstrate: (NP \ S) / NP.
-threaten: (NP \ S) / NP.
-commit: (NP \ S) / NP.
-deny: (NP \ S) / NP.
-destroy: (NP \ S) / NP.
-extend_v: (NP \ S) / NP.
-combine: (NP \ S) / NP.
-demand: (NP \ S) / NP.
-remind: (NP \ S) / NP.
-grab: (NP \ S) / NP.
-hire: (NP \ S) / NP.
-attack: (NP \ S) / NP.
-welcome: (NP \ S) / NP.
-expand: (NP \ S) / NP.
-explore: (NP \ S) / NP.
-obtain: (NP \ S) / NP.
-surround: (NP \ S) / NP.
-invite: (NP \ S) / NP.
-repeat: (NP \ S) / NP.
-predict: (NP \ S) / NP.
-belong: (NP \ S) / NP.
-acknowledge: (NP \ S) / NP.
-recommend: (NP \ S) / NP.
-generate: (NP \ S) / NP.
-propose: (NP \ S) / NP.
-capture: (NP \ S) / NP.
-prefer: (NP \ S) / NP.
-select: (NP \ S) / NP.
-declare: (NP \ S) / NP.
-appreciate: (NP \ S) / NP.
-defend: (NP \ S) / NP.
-ensure: (NP \ S) / NP.
-warn: (NP \ S) / NP.
-pursue: (NP \ S) / NP.
-steal: (NP \ S) / NP.
-estimate: (NP \ S) / NP.
-investigate: (NP \ S) / NP.
-solve: (NP \ S) / NP.
-eliminate: (NP \ S) / NP.
-confirm: (NP \ S) / NP.
-rely: (NP \ S) / NP.
-attract: (NP \ S) / NP.
-grant: (NP \ S) / NP.
-review: (NP \ S) / NP.
-display: (NP \ S) / NP.
-suspect: (NP \ S) / NP.
-permit: (NP \ S) / NP.
-arrest: (NP \ S) / NP.
-purchase: (NP \ S) / NP.
-suppose: (NP \ S) / NP.
-perceive: (NP \ S) / NP.
-inform: (NP \ S) / NP.
-abandon: (NP \ S) / NP.
-transform: (NP \ S) / NP.
-enable: (NP \ S) / NP.
-preserve: (NP \ S) / NP.
-arrange: (NP \ S) / NP.
-deserve: (NP \ S) / NP.
-resolve: (NP \ S) / NP.
-contact: (NP \ S) / NP.
-quote: (NP \ S) / NP.
-urge: (NP \ S) / NP.
-elect: (NP \ S) / NP.
-implement: (NP \ S) / NP.
-resist: (NP \ S) / NP.
-embrace: (NP \ S) / NP.
-supply: (NP \ S) / NP.
-assist: (NP \ S) / NP.
-construct: (NP \ S) / NP.
-analyze: (NP \ S) / NP.
-impose: (NP \ S) / NP.
-evaluate: (NP \ S) / NP.
-illustrate: (NP \ S) / NP.
-concentrate: (NP \ S) / NP.
-transfer: (NP \ S) / NP.
-mark: (NP \ S) / NP.
-locate: (NP \ S) / NP.
-file: (NP \ S) / NP.
-record: (NP \ S) / NP.
-report: (NP \ S) / NP.
-test: (NP \ S) / NP.
-design: (NP \ S) / NP.
-plan: (NP \ S) / NP.
-study: (NP \ S) / NP.
-form: (NP \ S) / NP.
-base: (NP \ S) / NP.
-charge: (NP \ S) / NP.
-search: (NP \ S) / NP.
-watch: (NP \ S) / NP.
-visit: (NP \ S) / NP.
-control: (NP \ S) / NP.
-mind: (NP \ S) / NP.
-guess: (NP \ S) / NP.
-forget: (NP \ S) / NP.
-answer: (NP \ S) / NP.
-care: (NP \ S) / NP.
-lack: (NP \ S) / NP.
-note: (NP \ S) / NP.
-cost: (NP \ S) / NP.
-influence: (NP \ S) / NP.
-smoke: (NP \ S) / NP.
-question: (NP \ S) / NP.
-copy: (NP \ S) / NP.
-pull: (NP \ S) / NP.
-fix: (NP \ S) / NP.
+take: (NP[a] \ S) / NP[b].
+give: (NP[a] \ S) / NP[b].
+find: (NP[a] \ S) / NP[b].
+tell: (NP[a] \ S) / NP[b].
+want: (NP[a] \ S) / NP[b].
+use: (NP[a] \ S) / NP[b].
+ask: (NP[a] \ S) / NP[b].
+need: (NP[a] \ S) / NP[b].
+feel: (NP[a] \ S) / NP[b].
+put: (NP[a] \ S) / NP[b].
+keep: (NP[a] \ S) / NP[b].
+let: (NP[a] \ S) / NP[b].
+help: (NP[a] \ S) / NP[b].
+show: (NP[a] \ S) / NP[b].
+hear: (NP[a] \ S) / NP[b].
+hold: (NP[a] \ S) / NP[b].
+bring: (NP[a] \ S) / NP[b].
+provide: (NP[a] \ S) / NP[b].
+pay: (NP[a] \ S) / NP[b].
+meet: (NP[a] \ S) / NP[b].
+include: (NP[a] \ S) / NP[b].
+learn: (NP[a] \ S) / NP[b].
+lead: (NP[a] \ S) / NP[b].
+follow: (NP[a] \ S) / NP[b].
+stop: (NP[a] \ S) / NP[b].
+create: (NP[a] \ S) / NP[b].
+allow: (NP[a] \ S) / NP[b].
+add: (NP[a] \ S) / NP[b].
+spend: (NP[a] \ S) / NP[b].
+open: (NP[a] \ S) / NP[b].
+win: (NP[a] \ S) / NP[b].
+offer: (NP[a] \ S) / NP[b].
+remember: (NP[a] \ S) / NP[b].
+consider: (NP[a] \ S) / NP[b].
+buy: (NP[a] \ S) / NP[b].
+serve: (NP[a] \ S) / NP[b].
+send: (NP[a] \ S) / NP[b].
+expect: (NP[a] \ S) / NP[b].
+build: (NP[a] \ S) / NP[b].
+cut: (NP[a] \ S) / NP[b].
+reach: (NP[a] \ S) / NP[b].
+kill: (NP[a] \ S) / NP[b].
+suggest: (NP[a] \ S) / NP[b].
+raise: (NP[a] \ S) / NP[b].
+pass: (NP[a] \ S) / NP[b].
+sell: (NP[a] \ S) / NP[b].
+require: (NP[a] \ S) / NP[b].
+decide: (NP[a] \ S) / NP[b].
+explain: (NP[a] \ S) / NP[b].
+carry: (NP[a] \ S) / NP[b].
+break: (NP[a] \ S) / NP[b].
+thank: (NP[a] \ S) / NP[b].
+receive: (NP[a] \ S) / NP[b].
+join: (NP[a] \ S) / NP[b].
+agree: (NP[a] \ S) / NP[b].
+pick: (NP[a] \ S) / NP[b].
+wear: (NP[a] \ S) / NP[b].
+support: (NP[a] \ S) / NP[b].
+hit: (NP[a] \ S) / NP[b].
+produce: (NP[a] \ S) / NP[b].
+cover: (NP[a] \ S) / NP[b].
+describe: (NP[a] \ S) / NP[b].
+catch: (NP[a] \ S) / NP[b].
+draw: (NP[a] \ S) / NP[b].
+choose: (NP[a] \ S) / NP[b].
+cause: (NP[a] \ S) / NP[b].
+involve: (NP[a] \ S) / NP[b].
+increase: (NP[a] \ S) / NP[b].
+seek: (NP[a] \ S) / NP[b].
+throw: (NP[a] \ S) / NP[b].
+fill: (NP[a] \ S) / NP[b].
+represent: (NP[a] \ S) / NP[b].
+drop: (NP[a] \ S) / NP[b].
+push: (NP[a] \ S) / NP[b].
+reduce: (NP[a] \ S) / NP[b].
+save: (NP[a] \ S) / NP[b].
+shoot: (NP[a] \ S) / NP[b].
+protect: (NP[a] \ S) / NP[b].
+accept: (NP[a] \ S) / NP[b].
+identify: (NP[a] \ S) / NP[b].
+determine: (NP[a] \ S) / NP[b].
+prepare: (NP[a] \ S) / NP[b].
+argue: (NP[a] \ S) / NP[b].
+recognize: (NP[a] \ S) / NP[b].
+indicate: (NP[a] \ S) / NP[b].
+wonder: (NP[a] \ S) / NP[b].
+fail: (NP[a] \ S) / NP[b].
+name: (NP[a] \ S) / NP[b].
+compare: (NP[a] \ S) / NP[b].
+miss: (NP[a] \ S) / NP[b].
+state: (NP[a] \ S) / NP[b].
+discuss: (NP[a] \ S) / NP[b].
+check: (NP[a] \ S) / NP[b].
+prove: (NP[a] \ S) / NP[b].
+claim: (NP[a] \ S) / NP[b].
+remove: (NP[a] \ S) / NP[b].
+enjoy: (NP[a] \ S) / NP[b].
+establish: (NP[a] \ S) / NP[b].
+imagine: (NP[a] \ S) / NP[b].
+avoid: (NP[a] \ S) / NP[b].
+finish: (NP[a] \ S) / NP[b].
+respond: (NP[a] \ S) / NP[b].
+maintain: (NP[a] \ S) / NP[b].
+reveal: (NP[a] \ S) / NP[b].
+contain: (NP[a] \ S) / NP[b].
+apply: (NP[a] \ S) / NP[b].
+manage: (NP[a] \ S) / NP[b].
+perform: (NP[a] \ S) / NP[b].
+treat: (NP[a] \ S) / NP[b].
+affect: (NP[a] \ S) / NP[b].
+worry: (NP[a] \ S) / NP[b].
+mention: (NP[a] \ S) / NP[b].
+improve: (NP[a] \ S) / NP[b].
+reflect: (NP[a] \ S) / NP[b].
+beat: (NP[a] \ S) / NP[b].
+notice: (NP[a] \ S) / NP[b].
+wish: (NP[a] \ S) / NP[b].
+prevent: (NP[a] \ S) / NP[b].
+assume: (NP[a] \ S) / NP[b].
+suffer: (NP[a] \ S) / NP[b].
+publish: (NP[a] \ S) / NP[b].
+hurt: (NP[a] \ S) / NP[b].
+achieve: (NP[a] \ S) / NP[b].
+announce: (NP[a] \ S) / NP[b].
+examine: (NP[a] \ S) / NP[b].
+touch: (NP[a] \ S) / NP[b].
+experience: (NP[a] \ S) / NP[b].
+replace: (NP[a] \ S) / NP[b].
+encourage: (NP[a] \ S) / NP[b].
+define: (NP[a] \ S) / NP[b].
+introduce: (NP[a] \ S) / NP[b].
+handle: (NP[a] \ S) / NP[b].
+refuse: (NP[a] \ S) / NP[b].
+gain: (NP[a] \ S) / NP[b].
+express: (NP[a] \ S) / NP[b].
+deliver: (NP[a] \ S) / NP[b].
+observe: (NP[a] \ S) / NP[b].
+earn: (NP[a] \ S) / NP[b].
+operate: (NP[a] \ S) / NP[b].
+contribute: (NP[a] \ S) / NP[b].
+settle: (NP[a] \ S) / NP[b].
+feed: (NP[a] \ S) / NP[b].
+collect: (NP[a] \ S) / NP[b].
+promote: (NP[a] \ S) / NP[b].
+marry: (NP[a] \ S) / NP[b].
+survive: (NP[a] \ S) / NP[b].
+lift: (NP[a] \ S) / NP[b].
+gather: (NP[a] \ S) / NP[b].
+limit: (NP[a] \ S) / NP[b].
+fit: (NP[a] \ S) / NP[b].
+associate: (NP[a] \ S) / NP[b].
+spread: (NP[a] \ S) / NP[b].
+ignore: (NP[a] \ S) / NP[b].
+measure: (NP[a] \ S) / NP[b].
+demonstrate: (NP[a] \ S) / NP[b].
+threaten: (NP[a] \ S) / NP[b].
+commit: (NP[a] \ S) / NP[b].
+deny: (NP[a] \ S) / NP[b].
+destroy: (NP[a] \ S) / NP[b].
+extend_v: (NP[a] \ S) / NP[b].
+combine: (NP[a] \ S) / NP[b].
+demand: (NP[a] \ S) / NP[b].
+remind: (NP[a] \ S) / NP[b].
+grab: (NP[a] \ S) / NP[b].
+hire: (NP[a] \ S) / NP[b].
+attack: (NP[a] \ S) / NP[b].
+welcome: (NP[a] \ S) / NP[b].
+expand: (NP[a] \ S) / NP[b].
+explore: (NP[a] \ S) / NP[b].
+obtain: (NP[a] \ S) / NP[b].
+surround: (NP[a] \ S) / NP[b].
+invite: (NP[a] \ S) / NP[b].
+repeat: (NP[a] \ S) / NP[b].
+predict: (NP[a] \ S) / NP[b].
+belong: (NP[a] \ S) / NP[b].
+acknowledge: (NP[a] \ S) / NP[b].
+recommend: (NP[a] \ S) / NP[b].
+generate: (NP[a] \ S) / NP[b].
+propose: (NP[a] \ S) / NP[b].
+capture: (NP[a] \ S) / NP[b].
+prefer: (NP[a] \ S) / NP[b].
+select: (NP[a] \ S) / NP[b].
+declare: (NP[a] \ S) / NP[b].
+appreciate: (NP[a] \ S) / NP[b].
+defend: (NP[a] \ S) / NP[b].
+ensure: (NP[a] \ S) / NP[b].
+warn: (NP[a] \ S) / NP[b].
+pursue: (NP[a] \ S) / NP[b].
+steal: (NP[a] \ S) / NP[b].
+estimate: (NP[a] \ S) / NP[b].
+investigate: (NP[a] \ S) / NP[b].
+solve: (NP[a] \ S) / NP[b].
+eliminate: (NP[a] \ S) / NP[b].
+confirm: (NP[a] \ S) / NP[b].
+rely: (NP[a] \ S) / NP[b].
+attract: (NP[a] \ S) / NP[b].
+grant: (NP[a] \ S) / NP[b].
+review: (NP[a] \ S) / NP[b].
+display: (NP[a] \ S) / NP[b].
+suspect: (NP[a] \ S) / NP[b].
+permit: (NP[a] \ S) / NP[b].
+arrest: (NP[a] \ S) / NP[b].
+purchase: (NP[a] \ S) / NP[b].
+suppose: (NP[a] \ S) / NP[b].
+perceive: (NP[a] \ S) / NP[b].
+inform: (NP[a] \ S) / NP[b].
+abandon: (NP[a] \ S) / NP[b].
+transform: (NP[a] \ S) / NP[b].
+enable: (NP[a] \ S) / NP[b].
+preserve: (NP[a] \ S) / NP[b].
+arrange: (NP[a] \ S) / NP[b].
+deserve: (NP[a] \ S) / NP[b].
+resolve: (NP[a] \ S) / NP[b].
+contact: (NP[a] \ S) / NP[b].
+quote: (NP[a] \ S) / NP[b].
+urge: (NP[a] \ S) / NP[b].
+elect: (NP[a] \ S) / NP[b].
+implement: (NP[a] \ S) / NP[b].
+resist: (NP[a] \ S) / NP[b].
+embrace: (NP[a] \ S) / NP[b].
+supply: (NP[a] \ S) / NP[b].
+assist: (NP[a] \ S) / NP[b].
+construct: (NP[a] \ S) / NP[b].
+analyze: (NP[a] \ S) / NP[b].
+impose: (NP[a] \ S) / NP[b].
+evaluate: (NP[a] \ S) / NP[b].
+illustrate: (NP[a] \ S) / NP[b].
+concentrate: (NP[a] \ S) / NP[b].
+transfer: (NP[a] \ S) / NP[b].
+mark: (NP[a] \ S) / NP[b].
+locate: (NP[a] \ S) / NP[b].
+file: (NP[a] \ S) / NP[b].
+record: (NP[a] \ S) / NP[b].
+report: (NP[a] \ S) / NP[b].
+test: (NP[a] \ S) / NP[b].
+design: (NP[a] \ S) / NP[b].
+plan: (NP[a] \ S) / NP[b].
+study: (NP[a] \ S) / NP[b].
+form: (NP[a] \ S) / NP[b].
+base: (NP[a] \ S) / NP[b].
+charge: (NP[a] \ S) / NP[b].
+search: (NP[a] \ S) / NP[b].
+watch: (NP[a] \ S) / NP[b].
+visit: (NP[a] \ S) / NP[b].
+control: (NP[a] \ S) / NP[b].
+mind: (NP[a] \ S) / NP[b].
+guess: (NP[a] \ S) / NP[b].
+forget: (NP[a] \ S) / NP[b].
+answer: (NP[a] \ S) / NP[b].
+care: (NP[a] \ S) / NP[b].
+lack: (NP[a] \ S) / NP[b].
+note: (NP[a] \ S) / NP[b].
+cost: (NP[a] \ S) / NP[b].
+influence: (NP[a] \ S) / NP[b].
+smoke: (NP[a] \ S) / NP[b].
+question: (NP[a] \ S) / NP[b].
+copy: (NP[a] \ S) / NP[b].
+pull: (NP[a] \ S) / NP[b].
+fix: (NP[a] \ S) / NP[b].
 
 -- ==========================================================================
 -- Verbs — Ambitransitive (both intransitive and transitive)
 -- ==========================================================================
 
 -- eat
-eat: (NP \ S) / NP.
+eat: (NP[a] \ S) / NP[b].
 -- read
-read: NP \ S.
-read: (NP \ S) / NP.
+read: NP[a] \ S.
+read: (NP[a] \ S) / NP[b].
 -- write
-write: NP \ S.
-write: (NP \ S) / NP.
+write: NP[a] \ S.
+write: (NP[a] \ S) / NP[b].
 -- sing
-sing: NP \ S.
-sing: (NP \ S) / NP.
+sing: NP[a] \ S.
+sing: (NP[a] \ S) / NP[b].
 -- drink
-drink: (NP \ S) / NP.
+drink: (NP[a] \ S) / NP[b].
 -- cook
-cook: NP \ S.
-cook: (NP \ S) / NP.
+cook: NP[a] \ S.
+cook: (NP[a] \ S) / NP[b].
 -- paint
-paint: (NP \ S) / NP.
+paint: (NP[a] \ S) / NP[b].
 -- wash
-wash: (NP \ S) / NP.
+wash: (NP[a] \ S) / NP[b].
 -- drive
-drive: (NP \ S) / NP.
+drive: (NP[a] \ S) / NP[b].
 -- teach
-teach: NP \ S.
-teach: (NP \ S) / NP.
+teach: NP[a] \ S.
+teach: (NP[a] \ S) / NP[b].
 -- fight
-fight: NP \ S.
-fight: (NP \ S) / NP.
+fight: NP[a] \ S.
+fight: (NP[a] \ S) / NP[b].
 -- speak
-speak: NP \ S.
-speak: (NP \ S) / NP.
+speak: NP[a] \ S.
+speak: (NP[a] \ S) / NP[b].
 -- move
-move: NP \ S.
-move: (NP \ S) / NP.
+move: NP[a] \ S.
+move: (NP[a] \ S) / NP[b].
 -- begin
-begin: (NP \ S) / NP.
+begin: (NP[a] \ S) / NP[b].
 -- start
-start: (NP \ S) / NP.
+start: (NP[a] \ S) / NP[b].
 -- end
-end: NP \ S.
-end: (NP \ S) / NP.
+end: NP[a] \ S.
+end: (NP[a] \ S) / NP[b].
 -- change
-change: NP \ S.
-change: (NP \ S) / NP.
+change: NP[a] \ S.
+change: (NP[a] \ S) / NP[b].
 -- turn
-turn: NP \ S.
-turn: (NP \ S) / NP.
+turn: NP[a] \ S.
+turn: (NP[a] \ S) / NP[b].
 -- burn
-burn: NP \ S.
-burn: (NP \ S) / NP.
+burn: NP[a] \ S.
+burn: (NP[a] \ S) / NP[b].
 -- hang
-hang: NP \ S.
-hang: (NP \ S) / NP.
+hang: NP[a] \ S.
+hang: (NP[a] \ S) / NP[b].
 -- shake
-shake: (NP \ S) / NP.
+shake: (NP[a] \ S) / NP[b].
 -- roll
-roll: NP \ S.
-roll: (NP \ S) / NP.
+roll: NP[a] \ S.
+roll: (NP[a] \ S) / NP[b].
 -- stick
-stick: (NP \ S) / NP.
+stick: (NP[a] \ S) / NP[b].
 -- blow
-blow: NP \ S.
-blow: (NP \ S) / NP.
+blow: NP[a] \ S.
+blow: (NP[a] \ S) / NP[b].
 -- cross
-cross: (NP \ S) / NP.
+cross: (NP[a] \ S) / NP[b].
 -- dress
-dress: NP \ S.
-dress: (NP \ S) / NP.
+dress: NP[a] \ S.
+dress: (NP[a] \ S) / NP[b].
 -- lock
-lock: (NP \ S) / NP.
+lock: (NP[a] \ S) / NP[b].
 -- block
-block: (NP \ S) / NP.
+block: (NP[a] \ S) / NP[b].
 -- land
-land: NP \ S.
-land: (NP \ S) / NP.
+land: NP[a] \ S.
+land: (NP[a] \ S) / NP[b].
 -- clean
-clean: (NP \ S) / NP.
+clean: (NP[a] \ S) / NP[b].
 -- divide
-divide: (NP \ S) / NP.
+divide: (NP[a] \ S) / NP[b].
 
 -- ==========================================================================
 -- Verbs — Clausal complement ((NP \ S) / S)
@@ -1398,402 +1359,402 @@ know: (NP \ S) / S.
 -- Adjectives
 -- ==========================================================================
 
-new: Adj.
-other: Adj.
-good: Adj.
-high: Adj.
-old: Adj.
-great: Adj.
-big: Adj.
-small: Adj.
-large: Adj.
-national: Adj.
-young: Adj.
-different: Adj.
-black: Adj.
-long: Adj.
-little: Adj.
-important: Adj.
-political: Adj.
-bad: Adj.
-white: Adj.
-real: Adj.
-best: Adj.
-right: Adj.
-social: Adj.
-public: Adj.
-sure: Adj.
-low: Adj.
-early: Adj.
-human: Adj.
-local: Adj.
-late: Adj.
-major: Adj.
-better: Adj.
-economic: Adj.
-strong: Adj.
-possible: Adj.
-whole: Adj.
-free: Adj.
-military: Adj.
-true: Adj.
-federal: Adj.
-international: Adj.
-full: Adj.
-special: Adj.
-easy: Adj.
-clear: Adj.
-recent: Adj.
-certain: Adj.
-personal: Adj.
-open: Adj.
-hard: Adj.
-difficult: Adj.
-available: Adj.
-likely: Adj.
-short: Adj.
-single: Adj.
-wrong: Adj.
-current: Adj.
-past: Adj.
-fine: Adj.
-poor: Adj.
-common: Adj.
-natural: Adj.
-significant: Adj.
-similar: Adj.
-hot: Adj.
-dead: Adj.
-serious: Adj.
-ready: Adj.
-simple: Adj.
-left: Adj.
-general: Adj.
-physical: Adj.
-environmental: Adj.
-financial: Adj.
-dark: Adj.
-various: Adj.
-entire: Adj.
-close: Adj.
-cold: Adj.
-final: Adj.
-green: Adj.
-nice: Adj.
-huge: Adj.
-popular: Adj.
-traditional: Adj.
-wide: Adj.
-particular: Adj.
-top: Adj.
-deep: Adj.
-far: Adj.
-individual: Adj.
-specific: Adj.
-necessary: Adj.
-middle: Adj.
-beautiful: Adj.
-heavy: Adj.
-sexual: Adj.
-tough: Adj.
-commercial: Adj.
-total: Adj.
-modern: Adj.
-positive: Adj.
-civil: Adj.
-safe: Adj.
-interesting: Adj.
-rich: Adj.
-western: Adj.
-senior: Adj.
-professional: Adj.
-successful: Adj.
-fresh: Adj.
-southern: Adj.
-global: Adj.
-critical: Adj.
-concerned: Adj.
-original: Adj.
-basic: Adj.
-powerful: Adj.
-perfect: Adj.
-nuclear: Adj.
-sorry: Adj.
-normal: Adj.
-front: Adj.
-supposed: Adj.
-independent: Adj.
-willing: Adj.
-previous: Adj.
-interested: Adj.
-wild: Adj.
-quick: Adj.
-light: Adj.
-bright: Adj.
-tiny: Adj.
-additional: Adj.
-living: Adj.
-present: Adj.
-warm: Adj.
-annual: Adj.
-responsible: Adj.
-regular: Adj.
-soft: Adj.
-afraid: Adj.
-native: Adj.
-broad: Adj.
-wonderful: Adj.
-growing: Adj.
-quiet: Adj.
-complete: Adj.
-active: Adj.
-chief: Adj.
-cool: Adj.
-dangerous: Adj.
-moral: Adj.
-healthy: Adj.
-negative: Adj.
-following: Adj.
-historical: Adj.
-direct: Adj.
-daily: Adj.
-fair: Adj.
-famous: Adj.
-familiar: Adj.
-appropriate: Adj.
-eastern: Adj.
-primary: Adj.
-clean: Adj.
-male: Adj.
-alive: Adj.
-extra: Adj.
-domestic: Adj.
-northern: Adj.
-dry: Adj.
-sweet: Adj.
-strange: Adj.
-urban: Adj.
-mental: Adj.
-educational: Adj.
-favorite: Adj.
-complex: Adj.
-scientific: Adj.
-impossible: Adj.
-married: Adj.
-alone: Adj.
-emotional: Adj.
-thin: Adj.
-empty: Adj.
-expensive: Adj.
-yellow: Adj.
-prime: Adj.
-obvious: Adj.
-comfortable: Adj.
-angry: Adj.
-thick: Adj.
-unique: Adj.
-internal: Adj.
-ethnic: Adj.
-actual: Adj.
-sick: Adj.
-slow: Adj.
-brown: Adj.
-standard: Adj.
-funny: Adj.
-correct: Adj.
-crazy: Adj.
-just: Adj.
-ancient: Adj.
-golden: Adj.
-equal: Adj.
-typical: Adj.
-conservative: Adj.
-smart: Adj.
-rare: Adj.
-separate: Adj.
-busy: Adj.
-cheap: Adj.
-gray: Adj.
-overall: Adj.
-initial: Adj.
-terrible: Adj.
-multiple: Adj.
-essential: Adj.
-criminal: Adj.
-careful: Adj.
-upper: Adj.
-tired: Adj.
-vast: Adj.
-limited: Adj.
-proud: Adj.
-increased: Adj.
-enormous: Adj.
-liberal: Adj.
-massive: Adj.
-narrow: Adj.
-solid: Adj.
-useful: Adj.
-secret: Adj.
-unusual: Adj.
-sharp: Adj.
-creative: Adj.
-proper: Adj.
-guilty: Adj.
-technical: Adj.
-weak: Adj.
-illegal: Adj.
-fun: Adj.
-spiritual: Adj.
-musical: Adj.
-dramatic: Adj.
-excellent: Adj.
-lucky: Adj.
-unable: Adj.
-sad: Adj.
-brief: Adj.
-violent: Adj.
-silent: Adj.
-immediate: Adj.
-double: Adj.
-formal: Adj.
-joint: Adj.
-opposite: Adj.
-consistent: Adj.
-grand: Adj.
-racial: Adj.
-glad: Adj.
-ordinary: Adj.
-numerous: Adj.
-practical: Adj.
-amazing: Adj.
-intense: Adj.
-visible: Adj.
-competitive: Adj.
-fundamental: Adj.
-severe: Adj.
-usual: Adj.
-psychological: Adj.
-increasing: Adj.
-holy: Adj.
-constant: Adj.
-capable: Adj.
-nervous: Adj.
-crucial: Adj.
-electronic: Adj.
-pure: Adj.
-smooth: Adj.
-nearby: Adj.
-inner: Adj.
-junior: Adj.
-straight: Adj.
-pretty: Adj.
-permanent: Adj.
-wet: Adj.
-bitter: Adj.
-brave: Adj.
-calm: Adj.
-casual: Adj.
-cheerful: Adj.
-classic: Adj.
-clever: Adj.
-confident: Adj.
-crazy: Adj.
-cruel: Adj.
-curious: Adj.
-decent: Adj.
-delicate: Adj.
-desperate: Adj.
-dirty: Adj.
-dull: Adj.
-eager: Adj.
-elegant: Adj.
-fierce: Adj.
-foolish: Adj.
-frank: Adj.
-generous: Adj.
-gentle: Adj.
-genuine: Adj.
-graceful: Adj.
-grateful: Adj.
-greedy: Adj.
-handsome: Adj.
-harsh: Adj.
-honest: Adj.
-humble: Adj.
-innocent: Adj.
-jealous: Adj.
-keen: Adj.
-kind: Adj.
-lazy: Adj.
-lively: Adj.
-logical: Adj.
-lonely: Adj.
-loose: Adj.
-loud: Adj.
-loyal: Adj.
-mad: Adj.
-mature: Adj.
-mild: Adj.
-modest: Adj.
-neat: Adj.
-noble: Adj.
-odd: Adj.
-patient: Adj.
-plain: Adj.
-pleasant: Adj.
-polite: Adj.
-precious: Adj.
-precise: Adj.
-random: Adj.
-rational: Adj.
-raw: Adj.
-reasonable: Adj.
-reliable: Adj.
-remarkable: Adj.
-remote: Adj.
-respectful: Adj.
-ridiculous: Adj.
-rough: Adj.
-rude: Adj.
-selfish: Adj.
-sensible: Adj.
-sensitive: Adj.
-shallow: Adj.
-shy: Adj.
-silly: Adj.
-sincere: Adj.
-slight: Adj.
-slippery: Adj.
-solar: Adj.
-spare: Adj.
-steady: Adj.
-steep: Adj.
-stiff: Adj.
-strict: Adj.
-stubborn: Adj.
-stupid: Adj.
-subtle: Adj.
-sudden: Adj.
-suitable: Adj.
-suspicious: Adj.
-swift: Adj.
-tender: Adj.
-tense: Adj.
-thorough: Adj.
-tight: Adj.
-ugly: Adj.
-uncomfortable: Adj.
-unfair: Adj.
-urgent: Adj.
-vague: Adj.
-vivid: Adj.
-vulnerable: Adj.
-wealthy: Adj.
-weird: Adj.
-wicked: Adj.
-wise: Adj.
-witty: Adj.
-worthy: Adj.
+new: Adj[a].
+other: Adj[a].
+good: Adj[a].
+high: Adj[a].
+old: Adj[a].
+great: Adj[a].
+big: Adj[a].
+small: Adj[a].
+large: Adj[a].
+national: Adj[a].
+young: Adj[a].
+different: Adj[a].
+black: Adj[a].
+long: Adj[a].
+little: Adj[a].
+important: Adj[a].
+political: Adj[a].
+bad: Adj[a].
+white: Adj[a].
+real: Adj[a].
+best: Adj[a].
+right: Adj[a].
+social: Adj[a].
+public: Adj[a].
+sure: Adj[a].
+low: Adj[a].
+early: Adj[a].
+human: Adj[a].
+local: Adj[a].
+late: Adj[a].
+major: Adj[a].
+better: Adj[a].
+economic: Adj[a].
+strong: Adj[a].
+possible: Adj[a].
+whole: Adj[a].
+free: Adj[a].
+military: Adj[a].
+true: Adj[a].
+federal: Adj[a].
+international: Adj[a].
+full: Adj[a].
+special: Adj[a].
+easy: Adj[a].
+clear: Adj[a].
+recent: Adj[a].
+certain: Adj[a].
+personal: Adj[a].
+open: Adj[a].
+hard: Adj[a].
+difficult: Adj[a].
+available: Adj[a].
+likely: Adj[a].
+short: Adj[a].
+single: Adj[a].
+wrong: Adj[a].
+current: Adj[a].
+past: Adj[a].
+fine: Adj[a].
+poor: Adj[a].
+common: Adj[a].
+natural: Adj[a].
+significant: Adj[a].
+similar: Adj[a].
+hot: Adj[a].
+dead: Adj[a].
+serious: Adj[a].
+ready: Adj[a].
+simple: Adj[a].
+left: Adj[a].
+general: Adj[a].
+physical: Adj[a].
+environmental: Adj[a].
+financial: Adj[a].
+dark: Adj[a].
+various: Adj[a].
+entire: Adj[a].
+close: Adj[a].
+cold: Adj[a].
+final: Adj[a].
+green: Adj[a].
+nice: Adj[a].
+huge: Adj[a].
+popular: Adj[a].
+traditional: Adj[a].
+wide: Adj[a].
+particular: Adj[a].
+top: Adj[a].
+deep: Adj[a].
+far: Adj[a].
+individual: Adj[a].
+specific: Adj[a].
+necessary: Adj[a].
+middle: Adj[a].
+beautiful: Adj[a].
+heavy: Adj[a].
+sexual: Adj[a].
+tough: Adj[a].
+commercial: Adj[a].
+total: Adj[a].
+modern: Adj[a].
+positive: Adj[a].
+civil: Adj[a].
+safe: Adj[a].
+interesting: Adj[a].
+rich: Adj[a].
+western: Adj[a].
+senior: Adj[a].
+professional: Adj[a].
+successful: Adj[a].
+fresh: Adj[a].
+southern: Adj[a].
+global: Adj[a].
+critical: Adj[a].
+concerned: Adj[a].
+original: Adj[a].
+basic: Adj[a].
+powerful: Adj[a].
+perfect: Adj[a].
+nuclear: Adj[a].
+sorry: Adj[a].
+normal: Adj[a].
+front: Adj[a].
+supposed: Adj[a].
+independent: Adj[a].
+willing: Adj[a].
+previous: Adj[a].
+interested: Adj[a].
+wild: Adj[a].
+quick: Adj[a].
+light: Adj[a].
+bright: Adj[a].
+tiny: Adj[a].
+additional: Adj[a].
+living: Adj[a].
+present: Adj[a].
+warm: Adj[a].
+annual: Adj[a].
+responsible: Adj[a].
+regular: Adj[a].
+soft: Adj[a].
+afraid: Adj[a].
+native: Adj[a].
+broad: Adj[a].
+wonderful: Adj[a].
+growing: Adj[a].
+quiet: Adj[a].
+complete: Adj[a].
+active: Adj[a].
+chief: Adj[a].
+cool: Adj[a].
+dangerous: Adj[a].
+moral: Adj[a].
+healthy: Adj[a].
+negative: Adj[a].
+following: Adj[a].
+historical: Adj[a].
+direct: Adj[a].
+daily: Adj[a].
+fair: Adj[a].
+famous: Adj[a].
+familiar: Adj[a].
+appropriate: Adj[a].
+eastern: Adj[a].
+primary: Adj[a].
+clean: Adj[a].
+male: Adj[a].
+alive: Adj[a].
+extra: Adj[a].
+domestic: Adj[a].
+northern: Adj[a].
+dry: Adj[a].
+sweet: Adj[a].
+strange: Adj[a].
+urban: Adj[a].
+mental: Adj[a].
+educational: Adj[a].
+favorite: Adj[a].
+complex: Adj[a].
+scientific: Adj[a].
+impossible: Adj[a].
+married: Adj[a].
+alone: Adj[a].
+emotional: Adj[a].
+thin: Adj[a].
+empty: Adj[a].
+expensive: Adj[a].
+yellow: Adj[a].
+prime: Adj[a].
+obvious: Adj[a].
+comfortable: Adj[a].
+angry: Adj[a].
+thick: Adj[a].
+unique: Adj[a].
+internal: Adj[a].
+ethnic: Adj[a].
+actual: Adj[a].
+sick: Adj[a].
+slow: Adj[a].
+brown: Adj[a].
+standard: Adj[a].
+funny: Adj[a].
+correct: Adj[a].
+crazy: Adj[a].
+just: Adj[a].
+ancient: Adj[a].
+golden: Adj[a].
+equal: Adj[a].
+typical: Adj[a].
+conservative: Adj[a].
+smart: Adj[a].
+rare: Adj[a].
+separate: Adj[a].
+busy: Adj[a].
+cheap: Adj[a].
+gray: Adj[a].
+overall: Adj[a].
+initial: Adj[a].
+terrible: Adj[a].
+multiple: Adj[a].
+essential: Adj[a].
+criminal: Adj[a].
+careful: Adj[a].
+upper: Adj[a].
+tired: Adj[a].
+vast: Adj[a].
+limited: Adj[a].
+proud: Adj[a].
+increased: Adj[a].
+enormous: Adj[a].
+liberal: Adj[a].
+massive: Adj[a].
+narrow: Adj[a].
+solid: Adj[a].
+useful: Adj[a].
+secret: Adj[a].
+unusual: Adj[a].
+sharp: Adj[a].
+creative: Adj[a].
+proper: Adj[a].
+guilty: Adj[a].
+technical: Adj[a].
+weak: Adj[a].
+illegal: Adj[a].
+fun: Adj[a].
+spiritual: Adj[a].
+musical: Adj[a].
+dramatic: Adj[a].
+excellent: Adj[a].
+lucky: Adj[a].
+unable: Adj[a].
+sad: Adj[a].
+brief: Adj[a].
+violent: Adj[a].
+silent: Adj[a].
+immediate: Adj[a].
+double: Adj[a].
+formal: Adj[a].
+joint: Adj[a].
+opposite: Adj[a].
+consistent: Adj[a].
+grand: Adj[a].
+racial: Adj[a].
+glad: Adj[a].
+ordinary: Adj[a].
+numerous: Adj[a].
+practical: Adj[a].
+amazing: Adj[a].
+intense: Adj[a].
+visible: Adj[a].
+competitive: Adj[a].
+fundamental: Adj[a].
+severe: Adj[a].
+usual: Adj[a].
+psychological: Adj[a].
+increasing: Adj[a].
+holy: Adj[a].
+constant: Adj[a].
+capable: Adj[a].
+nervous: Adj[a].
+crucial: Adj[a].
+electronic: Adj[a].
+pure: Adj[a].
+smooth: Adj[a].
+nearby: Adj[a].
+inner: Adj[a].
+junior: Adj[a].
+straight: Adj[a].
+pretty: Adj[a].
+permanent: Adj[a].
+wet: Adj[a].
+bitter: Adj[a].
+brave: Adj[a].
+calm: Adj[a].
+casual: Adj[a].
+cheerful: Adj[a].
+classic: Adj[a].
+clever: Adj[a].
+confident: Adj[a].
+crazy: Adj[a].
+cruel: Adj[a].
+curious: Adj[a].
+decent: Adj[a].
+delicate: Adj[a].
+desperate: Adj[a].
+dirty: Adj[a].
+dull: Adj[a].
+eager: Adj[a].
+elegant: Adj[a].
+fierce: Adj[a].
+foolish: Adj[a].
+frank: Adj[a].
+generous: Adj[a].
+gentle: Adj[a].
+genuine: Adj[a].
+graceful: Adj[a].
+grateful: Adj[a].
+greedy: Adj[a].
+handsome: Adj[a].
+harsh: Adj[a].
+honest: Adj[a].
+humble: Adj[a].
+innocent: Adj[a].
+jealous: Adj[a].
+keen: Adj[a].
+kind: Adj[a].
+lazy: Adj[a].
+lively: Adj[a].
+logical: Adj[a].
+lonely: Adj[a].
+loose: Adj[a].
+loud: Adj[a].
+loyal: Adj[a].
+mad: Adj[a].
+mature: Adj[a].
+mild: Adj[a].
+modest: Adj[a].
+neat: Adj[a].
+noble: Adj[a].
+odd: Adj[a].
+patient: Adj[a].
+plain: Adj[a].
+pleasant: Adj[a].
+polite: Adj[a].
+precious: Adj[a].
+precise: Adj[a].
+random: Adj[a].
+rational: Adj[a].
+raw: Adj[a].
+reasonable: Adj[a].
+reliable: Adj[a].
+remarkable: Adj[a].
+remote: Adj[a].
+respectful: Adj[a].
+ridiculous: Adj[a].
+rough: Adj[a].
+rude: Adj[a].
+selfish: Adj[a].
+sensible: Adj[a].
+sensitive: Adj[a].
+shallow: Adj[a].
+shy: Adj[a].
+silly: Adj[a].
+sincere: Adj[a].
+slight: Adj[a].
+slippery: Adj[a].
+solar: Adj[a].
+spare: Adj[a].
+steady: Adj[a].
+steep: Adj[a].
+stiff: Adj[a].
+strict: Adj[a].
+stubborn: Adj[a].
+stupid: Adj[a].
+subtle: Adj[a].
+sudden: Adj[a].
+suitable: Adj[a].
+suspicious: Adj[a].
+swift: Adj[a].
+tender: Adj[a].
+tense: Adj[a].
+thorough: Adj[a].
+tight: Adj[a].
+ugly: Adj[a].
+uncomfortable: Adj[a].
+unfair: Adj[a].
+urgent: Adj[a].
+vague: Adj[a].
+vivid: Adj[a].
+vulnerable: Adj[a].
+wealthy: Adj[a].
+weird: Adj[a].
+wicked: Adj[a].
+wise: Adj[a].
+witty: Adj[a].
+worthy: Adj[a].
 
 -- ==========================================================================
 -- Adverbs (manner/degree not already in en_grammar_basic)

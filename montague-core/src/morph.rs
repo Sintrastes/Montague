@@ -4,7 +4,7 @@
 //! so morphological analysis and whole-word lexicon lookup are treated as equal
 //! alternatives.
 
-use crate::types::LambekType;
+use crate::types::{AtomType, LambekType};
 
 /// Spelling-change reversal class for recovering stems from inflected forms.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -40,7 +40,7 @@ pub struct MorphemeInfo {
     /// The entity name for type lookup (e.g., `"s_suffix"`).
     pub entity: String,
     /// The Lambek type of the morpheme.
-    pub ty: LambekType<String>,
+    pub ty: LambekType<AtomType>,
     /// Spelling-change recovery classes for segmenting.
     pub strips: Vec<SpellingClass>,
 }

@@ -27,11 +27,11 @@ wise: Adjective.
 -- Copula
 is_cop: (Noun \ Sentence) / Adjective.
 
--- Coordinator for NPs: "Socrates and Plato"
-and_np: (Noun \ Noun) / Noun.
-
--- Coordinator for Adjectives: "mortal and wise"
-and_adj: (Adjective \ Adjective) / Adjective.
+-- Coordinator — one entity, category-specific types.
+-- Binary rules handle Adj\Adj for VP-internal coordination;
+-- CoordinationPostpass handles NP\NP at the top level.
+and_conj: (Noun \ Noun) / Noun.
+and_conj: (Adjective \ Adjective) / Adjective.
 
 -- Productions
 socrates --> socrates.
@@ -39,5 +39,4 @@ plato --> plato.
 mortal --> mortal.
 wise --> wise.
 is, are --> is_cop.
-and --> and_np.
-and --> and_adj.
+and --> and_conj.

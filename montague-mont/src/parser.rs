@@ -25,6 +25,8 @@ enum Token {
     Arrow,
     LParen,
     RParen,
+    LBracket,
+    RBracket,
     Comma,
     Import,
     As,
@@ -44,6 +46,8 @@ enum Token {
     Extend,
     /// Lowercase `type` keyword — for single-type declarations: `type A.`
     TypeKw,
+    /// `sort` keyword — for sort declarations: `sort entity.`
+    SortKw,
 }
 
 struct TokenWithSpan {
@@ -219,6 +223,20 @@ impl<'a> Scanner<'a> {
                     span: Span::new(start, self.pos),
                 })
             }
+            '[' => {
+                self.pos += 1;
+                Some(TokenWithSpan {
+                    token: Token::LBracket,
+                    span: Span::new(start, self.pos),
+                })
+            }
+            ']' => {
+                self.pos += 1;
+                Some(TokenWithSpan {
+                    token: Token::RBracket,
+                    span: Span::new(start, self.pos),
+                })
+            }
             ',' => {
                 self.pos += 1;
                 Some(TokenWithSpan {
@@ -282,6 +300,7 @@ impl<'a> Scanner<'a> {
                     "namespace" => Token::Namespace,
                     "extend" => Token::Extend,
                     "type" => Token::TypeKw,
+                    "sort" => Token::SortKw,
                     _ => Token::Ident(s),
                 };
                 Some(TokenWithSpan {
@@ -364,10 +383,45 @@ impl<'a> Parser<'a> {
     }
 
     // type expressions
+    fn type_arg(&mut self) -> Option<Spanned<TypeArg>> {
+        let id = self.ident()?;
+        let arg = if id.item.starts_with(|c: char| c.is_uppercase()) {
+            TypeArg::Concrete(id.item)
+        } else {
+            TypeArg::Var(id.item)
+        };
+        Some(Spanned::new(arg, id.span))
+    }
+
     fn type_atom(&mut self) -> Option<Spanned<TypeExpr>> {
         let id = self.type_ident()?;
         let start = id.span.start;
-        if self.eat(Token::LParen) {
+        // Parametric application: `Name[arg, arg]`
+        if self.eat(Token::LBracket) {
+            let mut args = Vec::new();
+            loop {
+                if matches!(self.peek(), Some(Token::RBracket)) {
+                    break;
+                }
+                if let Some(a) = self.type_arg() {
+                    args.push(a);
+                } else {
+                    break;
+                }
+                if !self.eat(Token::Comma) {
+                    break;
+                }
+            }
+            let end = self.peek_span().unwrap_or(id.span.end);
+            self.eat(Token::RBracket);
+            Some(Spanned::new(
+                TypeExpr::ParamApp {
+                    name: id.item,
+                    args,
+                },
+                Span::new(start, end),
+            ))
+        } else if self.eat(Token::LParen) {
             let mut args = Vec::new();
             loop {
                 if matches!(self.peek(), Some(Token::RParen)) {
@@ -546,33 +600,52 @@ impl<'a> Parser<'a> {
         ))
     }
 
-    fn declaration(&mut self) -> Option<Spanned<Declaration>> {
+    fn declaration(&mut self) -> Vec<Spanned<Declaration>> {
         match self.peek() {
             Some(Token::TypeKw) => self.single_type_decl(),
-            Some(Token::Morph) => self.morpheme_decl(),
-            Some(Token::Type) => self.type_decl(),
-            Some(Token::Namespace) => self.namespace_decl(),
+            Some(Token::SortKw) => self.sort_or_atom_decl().into_iter().collect(),
+            Some(Token::Morph) => self.morpheme_decl().into_iter().collect(),
+            Some(Token::Type) => self.type_decl().into_iter().collect(),
+            Some(Token::Namespace) => self.namespace_decl().into_iter().collect(),
             Some(Token::Ident(_)) => {
                 if self.pos + 1 < self.tokens.len() {
                     match &self.tokens[self.pos + 1].token {
-                        Token::Subtype => self.subtype_decl(),
-                        Token::Colon => self.atom_decl(),
-                        Token::Comma | Token::Arrow => self.production_decl(),
-                        Token::Dot => self.namespace_or_atom_decl(),
-                        _ => self.atom_decl(),
+                        Token::Subtype => self.subtype_decl().into_iter().collect(),
+                        Token::Colon => self.atom_decl().into_iter().collect(),
+                        Token::Comma | Token::Arrow => self.production_decl().into_iter().collect(),
+                        Token::Dot => self.namespace_or_atom_decl().into_iter().collect(),
+                        Token::Ident(_) => {
+                            // `ident <ident>` — could be a sort-member declaration
+                            // (`entity Person.` or `entity Person, Animate.`)
+                            // OR an atom_decl w/ missing colon (`entity: Person`).
+                            // Prefer sort-member if followed by End or Comma.
+                            if self.pos + 2 < self.tokens.len()
+                                && matches!(
+                                    &self.tokens[self.pos + 2].token,
+                                    Token::End | Token::Comma
+                                )
+                            {
+                                self.sort_member_decl()
+                            } else {
+                                self.atom_decl().into_iter().collect()
+                            }
+                        }
+                        _ => self.atom_decl().into_iter().collect(),
                     }
                 } else {
-                    None
+                    vec![]
                 }
             }
-            Some(Token::DocString(_)) => self.atom_decl(),
-            Some(Token::QuotedString(_)) => self.production_decl(),
-            _ => None,
+            Some(Token::DocString(_)) => self.atom_decl().into_iter().collect(),
+            Some(Token::QuotedString(_)) => self.production_decl().into_iter().collect(),
+            _ => vec![],
         }
     }
 
-    /// `type <TypeIdent>.`  Backtracks on failure so `type` can be an entity name.
-    fn single_type_decl(&mut self) -> Option<Spanned<Declaration>> {
+    /// `type <TypeIdent>[params]` or `type A, B[sort], C.` — comma-separated
+    /// type declarations sharing one `type` keyword.  Backtracks on failure
+    /// so `type` can be used as an entity name.
+    fn single_type_decl(&mut self) -> Vec<Spanned<Declaration>> {
         let saved = self.pos;
         let start = self.peek_span().unwrap_or(0);
         self.eat(Token::TypeKw);
@@ -580,12 +653,64 @@ impl<'a> Parser<'a> {
             Some(t) => t,
             None => {
                 self.pos = saved;
-                return None;
+                return vec![];
             }
         };
-        let end = t.span.end;
+        let mut results = Vec::new();
+
+        // Parse the first type (name + optional params).
+        let params = self.parse_type_params();
+        let end = self.peek_span().unwrap_or(t.span.end);
+        results.push(Spanned::new(
+            Declaration::SingleTypeDecl {
+                name: t.item.clone(),
+                params,
+            },
+            Span::new(start, end),
+        ));
+
+        // Parse additional comma-separated type declarations.
+        while self.eat(Token::Comma) {
+            match self.type_ident() {
+                Some(next_t) => {
+                    let p = self.parse_type_params();
+                    let e = self.peek_span().unwrap_or(next_t.span.end);
+                    results.push(Spanned::new(
+                        Declaration::SingleTypeDecl {
+                            name: next_t.item,
+                            params: p,
+                        },
+                        Span::new(start, e),
+                    ));
+                }
+                None => break,
+            }
+        }
+
         self.eat(Token::End);
-        Some(Spanned::new(Declaration::SingleTypeDecl(t.item), Span::new(start, end)))
+        results
+    }
+
+    /// Parse optional type parameters: `[ident, ident, ...]` or nothing.
+    fn parse_type_params(&mut self) -> Vec<String> {
+        let mut params = Vec::new();
+        if self.eat(Token::LBracket) {
+            loop {
+                if matches!(self.peek(), Some(Token::RBracket)) {
+                    break;
+                }
+                if let Some(p) = self.ident() {
+                    params.push(p.item);
+                } else {
+                    break;
+                }
+                if !self.eat(Token::Comma) {
+                    break;
+                }
+            }
+            self.eat(Token::RBracket);
+        }
+        params
     }
 
     /// `namespace <ident> (. <ident>)* .`
@@ -621,6 +746,122 @@ impl<'a> Parser<'a> {
             self.eat(Token::End);
             Some(Spanned::new(Declaration::NamespaceDecl(parts), Span::new(start_span.start, end)))
         }
+    }
+
+    /// `sort <ident>.`  or  `sort: <type_expr>.`  or  `sort, words --> entity.`
+    /// The `sort` keyword collides with `sort` used as an entity name / production word.
+    /// This function tries sort_decl first; falls back to treating `sort` as a regular ident.
+    fn sort_or_atom_decl(&mut self) -> Option<Spanned<Declaration>> {
+        let start = self.peek_span().unwrap_or(0);
+        self.eat(Token::SortKw);
+        // Lookahead: what follows `sort`?
+        match self.peek() {
+            // sort declaration: `sort <ident>.`
+            Some(Token::Ident(_)) if self.pos + 1 < self.tokens.len()
+                && matches!(&self.tokens[self.pos + 1].token, Token::End) =>
+            {
+                let name = self.ident()?;
+                let end = name.span.end;
+                self.eat(Token::End);
+                Some(Spanned::new(
+                    Declaration::SortDecl(name.item),
+                    Span::new(start, end),
+                ))
+            }
+            // Atom declaration: `sort: <type_expr>.`
+            Some(Token::Colon) => {
+                self.eat(Token::Colon);
+                let ty = self.type_expr()?;
+                let end = ty.span.end;
+                self.eat(Token::End);
+                Some(Spanned::new(
+                    Declaration::AtomDecl {
+                        doc: None,
+                        entity: "sort".to_string(),
+                        ty,
+                    },
+                    Span::new(start, end),
+                ))
+            }
+            // Subtype declaration: `sort :< <type>.`
+            Some(Token::Subtype) => {
+                self.eat(Token::Subtype);
+                let sup = self.type_ident()?;
+                let end = sup.span.end;
+                self.eat(Token::End);
+                Some(Spanned::new(
+                    Declaration::SubtypeDecl {
+                        sub: "sort".to_string(),
+                        sup: sup.item,
+                    },
+                    Span::new(start, end),
+                ))
+            }
+            // Production declaration: `sort, words --> entity.` or `sort --> entity.`
+            Some(Token::Comma) | Some(Token::Arrow) => {
+                let mut words: Vec<String> = vec!["sort".to_string()];
+                // SortKw is already consumed; Comma/Arrow are at current pos.
+                if self.eat(Token::Comma) {
+                    // Parse remaining comma-separated words
+                    loop {
+                        if let Some(w) = self.prod_word() {
+                            words.push(w.item);
+                        } else {
+                            break;
+                        }
+                        if !self.eat(Token::Comma) {
+                            break;
+                        }
+                    }
+                }
+                self.eat(Token::Arrow);
+                let entity = self.ident()?;
+                let end = entity.span.end;
+                self.eat(Token::End);
+                Some(Spanned::new(
+                    Declaration::ProductionDecl {
+                        words,
+                        entity: entity.item,
+                    },
+                    Span::new(start, end),
+                ))
+            }
+            // Unknown — just return None so parse_file skips the token
+            _ => None,
+        }
+    }
+
+    /// `entity Person, Animate, Inanimate.` — ident member (, member)* End.
+    /// Also accepts the single-member form `entity Person.`
+    fn sort_member_decl(&mut self) -> Vec<Spanned<Declaration>> {
+        let sort = match self.ident() {
+            Some(s) => s,
+            None => return vec![],
+        };
+        let start = sort.span.start;
+        let mut members = Vec::new();
+
+        // Parse at least one member.
+        match self.ident() {
+            Some(m) => members.push(m.item),
+            None => return vec![],
+        }
+        // Parse additional comma-separated members.
+        while self.eat(Token::Comma) {
+            match self.ident() {
+                Some(m) => members.push(m.item),
+                None => break,
+            }
+        }
+        let end = self.peek_span().unwrap_or(start);
+        self.eat(Token::End);
+        vec![Spanned::new(
+            Declaration::SortMemberDecl {
+                sort: sort.item,
+                members,
+            },
+            Span::new(start, end),
+        )]
     }
 
     /// `extend <ident> (. <ident>)* .`  or  `extend by "<uri>".`
@@ -755,10 +996,13 @@ impl<'a> Parser<'a> {
                     }
                 }
                 Some(_) => {
-                    if let Some(d) = self.declaration() {
-                        declarations.push(d);
-                    } else {
+                    let decls = self.declaration();
+                    if decls.is_empty() {
                         self.pos += 1;
+                    } else {
+                        for d in decls {
+                            declarations.push(d);
+                        }
                     }
                 }
                 None => break,
@@ -970,8 +1214,116 @@ mod tests {
     fn parse_single_type_decl() {
         let f = check("type Noun.");
         match &f.declarations[0].item {
-            Declaration::SingleTypeDecl(t) => assert_eq!(t, "Noun"),
+            Declaration::SingleTypeDecl { name, params } => {
+                assert_eq!(name, "Noun");
+                assert!(params.is_empty());
+            }
             _ => panic!("expected SingleTypeDecl"),
+        }
+    }
+
+    #[test]
+    fn parse_single_type_decl_with_params() {
+        let f = check("type NP[entity, case].");
+        match &f.declarations[0].item {
+            Declaration::SingleTypeDecl { name, params } => {
+                assert_eq!(name, "NP");
+                assert_eq!(params, &["entity", "case"]);
+            }
+            _ => panic!("expected SingleTypeDecl with params"),
+        }
+    }
+
+    #[test]
+    fn parse_sort_decl() {
+        let f = check("sort entity.");
+        match &f.declarations[0].item {
+            Declaration::SortDecl(name) => assert_eq!(name, "entity"),
+            _ => panic!("expected SortDecl"),
+        }
+    }
+
+    #[test]
+    fn parse_sort_member_decl() {
+        let f = check("entity Person.");
+        match &f.declarations[0].item {
+            Declaration::SortMemberDecl { sort, members } => {
+                assert_eq!(sort, "entity");
+                assert_eq!(members, &vec!["Person".to_string()]);
+            }
+            _ => panic!("expected SortMemberDecl"),
+        }
+    }
+
+    #[test]
+    fn parse_sort_member_decl_multi() {
+        let f = check("entity Person, Animate, Inanimate.");
+        match &f.declarations[0].item {
+            Declaration::SortMemberDecl { sort, members } => {
+                assert_eq!(sort, "entity");
+                assert_eq!(members, &vec!["Person".to_string(), "Animate".to_string(), "Inanimate".to_string()]);
+            }
+            _ => panic!("expected SortMemberDecl with multiple members"),
+        }
+    }
+
+    #[test]
+    fn parse_sort_and_member() {
+        let src = "sort entity.\nentity Person.\nentity Animate.\nentity Abstract.";
+        let f = check(src);
+        assert_eq!(f.declarations.len(), 4);
+        assert!(matches!(f.declarations[0].item, Declaration::SortDecl(_)));
+        assert!(matches!(f.declarations[1].item, Declaration::SortMemberDecl { .. }));
+        assert!(matches!(f.declarations[2].item, Declaration::SortMemberDecl { .. }));
+        assert!(matches!(f.declarations[3].item, Declaration::SortMemberDecl { .. }));
+    }
+
+    #[test]
+    fn parse_param_app_type() {
+        let f = check("kot: N[Animal].");
+        match &f.declarations[0].item {
+            Declaration::AtomDecl { entity, ty, .. } => {
+                assert_eq!(entity, "kot");
+                match &ty.item {
+                    TypeExpr::ParamApp { name, args } => {
+                        assert_eq!(name, "N");
+                        assert_eq!(args.len(), 1);
+                        assert!(matches!(args[0].item, TypeArg::Concrete(ref c) if c == "Animal"));
+                    }
+                    _ => panic!("expected ParamApp, got {:?}", ty.item),
+                }
+            }
+            _ => panic!("expected AtomDecl"),
+        }
+    }
+
+    #[test]
+    fn parse_param_app_type_with_var() {
+        let f = check("the: NP[a] / N[a].");
+        match &f.declarations[0].item {
+            Declaration::AtomDecl { ty, .. } => {
+                // Verify it parses — the exact shape is LeftArrow(ParamApp NP[a], ParamApp N[a])
+                match &ty.item {
+                    TypeExpr::LeftArrow(a, b) => {
+                        match &a.item {
+                            TypeExpr::ParamApp { name, args } => {
+                                assert_eq!(name, "NP");
+                                assert!(matches!(args[0].item, TypeArg::Var(ref v) if v == "a"));
+                            }
+                            _ => panic!("expected ParamApp in left, got {:?}", a.item),
+                        }
+                        match &b.item {
+                            TypeExpr::ParamApp { name, args } => {
+                                assert_eq!(name, "N");
+                                assert!(matches!(args[0].item, TypeArg::Var(ref v) if v == "a"));
+                            }
+                            _ => panic!("expected ParamApp in right, got {:?}", b.item),
+                        }
+                    }
+                    _ => panic!("expected LeftArrow, got {:?}", ty.item),
+                }
+            }
+            _ => panic!("expected AtomDecl"),
         }
     }
 
@@ -1021,6 +1373,6 @@ mod tests {
         let f = check(src);
         assert_eq!(f.declarations.len(), 2);
         assert!(matches!(f.declarations[0].item, Declaration::TypeDecl(_)));
-        assert!(matches!(f.declarations[1].item, Declaration::SingleTypeDecl(_)));
+        assert!(matches!(f.declarations[1].item, Declaration::SingleTypeDecl { .. }));
     }
 }

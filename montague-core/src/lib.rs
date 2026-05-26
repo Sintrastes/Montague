@@ -19,6 +19,7 @@ pub(crate) mod reference;
 pub mod registry;
 pub mod sem;
 pub mod semantics;
+pub mod sort;
 pub mod subtyping;
 pub mod types;
 
@@ -34,8 +35,9 @@ pub use sem::{
     DirectInterp, OpSet, Pass, PassCtx, SemTerm, VarEnv, VarId,
 };
 pub use semantics::Semantics;
+pub use sort::SortRegistry;
 pub use subtyping::{SubtypeLattice, Variance};
-pub use types::{AnnotatedTerm, LambekFold, LambekType, NonDet, Term};
+pub use types::{AnnotatedTerm, LambekFold, LambekType, NonDet, SortVarTable, Term, TypeCheck};
 
 use std::hash::Hash;
 use types::AnnotatedTerm as AT;
@@ -128,7 +130,7 @@ pub fn get_all_parses_chart<A, T, X>(
 ) -> Vec<X>
 where
     A: Clone + Eq + Hash + Send + Sync + 'static,
-    T: Hash + Eq + Clone + Send + Sync + 'static,
+    T: TypeCheck + Send + Sync + 'static,
     X: Clone + PartialEq,
 {
     let tokens = annotate_words(sem, input);
@@ -164,7 +166,7 @@ pub fn get_all_parses_with_morphology<A, T, X>(
 ) -> Vec<X>
 where
     A: Clone + Eq + Hash + Send + Sync + 'static,
-    T: Hash + Eq + Clone + Send + Sync + 'static,
+    T: TypeCheck + Send + Sync + 'static,
     X: Clone + PartialEq,
 {
     let words: Vec<String> = input
@@ -225,7 +227,7 @@ pub fn reduce<A, T, X>(
 ) -> NonDet<X>
 where
     A: Clone + Eq + Hash + Send + Sync + 'static,
-    T: Hash + Eq + Clone + Send + Sync + 'static,
+    T: TypeCheck + Send + Sync + 'static,
     X: Clone,
 {
     if terms.len() == 1 {
@@ -253,7 +255,7 @@ pub fn get_all_parses<A, T, X>(
 ) -> Vec<X>
 where
     A: Clone + Eq + Hash + Send + Sync + 'static,
-    T: Hash + Eq + Clone + Send + Sync + 'static,
+    T: TypeCheck + Send + Sync + 'static,
     X: Clone + PartialEq,
 {
     let mut results = Vec::new();
@@ -276,7 +278,7 @@ pub fn get_parse<A, T, X>(
 ) -> Option<X>
 where
     A: Clone + Eq + Hash + Send + Sync + 'static,
-    T: Hash + Eq + Clone + Send + Sync + 'static,
+    T: TypeCheck + Send + Sync + 'static,
     X: Clone + PartialEq,
 {
     get_all_parses(engine, ctx, sem, input).into_iter().next()
@@ -313,6 +315,8 @@ mod tests {
         Person,
         Thing,
     }
+
+    crate::impl_type_check_trivial!(BT);
 
     /// Build the canonical test lattice: Person :< Noun, Thing :< Noun.
     fn test_lattice() -> SubtypeLattice<BT> {
