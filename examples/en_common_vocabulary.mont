@@ -110,6 +110,7 @@ prisoner: Person.
 teenager: Person.
 gentleman: Person.
 lady: Person.
+human_n: Person.
 candidate: Person.
 director: Person.
 volunteer: Person.
@@ -123,6 +124,19 @@ maker: Person.
 commander: Person.
 educator: Person.
 supporter: Person.
+husband: Person.
+wife: Person.
+brother: Person.
+sister: Person.
+daughter: Person.
+son: Person.
+baby: Person.
+adult: Person.
+guy: Person.
+hero: Person.
+king: Person.
+victim: Person.
+prisoner: Person.
 
 -- ==========================================================================
 -- Nouns — Animate > Animal
@@ -191,6 +205,21 @@ roof: Building.
 kitchen: Building.
 bedroom: Building.
 bathroom: Building.
+hospital: Building.
+church: Building.
+library: Building.
+museum: Building.
+restaurant: Building.
+hotel: Building.
+store: Building.
+station: Building.
+airport: Building.
+prison: Building.
+college: Building.
+university: Building.
+factory: Building.
+apartment: Building.
+building: Building.
 
 -- ==========================================================================
 -- Nouns — Inanimate > Artifact > Furniture
@@ -419,6 +448,8 @@ holiday: Time.
 era: Time.
 future: Time.
 past: Time.
+date: Time.
+calendar: Time.
 
 -- ==========================================================================
 -- Nouns — Abstract > Quantity
@@ -474,6 +505,62 @@ chance: Idea.
 example: Idea.
 evidence: Idea.
 proof: Idea.
+action: Idea.
+practice: Idea.
+process: Idea.
+policy: Idea.
+law: Idea.
+rule: Idea.
+program: Idea.
+project: Idea.
+design: Idea.
+model: Idea.
+type_n: Idea.
+sort: Idea.
+kind: Idea.
+part: Idea.
+section: Idea.
+unit: Idea.
+structure: Idea.
+function: Idea.
+role: Idea.
+context: Idea.
+case: Idea.
+issue: Idea.
+matter: Idea.
+subject: Idea.
+term: Idea.
+standard: Idea.
+resource: Idea.
+source: Idea.
+data: Idea.
+information: Idea.
+detail: Idea.
+factor: Idea.
+element: Idea.
+aspect: Idea.
+feature: Idea.
+focus: Idea.
+direction: Idea.
+approach: Idea.
+technique: Idea.
+technology: Idea.
+industry: Idea.
+economy: Idea.
+market: Idea.
+business: Idea.
+service: Idea.
+benefit: Idea.
+advantage: Idea.
+result: Idea.
+effect: Idea.
+impact: Idea.
+outcome: Idea.
+risk: Idea.
+concern: Idea.
+challenge: Idea.
+solution: Idea.
+candidate: Idea.
 
 -- ==========================================================================
 -- Nouns — Abstract > Event
@@ -501,6 +588,16 @@ movie: Event.
 film: Event.
 concert: Event.
 exercise: Event.
+campaign: Event.
+election: Event.
+conference: Event.
+trial: Event.
+operation: Event.
+crisis: Event.
+conflict: Event.
+competition: Event.
+performance: Event.
+interview: Event.
 
 -- ==========================================================================
 -- Nouns — Abstract > Communication
@@ -538,6 +635,16 @@ definition: Communication.
 promise: Communication.
 joke: Communication.
 tale: Communication.
+image: Communication.
+picture: Communication.
+sign: Communication.
+signal: Communication.
+data: Communication.
+network: Communication.
+press: Communication.
+publication: Communication.
+culture: Communication.
+tradition: Communication.
 
 -- ==========================================================================
 -- Nouns — Abstract > State
@@ -557,6 +664,27 @@ situation: State.
 poverty: State.
 silence: State.
 disorder: State.
+death: State.
+conflict: State.
+pressure: State.
+stress: State.
+success: State.
+failure: State.
+loss: State.
+growth: State.
+progress: State.
+treatment: State.
+protection: State.
+security: State.
+defense: State.
+education: State.
+training: State.
+employment: State.
+crime: State.
+violence: State.
+pollution: State.
+disease: State.
+injury: State.
 
 -- ==========================================================================
 -- Nouns — Abstract > Attribute
@@ -570,6 +698,27 @@ talent: Attribute.
 intelligence: Attribute.
 skill: Attribute.
 ability: Attribute.
+power: Attribute.
+force: Attribute.
+energy: Attribute.
+weight: Attribute.
+size: Attribute.
+scale: Attribute.
+length: Attribute.
+depth: Attribute.
+color: Attribute.
+tone: Attribute.
+style: Attribute.
+nature: Attribute.
+character: Attribute.
+personality: Attribute.
+status: Attribute.
+reputation: Attribute.
+significance: Attribute.
+importance: Attribute.
+value: Attribute.
+cost: Attribute.
+price: Attribute.
 
 -- ==========================================================================
 -- Nouns — Abstract > Emotion
@@ -656,6 +805,171 @@ supply: Collection.
 stock: Collection.
 
 -- ==========================================================================
+-- Nouns — Inanimate > Artifact > Container (additions)
+-- ==========================================================================
+
+plate: Container.
+dish: Container.
+pot: Container.
+pan: Container.
+
+-- ==========================================================================
+-- Nouns — Inanimate > Artifact > Instrument (additions)
+-- ==========================================================================
+
+bell: Instrument.
+clock: Instrument.
+watch_n: Instrument.
+lamp: Instrument.
+wheel: Instrument.
+motor: Instrument.
+pump: Instrument.
+
+-- ==========================================================================
+-- Nouns — Inanimate > Artifact > Furniture (additions)
+-- ==========================================================================
+
+shelf: Furniture.
+couch: Furniture.
+bench: Furniture.
+mirror: Furniture.
+curtain: Furniture.
+
+-- ==========================================================================
+-- Nouns — Inanimate > Artifact > Clothing (additions)
+-- ==========================================================================
+
+boot: Clothing.
+glove: Clothing.
+sock: Clothing.
+skirt: Clothing.
+ring_n: Clothing.
+jewelry: Clothing.
+button: Clothing.
+
+-- ==========================================================================
+-- Nouns — Inanimate > Artifact > Tool (additions)
+-- ==========================================================================
+
+hammer: Tool.
+rope: Tool.
+chain: Tool.
+ladder: Tool.
+brush: Tool.
+needle: Tool.
+
+-- ==========================================================================
+-- Nouns — Inanimate > NaturalObject (additions)
+-- ==========================================================================
+
+wave: NaturalObject.
+cave: NaturalObject.
+volcano: NaturalObject.
+valley: NaturalObject.
+
+-- ==========================================================================
+-- Nouns — Inanimate > Substance (additions)
+-- ==========================================================================
+
+steam: Substance.
+powder: Substance.
+flame: Substance.
+mud: Substance.
+
+-- ==========================================================================
+-- Nouns — Abstract > Time (additions)
+-- ==========================================================================
+
+birthday: Time.
+dawn: Time.
+noon: Time.
+midnight: Time.
+deadline: Time.
+
+-- ==========================================================================
+-- Nouns — Abstract > Quantity (additions)
+-- ==========================================================================
+
+distance: Quantity.
+depth: Quantity.
+width: Quantity.
+height: Quantity.
+length_n: Quantity.
+measurement: Quantity.
+
+-- ==========================================================================
+-- Nouns — Abstract > Event (additions)
+-- ==========================================================================
+
+celebration: Event.
+funeral: Event.
+festival: Event.
+parade: Event.
+protest: Event.
+revolution: Event.
+explosion: Event.
+crash: Event.
+storm: Event.
+flood: Event.
+earthquake: Event.
+
+-- ==========================================================================
+-- Nouns — Group > SocialGroup (additions)
+-- ==========================================================================
+
+tribe: SocialGroup.
+clan: SocialGroup.
+gang: SocialGroup.
+council: SocialGroup.
+assembly: SocialGroup.
+brigade: SocialGroup.
+squad: SocialGroup.
+
+-- ==========================================================================
+-- Nouns — Abstract > Idea (additions)
+-- ==========================================================================
+
+mind: Idea.
+memory: Idea.
+imagination: Idea.
+opinion: Idea.
+attitude: Idea.
+perspective: Idea.
+tradition: Idea.
+ritual: Idea.
+habit: Idea.
+custom: Idea.
+religion: Idea.
+faith: Idea.
+dream: Idea.
+nightmare: Idea.
+fantasy: Idea.
+vision: Idea.
+mission: Idea.
+career: Idea.
+profession: Idea.
+occupation: Idea.
+task: Idea.
+duty: Idea.
+responsibility: Idea.
+mistake: Idea.
+error: Idea.
+tragedy: Idea.
+miracle: Idea.
+coincidence: Idea.
+category: Idea.
+phase: Idea.
+step: Idea.
+stage: Idea.
+trend: Idea.
+background: Idea.
+foundation: Idea.
+basis: Idea.
+theme: Idea.
+version: Idea.
+alternative: Idea.
+
+-- ==========================================================================
 -- Proper Names
 -- ==========================================================================
 
@@ -696,6 +1010,14 @@ enter: NP \ S.
 disappear: NP \ S.
 appear: NP \ S.
 exist: NP \ S.
+grow: NP \ S.
+continue: NP \ S.
+hurry: NP \ S.
+rest: NP \ S.
+hide: NP \ S.
+escape: NP \ S.
+relax: NP \ S.
+complain: NP \ S.
 cry: NP \ S.
 shout: NP \ S.
 scream: NP \ S.
@@ -961,6 +1283,23 @@ form: (NP \ S) / NP.
 base: (NP \ S) / NP.
 charge: (NP \ S) / NP.
 search: (NP \ S) / NP.
+watch: (NP \ S) / NP.
+visit: (NP \ S) / NP.
+control: (NP \ S) / NP.
+mind: (NP \ S) / NP.
+guess: (NP \ S) / NP.
+forget: (NP \ S) / NP.
+answer: (NP \ S) / NP.
+care: (NP \ S) / NP.
+lack: (NP \ S) / NP.
+note: (NP \ S) / NP.
+cost: (NP \ S) / NP.
+influence: (NP \ S) / NP.
+smoke: (NP \ S) / NP.
+question: (NP \ S) / NP.
+copy: (NP \ S) / NP.
+pull: (NP \ S) / NP.
+fix: (NP \ S) / NP.
 
 -- ==========================================================================
 -- Verbs — Ambitransitive (both intransitive and transitive)
@@ -1350,6 +1689,111 @@ straight: Adj.
 pretty: Adj.
 permanent: Adj.
 wet: Adj.
+bitter: Adj.
+brave: Adj.
+calm: Adj.
+casual: Adj.
+cheerful: Adj.
+classic: Adj.
+clever: Adj.
+confident: Adj.
+crazy: Adj.
+cruel: Adj.
+curious: Adj.
+decent: Adj.
+delicate: Adj.
+desperate: Adj.
+dirty: Adj.
+dull: Adj.
+eager: Adj.
+elegant: Adj.
+fierce: Adj.
+foolish: Adj.
+frank: Adj.
+generous: Adj.
+gentle: Adj.
+genuine: Adj.
+graceful: Adj.
+grateful: Adj.
+greedy: Adj.
+handsome: Adj.
+harsh: Adj.
+honest: Adj.
+humble: Adj.
+innocent: Adj.
+jealous: Adj.
+keen: Adj.
+kind: Adj.
+lazy: Adj.
+lively: Adj.
+logical: Adj.
+lonely: Adj.
+loose: Adj.
+loud: Adj.
+loyal: Adj.
+mad: Adj.
+mature: Adj.
+mild: Adj.
+modest: Adj.
+neat: Adj.
+noble: Adj.
+odd: Adj.
+patient: Adj.
+plain: Adj.
+pleasant: Adj.
+polite: Adj.
+precious: Adj.
+precise: Adj.
+random: Adj.
+rational: Adj.
+raw: Adj.
+reasonable: Adj.
+reliable: Adj.
+remarkable: Adj.
+remote: Adj.
+respectful: Adj.
+ridiculous: Adj.
+rough: Adj.
+rude: Adj.
+selfish: Adj.
+sensible: Adj.
+sensitive: Adj.
+shallow: Adj.
+shy: Adj.
+silly: Adj.
+sincere: Adj.
+slight: Adj.
+slippery: Adj.
+solar: Adj.
+spare: Adj.
+steady: Adj.
+steep: Adj.
+stiff: Adj.
+strict: Adj.
+stubborn: Adj.
+stupid: Adj.
+subtle: Adj.
+sudden: Adj.
+suitable: Adj.
+suspicious: Adj.
+swift: Adj.
+tender: Adj.
+tense: Adj.
+thorough: Adj.
+tight: Adj.
+ugly: Adj.
+uncomfortable: Adj.
+unfair: Adj.
+urgent: Adj.
+vague: Adj.
+vivid: Adj.
+vulnerable: Adj.
+wealthy: Adj.
+weird: Adj.
+wicked: Adj.
+wise: Adj.
+witty: Adj.
+worthy: Adj.
 
 -- ==========================================================================
 -- Adverbs (manner/degree not already in en_grammar_basic)
@@ -1370,6 +1814,134 @@ usually: (NP \ S) \ (NP \ S).
 certainly: (NP \ S) \ (NP \ S).
 probably: (NP \ S) \ (NP \ S).
 possibly: (NP \ S) \ (NP \ S).
+
+-- ==========================================================================
+-- Productions — Idea (new batch)
+-- ==========================================================================
+
+action, actions --> action.
+practice, practices --> practice.
+process, processes --> process.
+policy, policies --> policy.
+law, laws --> law.
+rule, rules --> rule.
+program, programs --> program.
+project, projects --> project.
+design, designs --> design.
+model, models --> model.
+type_n --> type_n.
+sort, sorts --> sort.
+kind, kinds --> kind.
+part, parts --> part.
+section, sections --> section.
+unit, units --> unit.
+function, functions --> function.
+role, roles --> role.
+context, contexts --> context.
+case, cases --> case.
+issue, issues --> issue.
+matter, matters --> matter.
+term, terms --> term.
+standard, standards --> standard.
+resource, resources --> resource.
+source, sources --> source.
+data --> data.
+information --> information.
+detail, details --> detail.
+factor, factors --> factor.
+element, elements --> element.
+aspect, aspects --> aspect.
+feature, features --> feature.
+focus --> focus.
+direction, directions --> direction.
+approach, approaches --> approach.
+technique, techniques --> technique.
+technology, technologies --> technology.
+industry, industries --> industry.
+economy, economies --> economy.
+market, markets --> market.
+business, businesses --> business.
+service, services --> service.
+benefit, benefits --> benefit.
+advantage, advantages --> advantage.
+result, results --> result.
+effect, effects --> effect.
+impact, impacts --> impact.
+outcome, outcomes --> outcome.
+risk, risks --> risk.
+concern, concerns --> concern.
+challenge, challenges --> challenge.
+solution, solutions --> solution.
+candidate, candidates --> candidate.
+structure, structures --> structure.
+
+-- Event (new batch)
+campaign, campaigns --> campaign.
+election, elections --> election.
+conference, conferences --> conference.
+trial, trials --> trial.
+operation, operations --> operation.
+competition, competitions --> competition.
+performance, performances --> performance.
+interview, interviews --> interview.
+
+-- Communication (new batch)
+image, images --> image.
+picture, pictures --> picture.
+sign, signs --> sign.
+signal, signals --> signal.
+network, networks --> network.
+press --> press.
+publication, publications --> publication.
+culture, cultures --> culture.
+tradition, traditions --> tradition.
+
+-- State (new batch)
+death, deaths --> death.
+pressure --> pressure.
+stress --> stress.
+success, successes --> success.
+failure, failures --> failure.
+loss, losses --> loss.
+growth --> growth.
+progress --> progress.
+treatment, treatments --> treatment.
+protection --> protection.
+security --> security.
+defense --> defense.
+education --> education.
+training --> training.
+employment --> employment.
+crime, crimes --> crime.
+violence --> violence.
+pollution --> pollution.
+disease, diseases --> disease.
+injury, injuries --> injury.
+
+-- Attribute (new batch)
+power --> power.
+force, forces --> force.
+energy --> energy.
+weight, weights --> weight.
+size, sizes --> size.
+scale, scales --> scale.
+color, colors --> color.
+tone, tones --> tone.
+style, styles --> style.
+nature --> nature.
+character, characters --> character.
+personality, personalities --> personality.
+status --> status.
+reputation, reputations --> reputation.
+significance --> significance.
+importance --> importance.
+value, values --> value.
+cost, costs --> cost.
+price, prices --> price.
+
+-- Time (missed)
+date, dates --> date.
+calendar, calendars --> calendar.
 
 -- ==========================================================================
 -- Productions — Nouns
@@ -1430,6 +2002,7 @@ prisoner, prisoners --> prisoner.
 teenager, teenagers --> teenager.
 gentleman, gentlemen --> gentleman.
 lady, ladies --> lady.
+human, humans --> human_n.
 candidate, candidates --> candidate.
 director, directors --> director.
 volunteer, volunteers --> volunteer.
@@ -1443,6 +2016,18 @@ maker, makers --> maker.
 commander, commanders --> commander.
 educator, educators --> educator.
 supporter, supporters --> supporter.
+husband, husbands --> husband.
+wife, wives --> wife.
+brother, brothers --> brother.
+sister, sisters --> sister.
+daughter, daughters --> daughter.
+son, sons --> son.
+baby, babies --> baby.
+adult, adults --> adult.
+guy, guys --> guy.
+hero, heroes --> hero.
+king, kings --> king.
+victim, victims --> victim.
 
 -- Animal
 horse, horses --> horse.
@@ -1497,6 +2082,21 @@ roof, roofs --> roof.
 kitchen, kitchens --> kitchen.
 bedroom, bedrooms --> bedroom.
 bathroom, bathrooms --> bathroom.
+hospital, hospitals --> hospital.
+church, churches --> church.
+library, libraries --> library.
+museum, museums --> museum.
+restaurant, restaurants --> restaurant.
+hotel, hotels --> hotel.
+store, stores --> store.
+station, stations --> station.
+airport, airports --> airport.
+prison, prisons --> prison.
+college, colleges --> college.
+university, universities --> university.
+factory, factories --> factory.
+apartment, apartments --> apartment.
+building, buildings --> building.
 
 -- Furniture
 table, tables --> table.
@@ -1926,6 +2526,7 @@ enter, enters, entered --> enter.
 disappear, disappears, disappeared --> disappear.
 appear, appears, appeared --> appear.
 exist, exists, existed --> exist.
+grow, grows, grew --> grow.
 cry, cries, cried --> cry.
 shout, shouts, shouted --> shout.
 scream, screams, screamed --> scream.
@@ -1944,6 +2545,13 @@ slide, slides, slid --> slide.
 bend, bends, bent --> bend.
 nod, nods, nodded --> nod.
 whisper, whispers, whispered --> whisper.
+continue, continues, continued --> continue.
+hurry, hurries, hurried --> hurry.
+rest, rests, rested --> rest.
+hide, hides, hid --> hide.
+escape, escapes, escaped --> escape.
+relax, relaxes, relaxed --> relax.
+complain, complains, complained --> complain.
 
 -- Transitive
 take, takes, took --> take.
@@ -2188,6 +2796,23 @@ form, forms, formed --> form.
 base, bases, based --> base.
 charge, charges, charged --> charge.
 search, searches, searched --> search.
+watch, watches, watched --> watch.
+visit, visits, visited --> visit.
+control, controls, controlled --> control.
+mind, minds, minded --> mind.
+guess, guesses, guessed --> guess.
+forget, forgets, forgot --> forget.
+answer, answers, answered --> answer.
+care, cares, cared --> care.
+lack, lacks, lacked --> lack.
+note, notes, noted --> note.
+cost, costs, cost --> cost.
+influence, influences, influenced --> influence.
+smoke, smokes, smoked --> smoke.
+question, questions, questioned --> question.
+copy, copies, copied --> copy.
+pull, pulls, pulled --> pull.
+fix, fixes, fixed --> fix.
 
 -- Ambitransitive
 eat, eats, ate --> eat.
@@ -2523,6 +3148,109 @@ straight --> straight.
 pretty --> pretty.
 permanent --> permanent.
 wet --> wet.
+bitter --> bitter.
+brave --> brave.
+calm --> calm.
+casual --> casual.
+cheerful --> cheerful.
+classic --> classic.
+clever --> clever.
+confident --> confident.
+crazy --> crazy.
+cruel --> cruel.
+curious --> curious.
+decent --> decent.
+delicate --> delicate.
+desperate --> desperate.
+dirty --> dirty.
+dull --> dull.
+eager --> eager.
+elegant --> elegant.
+fierce --> fierce.
+foolish --> foolish.
+frank --> frank.
+generous --> generous.
+gentle --> gentle.
+genuine --> genuine.
+graceful --> graceful.
+grateful --> grateful.
+greedy --> greedy.
+handsome --> handsome.
+harsh --> harsh.
+honest --> honest.
+humble --> humble.
+innocent --> innocent.
+jealous --> jealous.
+keen --> keen.
+lazy --> lazy.
+lively --> lively.
+logical --> logical.
+lonely --> lonely.
+loose --> loose.
+loud --> loud.
+loyal --> loyal.
+mad --> mad.
+mature --> mature.
+mild --> mild.
+modest --> modest.
+neat --> neat.
+noble --> noble.
+odd --> odd.
+plain --> plain.
+pleasant --> pleasant.
+polite --> polite.
+precious --> precious.
+precise --> precise.
+random --> random.
+rational --> rational.
+raw --> raw.
+reasonable --> reasonable.
+reliable --> reliable.
+remarkable --> remarkable.
+remote --> remote.
+respectful --> respectful.
+ridiculous --> ridiculous.
+rough --> rough.
+rude --> rude.
+selfish --> selfish.
+sensible --> sensible.
+sensitive --> sensitive.
+shallow --> shallow.
+shy --> shy.
+silly --> silly.
+sincere --> sincere.
+slight --> slight.
+slippery --> slippery.
+solar --> solar.
+spare --> spare.
+steady --> steady.
+steep --> steep.
+stiff --> stiff.
+strict --> strict.
+stubborn --> stubborn.
+stupid --> stupid.
+subtle --> subtle.
+sudden --> sudden.
+suitable --> suitable.
+suspicious --> suspicious.
+swift --> swift.
+tender --> tender.
+tense --> tense.
+thorough --> thorough.
+tight --> tight.
+ugly --> ugly.
+uncomfortable --> uncomfortable.
+unfair --> unfair.
+urgent --> urgent.
+vague --> vague.
+vivid --> vivid.
+vulnerable --> vulnerable.
+wealthy --> wealthy.
+weird --> weird.
+wicked --> wicked.
+wise --> wise.
+witty --> witty.
+worthy --> worthy.
 
 -- ==========================================================================
 -- Productions — Adverbs

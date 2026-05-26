@@ -571,11 +571,18 @@ impl<'a> Parser<'a> {
         }
     }
 
-    /// `type <TypeIdent>.`
+    /// `type <TypeIdent>.`  Backtracks on failure so `type` can be an entity name.
     fn single_type_decl(&mut self) -> Option<Spanned<Declaration>> {
+        let saved = self.pos;
         let start = self.peek_span().unwrap_or(0);
         self.eat(Token::TypeKw);
-        let t = self.type_ident()?;
+        let t = match self.type_ident() {
+            Some(t) => t,
+            None => {
+                self.pos = saved;
+                return None;
+            }
+        };
         let end = t.span.end;
         self.eat(Token::End);
         Some(Spanned::new(Declaration::SingleTypeDecl(t.item), Span::new(start, end)))
