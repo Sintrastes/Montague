@@ -9,7 +9,7 @@ use montague_core::registry::Registry;
 use montague_core::subtyping::SubtypeLattice;
 use montague_core::types::LambekType;
 
-use crate::ast::{AtomEntry, Declaration, MontFile, MorphemeEntry, ProductionEntry, Span, TypeExpr};
+use crate::ast::{AtomEntry, Declaration, Directive, MontFile, MorphemeEntry, ProductionEntry, Span, TypeExpr};
 use crate::error::ResolveError;
 
 /// The output of name resolution — a typed lexicon ready for parsing.
@@ -22,6 +22,99 @@ pub struct ResolvedLexicon {
     pub productions: Vec<ProductionEntry>,
     pub morphemes: Vec<MorphemeEntry<LambekType<String>>>,
     pub lattice: SubtypeLattice<String>,
+    /// Namespace declared in this file (if any).
+    pub namespace: Option<Vec<String>>,
+    /// Type names declared in this file (via `type A.` or `Type = A | B.`).
+    pub type_names: HashSet<String>,
+}
+
+impl ResolvedLexicon {
+    /// Merge another resolved lexicon into this one.
+    ///
+    /// Concatenates atoms, productions, morphemes, and merges subtype lattices.
+    /// Returns errors for entity name collisions.
+    pub fn extend(&mut self, other: ResolvedLexicon) -> Result<(), Vec<ResolveError>> {
+        let mut errors = Vec::new();
+
+        // Check for entity name collisions
+        let existing_entities: HashSet<&str> = self.atoms.iter().map(|a| a.entity.as_str()).collect();
+        for a in &other.atoms {
+            if existing_entities.contains(a.entity.as_str()) {
+                errors.push(ResolveError::DuplicateEntity {
+                    entity: a.entity.clone(),
+                    original_span: a.span,
+                    span: a.span,
+                });
+            }
+        }
+
+        if !errors.is_empty() {
+            return Err(errors);
+        }
+
+        self.atoms.extend(other.atoms);
+        self.productions.extend(other.productions);
+        self.morphemes.extend(other.morphemes);
+        self.lattice.union(&other.lattice);
+        Ok(())
+    }
+}
+
+// ---------------------------------------------------------------------------
+// File resolver trait
+// ---------------------------------------------------------------------------
+
+/// Trait for resolving external file references (extend directives).
+pub trait FileResolver {
+    /// Resolve a namespace to source content.
+    /// E.g., namespace `["montague", "en_grammar_basic"]` → file `en_grammar_basic.mont`
+    /// in the extending file's base directory.
+    fn resolve_namespace(
+        &self,
+        namespace: &[String],
+        base_dir: &str,
+    ) -> Result<String, ResolveError>;
+
+    /// Resolve a URI (file://, https://) to source content.
+    fn resolve_uri(&self, uri: &str) -> Result<String, ResolveError>;
+}
+
+/// File-system based resolver. Looks for module files in the same directory
+/// as the extending file.
+pub struct FsFileResolver;
+
+impl FileResolver for FsFileResolver {
+    fn resolve_namespace(
+        &self,
+        namespace: &[String],
+        base_dir: &str,
+    ) -> Result<String, ResolveError> {
+        let last = namespace
+            .last()
+            .ok_or_else(|| ResolveError::UnknownNamespace {
+                name: namespace.join("."),
+                span: Span::new(0, 0),
+            })?;
+        let path = std::path::Path::new(base_dir).join(format!("{last}.mont"));
+        std::fs::read_to_string(&path).map_err(|_| ResolveError::UnknownNamespace {
+            name: namespace.join("."),
+            span: Span::new(0, 0),
+        })
+    }
+
+    fn resolve_uri(&self, uri: &str) -> Result<String, ResolveError> {
+        if let Some(path) = uri.strip_prefix("file://") {
+            std::fs::read_to_string(path).map_err(|_| ResolveError::UnknownNamespace {
+                name: uri.to_string(),
+                span: Span::new(0, 0),
+            })
+        } else {
+            Err(ResolveError::UnknownNamespace {
+                name: uri.to_string(),
+                span: Span::new(0, 0),
+            })
+        }
+    }
 }
 
 /// Resolve a [`MontFile`] AST against a [`Registry`], producing a typed lexicon
@@ -30,20 +123,112 @@ pub struct ResolvedLexicon {
 /// Returns `ResolvedLexicon<LambekType<String>>` — each atom entry stores its
 /// resolved Lambek type.
 pub fn resolve(file: &MontFile, reg: &Registry) -> Result<ResolvedLexicon, Vec<ResolveError>> {
-    let mut errors = Vec::new();
+    resolve_with_resolver(file, reg, &FsFileResolver, "")
+}
 
-    // -- Pass 1: collect known types --
+/// Resolve with an explicit [`FileResolver`] and base directory for extend
+/// resolution.
+pub fn resolve_with_resolver(
+    file: &MontFile,
+    reg: &Registry,
+    resolver: &dyn FileResolver,
+    base_dir: &str,
+) -> Result<ResolvedLexicon, Vec<ResolveError>> {
+    let mut errors = Vec::new();
+    let mut seen_namespaces: HashSet<Vec<String>> = HashSet::new();
+
+    // -- Pass 0: namespace declaration --
+    let mut namespace: Option<Vec<String>> = None;
+    for decl in &file.declarations {
+        if let Declaration::NamespaceDecl(parts) = &decl.item {
+            if namespace.is_some() {
+                errors.push(ResolveError::DuplicateEntity {
+                    entity: parts.join("."),
+                    original_span: decl.span,
+                    span: decl.span,
+                });
+            } else {
+                namespace = Some(parts.clone());
+            }
+        }
+    }
+
+    // -- Pass 0b: resolve extends early so their types are available --
+    let mut extended_lexicons: Vec<ResolvedLexicon> = Vec::new();
+    let mut extended_namespaces: HashSet<Vec<String>> = HashSet::new();
+    for dir in &file.directives {
+        let (ext_ns, ext_src): (Option<Vec<String>>, String) = match &dir.item {
+            Directive::Extend { namespace } => {
+                if extended_namespaces.contains(namespace) || seen_namespaces.contains(namespace) {
+                    continue;
+                }
+                seen_namespaces.insert(namespace.clone());
+                extended_namespaces.insert(namespace.clone());
+                let src = match resolver.resolve_namespace(namespace, base_dir) {
+                    Ok(s) => s,
+                    Err(e) => { errors.push(e); return Err(errors); }
+                };
+                (Some(namespace.clone()), src)
+            }
+            Directive::ExtendBy { ref uri } => {
+                let src = match resolver.resolve_uri(uri) {
+                    Ok(s) => s,
+                    Err(e) => { errors.push(e); return Err(errors); }
+                };
+                (None, src)
+            }
+            _ => continue,
+        };
+        let (sub_ast, parse_errs) = crate::parser::parse(&ext_src);
+        if !parse_errs.is_empty() {
+            for _e in &parse_errs {
+                errors.push(ResolveError::UnknownNamespace {
+                    name: ext_ns.as_ref().map(|v| v.join(".")).unwrap_or_else(|| "(uri)".into()),
+                    span: dir.span,
+                });
+            }
+            return Err(errors);
+        }
+        match resolve_with_resolver(&sub_ast, reg, resolver, base_dir) {
+            Ok(l) => extended_lexicons.push(l),
+            Err(mut es) => { errors.append(&mut es); return Err(errors); }
+        }
+    }
+
+    // -- Pass 1: collect known types (local + extended) --
     let mut known_types: HashSet<String> = HashSet::new();
     for decl in &file.declarations {
-        if let Declaration::TypeDecl(types) = &decl.item {
-            for t in types {
+        match &decl.item {
+            Declaration::TypeDecl(types) => {
+                for t in types { known_types.insert(t.clone()); }
+            }
+            Declaration::SingleTypeDecl(t) => {
                 known_types.insert(t.clone());
+            }
+            _ => {}
+        }
+    }
+    // Add types from extended lexicons (type_names tracks declared types)
+    for el in &extended_lexicons {
+        for t in &el.type_names {
+            known_types.insert(t.clone());
+        }
+        // Also collect types from extended lattice
+        for (sub, sups) in el.lattice.direct_supertypes_iter() {
+            if !known_types.contains(sub) { known_types.insert(sub.clone()); }
+            for s in sups {
+                if !known_types.contains(s) { known_types.insert(s.clone()); }
             }
         }
     }
 
     // -- Pass 2: subtype lattice --
     let mut lattice = SubtypeLattice::new();
+    // Start with extended lattices
+    for el in &extended_lexicons {
+        lattice.union(&el.lattice);
+    }
+    // Add local subtype declarations
     for decl in &file.declarations {
         if let Declaration::SubtypeDecl { sub, sup } = &decl.item {
             if !known_types.contains(sub) {
@@ -124,16 +309,40 @@ pub fn resolve(file: &MontFile, reg: &Registry) -> Result<ResolvedLexicon, Vec<R
         }
     }
 
-    if errors.is_empty() {
-        Ok(ResolvedLexicon {
-            atoms,
-            productions,
-            morphemes,
-            lattice,
-        })
-    } else {
-        Err(errors)
+    // Build the base lexicon for this file
+    if !errors.is_empty() {
+        return Err(errors);
     }
+
+    let mut lex = ResolvedLexicon {
+        atoms,
+        productions,
+        morphemes,
+        lattice,
+        namespace: namespace.clone(),
+        type_names: known_types.clone(),
+    };
+
+    // -- Pass 5: merge pre-resolved extended lexicons --
+    for el in extended_lexicons {
+        // Filter out entities that already exist in the local file.
+        let existing_entities: HashSet<&str> = lex.atoms.iter().map(|a| a.entity.as_str()).collect();
+        let new_atoms: Vec<_> = el.atoms.into_iter()
+            .filter(|a| !existing_entities.contains(a.entity.as_str()))
+            .collect();
+        let new_productions: Vec<_> = el.productions.into_iter()
+            .filter(|p| !lex.productions.iter().any(|lp| lp.words == p.words && lp.entity == p.entity))
+            .collect();
+        let existing_morph_entities: HashSet<&str> = lex.morphemes.iter().map(|m| m.entity.as_str()).collect();
+        let new_morphemes: Vec<_> = el.morphemes.into_iter()
+            .filter(|m| !existing_morph_entities.contains(m.entity.as_str()))
+            .collect();
+        lex.atoms.extend(new_atoms);
+        lex.productions.extend(new_productions);
+        lex.morphemes.extend(new_morphemes);
+    }
+
+    Ok(lex)
 }
 
 /// Derive a unique entity name from a morpheme surface form.
@@ -483,5 +692,27 @@ mod tests {
         // The morpheme entity should have a type via type_of_atom
         let types = (sem.type_of_atom)(&"s_suffix".to_string());
         assert_eq!(types.len(), 1);
+    }
+
+    #[test]
+    fn resolve_single_type_decl() {
+        let src = "type S.\ntype NP.\nwalk: NP \\ S.";
+        let lex = resolve_str(src).unwrap();
+        assert_eq!(lex.atoms.len(), 1);
+    }
+
+    #[test]
+    fn resolve_namespace_decl() {
+        let src = "namespace montague.test.\ntype S.\ntype NP.\nwalk: NP \\ S.";
+        let lex = resolve_str(src).unwrap();
+        assert_eq!(lex.namespace, Some(vec!["montague".into(), "test".into()]));
+        assert_eq!(lex.atoms.len(), 1);
+    }
+
+    #[test]
+    fn resolve_mixed_type_syntax() {
+        let src = "Type = S | NP.\ntype N.\nwalk: NP \\ S.\nman: N.";
+        let lex = resolve_str(src).unwrap();
+        assert_eq!(lex.atoms.len(), 2);
     }
 }

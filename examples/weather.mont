@@ -1,4 +1,5 @@
 -- Weather expressions and expletive subjects.
+-- Demonstrates extend by URL (GitHub raw file).
 -- "It is raining."  "It is cold."  "It rained."  "It is two thirty."
 --
 -- Test with:
@@ -6,43 +7,39 @@
 --   mont tree examples/weather.mont "It is cold."
 --   mont tree examples/weather.mont "It rained."
 
-Type =
-    Sentence
-  | Adjective
-  | Expletive
-  | Time.
+namespace montague.weather.
 
--- | The dummy subject "it" in weather expressions.
-it_subj: Expletive.
+extend by "https://raw.githubusercontent.com/Sintrastes/Montague/refs/heads/main/examples/en_grammar_basic.mont".
 
--- | Copula "is" — absorbs Adjective from right, then Expletive from left.
-is_cop: (Expletive \ Sentence) / Adjective.
+-- ==========================================================================
+-- Weather-specific types and atoms
+-- (Expletive, it_subj, is_cop_expletive, a_art come from en_grammar_basic)
+-- ==========================================================================
+
+-- Time expressions
+type Time.
 
 -- | Weather predicates that need the dummy subject.
-rained: Expletive \ Sentence.
-snowed: Expletive \ Sentence.
+rained: Expletive \ S.
+snowed: Expletive \ S.
 
 -- | Adjectival predicates — "raining", "cold", "warm".
-raining: Adjective.
-cold: Adjective.
-warm: Adjective.
+raining: Adj.
+cold: Adj.
+warm: Adj.
 
 -- | A specific time-of-day expression.
 two_thirty: Time.
 
--- | Copula for attributing a time. "It is two thirty."
---   Note: "two thirty" must be written as a single token "two_thirty"
---   until multi-word surface forms are supported.
-is_at: (Expletive \ Sentence) / Time.
+-- | Copula for attributing a time.
+is_weather_at: (Expletive \ S) / Time.
 
 -- Surface form -> entity.
-it --> it_subj.
-is --> is_cop.
-is --> is_at.
+-- (it --> it_subj and is --> is_cop_expletive come from en_grammar_basic)
 rained --> rained.
 snowed --> snowed.
 raining --> raining.
 cold --> cold.
 warm --> warm.
 two_thirty --> two_thirty.
-is_at --> is_at.
+is --> is_weather_at.

@@ -9,7 +9,11 @@
 --   montague ask examples/composition.mont          (rejects quickly eats fish)
 --   montague ask examples/composition.mont --compose (accepts quickly eats fish)
 
-Type = S | NP | VP.
+namespace montague.composition.
+
+type S.
+type NP.
+type VP.
 
 -- Proper nouns
 alice: NP.

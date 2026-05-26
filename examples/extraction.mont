@@ -10,7 +10,12 @@
 --   "every number that divides six is positive"  → parses
 --   "a number that divides six is prime"         → parses
 
-Type = S | NP | N | Adj.
+namespace montague.extraction.
+
+type S.
+type NP.
+type N.
+type Adj.
 
 -- Common nouns
 number: N.

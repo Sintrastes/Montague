@@ -176,6 +176,22 @@ impl<T: Hash + Eq + Clone> SubtypeLattice<T> {
         }
     }
 
+    /// Merge all subtype edges from `other` into this lattice.
+    ///
+    /// Used when combining lexicons from multiple `.mont` files via `extend`.
+    pub fn union(&mut self, other: &SubtypeLattice<T>) {
+        for (sub, sups) in &other.direct_supertypes {
+            for sup in sups {
+                self.add_subtype(sub.clone(), sup.clone());
+            }
+        }
+    }
+
+    /// Iterate over all direct subtype→supertypes edges.
+    pub fn direct_supertypes_iter(&self) -> impl Iterator<Item = (&T, &HashSet<T>)> {
+        self.direct_supertypes.iter()
+    }
+
     /// Collect all supertypes (transitive closure upward) of `t`, including
     /// `t` itself.
     fn all_supertypes(&self, t: &T) -> HashSet<T> {

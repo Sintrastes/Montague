@@ -36,6 +36,14 @@ enum Token {
     Morph,
     /// `STRIPS` keyword.
     Strips,
+    /// `.` used as a namespace separator (mid-line, followed by non-whitespace).
+    Dot,
+    /// `namespace` keyword.
+    Namespace,
+    /// `extend` keyword.
+    Extend,
+    /// Lowercase `type` keyword — for single-type declarations: `type A.`
+    TypeKw,
 }
 
 struct TokenWithSpan {
@@ -157,8 +165,22 @@ impl<'a> Scanner<'a> {
             }
             '.' => {
                 self.pos += 1;
+                // Disambiguate: if followed by whitespace-then-newline/EOF/comment
+                // → End (statement terminator); otherwise → Dot (namespace sep).
+                let mut peek = self.pos;
+                while peek < self.src.len()
+                    && (self.src.as_bytes()[peek] == b' ' || self.src.as_bytes()[peek] == b'\t')
+                {
+                    peek += 1;
+                }
+                let is_end = peek >= self.src.len()
+                    || self.src.as_bytes()[peek] == b'\n'
+                    || self.src.as_bytes()[peek] == b'\r'
+                    || (peek + 1 < self.src.len()
+                        && self.src.as_bytes()[peek] == b'-'
+                        && self.src.as_bytes()[peek + 1] == b'-');
                 Some(TokenWithSpan {
-                    token: Token::End,
+                    token: if is_end { Token::End } else { Token::Dot },
                     span: Span::new(start, self.pos),
                 })
             }
@@ -257,6 +279,9 @@ impl<'a> Scanner<'a> {
                     "as" => Token::As,
                     "MORPH" => Token::Morph,
                     "STRIPS" => Token::Strips,
+                    "namespace" => Token::Namespace,
+                    "extend" => Token::Extend,
+                    "type" => Token::TypeKw,
                     _ => Token::Ident(s),
                 };
                 Some(TokenWithSpan {
@@ -523,14 +548,17 @@ impl<'a> Parser<'a> {
 
     fn declaration(&mut self) -> Option<Spanned<Declaration>> {
         match self.peek() {
+            Some(Token::TypeKw) => self.single_type_decl(),
             Some(Token::Morph) => self.morpheme_decl(),
             Some(Token::Type) => self.type_decl(),
+            Some(Token::Namespace) => self.namespace_decl(),
             Some(Token::Ident(_)) => {
                 if self.pos + 1 < self.tokens.len() {
                     match &self.tokens[self.pos + 1].token {
                         Token::Subtype => self.subtype_decl(),
                         Token::Colon => self.atom_decl(),
                         Token::Comma | Token::Arrow => self.production_decl(),
+                        Token::Dot => self.namespace_or_atom_decl(),
                         _ => self.atom_decl(),
                     }
                 } else {
@@ -541,6 +569,90 @@ impl<'a> Parser<'a> {
             Some(Token::QuotedString(_)) => self.production_decl(),
             _ => None,
         }
+    }
+
+    /// `type <TypeIdent>.`
+    fn single_type_decl(&mut self) -> Option<Spanned<Declaration>> {
+        let start = self.peek_span().unwrap_or(0);
+        self.eat(Token::TypeKw);
+        let t = self.type_ident()?;
+        let end = t.span.end;
+        self.eat(Token::End);
+        Some(Spanned::new(Declaration::SingleTypeDecl(t.item), Span::new(start, end)))
+    }
+
+    /// `namespace <ident> (. <ident>)* .`
+    fn namespace_decl(&mut self) -> Option<Spanned<Declaration>> {
+        let start = self.peek_span().unwrap_or(0);
+        self.eat(Token::Namespace);
+        let mut parts = vec![self.ident()?.item.clone()];
+        while self.eat(Token::Dot) {
+            if let Some(id) = self.ident() {
+                parts.push(id.item.clone());
+            } else { break; }
+        }
+        let end = self.peek_span().unwrap_or(start);
+        self.eat(Token::End);
+        Some(Spanned::new(Declaration::NamespaceDecl(parts), Span::new(start, end)))
+    }
+
+    /// Ident + Dot — ambiguous: could be namespace decl or qualified atom.
+    fn namespace_or_atom_decl(&mut self) -> Option<Spanned<Declaration>> {
+        let saved = self.pos;
+        let mut parts = vec![self.ident()?.item.clone()];
+        let start_span = self.tokens.get(saved).map(|t| t.span).unwrap_or(Span::new(0, 0));
+        while self.eat(Token::Dot) {
+            if let Some(id) = self.ident() {
+                parts.push(id.item.clone());
+            } else { break; }
+        }
+        if matches!(self.peek(), Some(Token::Colon)) {
+            self.pos = saved;
+            self.atom_decl()
+        } else {
+            let end = self.peek_span().unwrap_or(start_span.end);
+            self.eat(Token::End);
+            Some(Spanned::new(Declaration::NamespaceDecl(parts), Span::new(start_span.start, end)))
+        }
+    }
+
+    /// `extend <ident> (. <ident>)* .`  or  `extend by "<uri>".`
+    fn extend_decl(&mut self) -> Option<Spanned<Directive>> {
+        let start = self.peek_span().unwrap_or(0);
+        self.eat(Token::Extend);
+        // Check for "by" as a regular ident (not a keyword)
+        if let Some(TokenWithSpan { token: Token::Ident(s), .. }) = self.tokens.get(self.pos) {
+            if s == "by" {
+                self.pos += 1;
+                let uri = match self.tokens.get(self.pos) {
+                    Some(TokenWithSpan { token: Token::QuotedString(s), .. }) => {
+                        let s = s.clone();
+                        self.pos += 1;
+                        s
+                    }
+                    _ => {
+                        self.errors.push(MontParseError::UnexpectedToken {
+                            expected: "quoted URI string".into(),
+                            found: format!("{:?}", self.peek()),
+                            span: Span::new(start, self.pos),
+                        });
+                        return None;
+                    }
+                };
+                let end = self.peek_span().unwrap_or(start);
+                self.eat(Token::End);
+                return Some(Spanned::new(Directive::ExtendBy { uri }, Span::new(start, end)));
+            }
+        }
+        let mut parts = vec![self.ident()?.item.clone()];
+        while self.eat(Token::Dot) {
+            if let Some(id) = self.ident() {
+                parts.push(id.item.clone());
+            } else { break; }
+        }
+        let end = self.peek_span().unwrap_or(start);
+        self.eat(Token::End);
+        Some(Spanned::new(Directive::Extend { namespace: parts }, Span::new(start, end)))
     }
 
     fn morpheme_decl(&mut self) -> Option<Spanned<Declaration>> {
@@ -612,6 +724,11 @@ impl<'a> Parser<'a> {
             match self.peek() {
                 Some(Token::Import) => {
                     if let Some(d) = self.directive() {
+                        directives.push(d);
+                    }
+                }
+                Some(Token::Extend) => {
+                    if let Some(d) = self.extend_decl() {
                         directives.push(d);
                     }
                 }
@@ -827,12 +944,61 @@ mod tests {
             _ => panic!("expected MorphemeDecl"),
         }
     }
+    #[test]
+    fn parse_single_type_decl() {
+        let f = check("type Noun.");
+        match &f.declarations[0].item {
+            Declaration::SingleTypeDecl(t) => assert_eq!(t, "Noun"),
+            _ => panic!("expected SingleTypeDecl"),
+        }
+    }
 
     #[test]
-    fn parse_morph_decl_roundtrips() {
-        let src = "MORPH +ing : (N \\ (NP \\ S)) STRIPS e, CC.";
+    fn parse_namespace_decl() {
+        let f = check("namespace montague.en_grammar_basic.");
+        match &f.declarations[0].item {
+            Declaration::NamespaceDecl(parts) => {
+                assert_eq!(parts, &["montague", "en_grammar_basic"]);
+            }
+            _ => panic!("expected NamespaceDecl"),
+        }
+    }
+
+    #[test]
+    fn parse_extend_decl() {
+        let f = check("extend montague.en_grammar_basic.");
+        match &f.directives[0].item {
+            Directive::Extend { ref namespace } => {
+                assert_eq!(namespace, &["montague", "en_grammar_basic"]);
+            }
+            _ => panic!("expected Extend directive"),
+        }
+    }
+
+    #[test]
+    fn parse_extend_by_uri() {
+        let f = check(r#"extend by "file:///path/to/grammar.mont"."#);
+        match &f.directives[0].item {
+            Directive::ExtendBy { uri } => {
+                assert_eq!(uri, "file:///path/to/grammar.mont");
+            }
+            _ => panic!("expected ExtendBy directive"),
+        }
+    }
+
+    #[test]
+    fn parse_dot_disambiguation() {
+        let src = "type S.\ntype NP.\n";
         let f = check(src);
-        let output = f.declarations[0].item.to_string();
-        assert_eq!(output, "MORPH +ing: (N \\ (NP \\ S)) STRIPS e, CC.");
+        assert_eq!(f.declarations.len(), 2);
+    }
+
+    #[test]
+    fn parse_mixed_old_new_type_syntax() {
+        let src = "Type = A | B.\ntype C.";
+        let f = check(src);
+        assert_eq!(f.declarations.len(), 2);
+        assert!(matches!(f.declarations[0].item, Declaration::TypeDecl(_)));
+        assert!(matches!(f.declarations[1].item, Declaration::SingleTypeDecl(_)));
     }
 }

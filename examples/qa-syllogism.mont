@@ -1,121 +1,125 @@
 -- Q&A syllogism — supports assertions and questions for Prolog inference.
+-- Extends the basic English grammar with content vocabulary for testing.
 -- Test with:
 --   montague ask examples/qa-syllogism.mont
 --   > Socrates is a man.
 --   > all men are mortal.
 --   > Socrates is mortal?
 
-Type =
-    Sentence
-  | Question
-  | Noun
-  | Adjective
-  | Person.
+namespace montague.qa_syllogism.
 
-Person :< Noun.
+extend montague.en_grammar_basic.
 
--- | The philosopher.
-socrates: Person.
-plato: Person.
+-- ==========================================================================
+-- Content Vocabulary (moved from en_grammar_basic to keep grammar pure)
+-- ==========================================================================
 
--- | Common nouns.
-man_noun: Noun.
-philosopher: Noun.
-being: Noun.
+-- Proper names
+socrates: NP.
+plato: NP.
+alice: NP.
+bob: NP.
 
--- | Adjectives / predicates.
-mortal: Adjective.
-living: Adjective.
+-- Common nouns
+man: N.
+men: N.
+cat: N.
+dog: N.
+bird: N.
+animal: N.
+philosopher: N.
 
--- | Article "a" — predicative (produces Adjective for copula predication).
-a_art: Adjective / Noun.
+-- Additional nouns (qa-syllogism specific)
+man_noun: N.
+being: N.
 
--- | Article "a" — nominal (produces Noun for identity copula).
-a_np: Noun / Noun.
+-- Adjectives
+mortal: Adj.
+happy: Adj.
+wise: Adj.
+tall: Adj.
+good: Adj.
+red: Adj.
+living: Adj.
 
--- | Prenominal adjective modifiers.
-mortal_adj: Noun / Noun.
-living_adj: Noun / Noun.
+-- Intransitive verbs (bare VP: NP\S)
+runs: NP \ S.
+sleeps: NP \ S.
+talks: NP \ S.
+thinks: NP \ S.
+walks: NP \ S.
 
--- | Copula — predicative (takes Adjective).
-is_cop: (Noun \ Sentence) / Adjective.
+-- Transitive verbs ((NP\S)/NP)
+likes: (NP \ S) / NP.
+sees: (NP \ S) / NP.
+knows: (NP \ S) / NP.
+eats: (NP \ S) / NP.
 
--- | Copula — identity (takes Noun/NP).
-is_ident: (Noun \ Sentence) / Noun.
+-- ==========================================================================
+-- Prenominal adjective modifiers & focus particles
+-- ==========================================================================
 
--- | Definite determiner "the".
-the: Noun / Noun.
+mortal_adj: N / N.
+living_adj: N / N.
 
--- | Relative pronouns for subject extraction.
---   "philosopher that is mortal" / "philosopher who is mortal".
-that_rel: (Noun \ Noun) / (Noun \ Sentence).
-who_rel: (Noun \ Noun) / (Noun \ Sentence).
+-- Conjunction: adjacent-Adjective coordination
+and: (Adj \ Adj) / Adj.
+but: (Adj \ Adj) / Adj.
+or: (Adj \ Adj) / Adj.
+nor: (Adj \ Adj) / Adj.
 
--- | Quantifier.
-all_q: (Sentence / (Noun \ Sentence)) / Noun.
+-- Focus particles for paired constructions
+both: (Adj / N) / (Adj / N).
+either: (Adj / N) / (Adj / N).
+neither: (Adj / N) / (Adj / N).
+not_only: (Adj / N) / (Adj / N).
+but_also: (Adj \ Adj) / Adj.
+as_well_as: (Adj \ Adj) / Adj.
 
--- | Question operator: S → Q for yes/no questions (statement form + "?").
---   "Socrates is mortal?" → ask_op(S) : Question
-ask_op: Question / Sentence.
+-- ==========================================================================
+-- Productions
+-- ==========================================================================
 
--- | Inverted copula for subject-aux inversion questions.
---   "Is Socrates mortal?" → is_q takes NP to the right, then Adj → Question.
---   Type: (Q / Adj) / N  — both arguments consumed via right-application.
-is_q: (Question / Adjective) / Noun.
-
--- | Wh-pronoun: takes VP (Noun \ Sentence) to the right → Question.
---   "Who is mortal?" → who_q takes "is mortal" : N\S → Question.
-who_q: Question / (Noun \ Sentence).
-
--- | Conjunction: "and" conjoins two Adjectives.
---   "a man and mortal" → and(man_noun, mortal).
-and: (Adjective \ Adjective) / Adjective.
-
--- | Conjunction: "but" — semantically same as "and" (contrastive pragmatics).
-but: (Adjective \ Adjective) / Adjective.
-
--- | Disjunction: "or" — produces Prolog ;-separated goals.
-or: (Adjective \ Adjective) / Adjective.
-
--- | Negated conjunction: "nor" — wraps each goal in \+ (negation as failure).
---   "neither a man nor mortal" → \+ man_noun(X), \+ mortal(X).
-nor: (Adjective \ Adjective) / Adjective.
-
--- | Focus particles for paired constructions:
---   "both...and"    → both    decorates first conjunct, and does the joining.
---   "either...or"   → either  decorates first conjunct, or  does the joining.
---   "neither...nor" → neither decorates first conjunct, nor does the joining.
---   "not only...but also" → not_only decorates, but_also does the joining.
-both: (Adjective / Noun) / (Adjective / Noun).
-either: (Adjective / Noun) / (Adjective / Noun).
-neither: (Adjective / Noun) / (Adjective / Noun).
-not_only: (Adjective / Noun) / (Adjective / Noun).
-
--- | Conjunction particle for "not only...but also".
-but_also: (Adjective \ Adjective) / Adjective.
-
--- | Alternative conjunction: "as well as".
-as_well_as: (Adjective \ Adjective) / Adjective.
-
--- Productions.
+-- Proper names
 socrates --> socrates.
 plato --> plato.
-man, men --> man_noun.
+alice --> alice.
+bob --> bob.
+
+-- Common nouns
+man --> man.
+men --> men.
+cat --> cat.
+dog --> dog.
+bird --> bird.
+animal --> animal.
 philosopher --> philosopher.
+man, men --> man_noun.
 being, beings --> being.
+
+-- Adjectives
 mortal --> mortal.
-mortal --> mortal_adj.
+happy --> happy.
+wise --> wise.
+tall --> tall.
+good --> good.
+red --> red.
 living --> living.
+mortal --> mortal_adj.
 living --> living_adj.
-a --> a_art.
-is, are --> is_cop.
-is, are --> is_q.
-is, are --> is_ident.
-the --> the.
-that --> that_rel.
-who --> who_q.
-who --> who_rel.
-all, every --> all_q.
+
+-- Verbs
+run, runs --> runs.
+sleep, sleeps --> sleeps.
+talk, talks --> talks.
+think, thinks --> thinks.
+walk, walks --> walks.
+like, likes --> likes.
+see, sees --> sees.
+know, knows --> knows.
+eat, eats --> eats.
+
+-- Conjunction
 and --> and.
 but --> but.
 or --> or.

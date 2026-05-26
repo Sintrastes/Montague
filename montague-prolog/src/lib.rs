@@ -264,6 +264,22 @@ pub fn lower_term_to_prolog(term: &Term<String>) -> Option<Vec<String>> {
             _ => String::new(),
         };
 
+        // Identity copula: is_ident(nominal, subj) → noun(subj).
+        // Type (NP\S)/NP: first right-applied to nominal, then left-applied to subj.
+        // After flattening: App(is_ident, [nominal, subj]).
+        if (fname == "is_ident" || fname == "are_ident") && args.len() == 2 {
+            let nominal = strip_article(&args[0]);
+            let subj = term_to_prolog_arg(&args[1])?;
+            if let Some(goals) = lower_noun_phrase_to_goals(&nominal) {
+                let clauses: Vec<String> = goals
+                    .iter()
+                    .map(|g| g.replace("(X)", &format!("({subj})")))
+                    .map(|g| format!("{g}."))
+                    .collect();
+                return Some(clauses);
+            }
+        }
+
         // Copula stripping for assertions and queries.
         if (fname == "is_cop" || fname == "are_cop") && args.len() >= 2 {
             let pred = strip_article(&args[0]);
@@ -335,7 +351,7 @@ pub fn lower_term_to_prolog(term: &Term<String>) -> Option<Vec<String>> {
         // Quantifier: all_q / every_q
         // The VP may be a simple predicate or an identity copula is_ident(nominal).
         // For is_ident, decompose the nominal into one rule per goal.
-        if (fname == "all_q" || fname == "every_q") && args.len() == 2 {
+        if (fname == "all_q" || fname == "every_q" || fname == "all" || fname == "every") && args.len() == 2 {
             let noun_goals = lower_noun_phrase_to_goals(&args[0])?;
             let body = noun_goals.join(", ");
 

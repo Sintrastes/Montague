@@ -6,10 +6,11 @@
 --   mont lower examples/family.mont sexp
 --   mont tree examples/family.mont "bob is the father of alice"
 
-Type =
-    Sentence
-  | Noun
-  | Person.
+namespace montague.family.
+
+type Sentence.
+type Noun.
+type Person.
 
 -- Subtypes.
 Person :< Noun.

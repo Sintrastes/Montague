@@ -2,7 +2,14 @@
 -- Demonstrates that "the idea sleeps" is rejected while "the cat sleeps" parses,
 -- using only the standard Type and :< declarations — no special machinery.
 
-Type = Sentence | Noun | Animate | Inanimate | Person | Adjective.
+namespace montague.sorts.
+
+type Sentence.
+type Noun.
+type Animate.
+type Inanimate.
+type Person.
+type Adjective.
 
 -- Subtype hierarchy: Person < Animate < Noun, Inanimate < Noun.
 Animate :< Noun.

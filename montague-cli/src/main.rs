@@ -109,7 +109,7 @@ fn cmd_lower(args: &[String]) {
     }
 
     let reg = core::registry::Registry::empty();
-    let lex = match resolver::resolve(&ast, &reg) {
+    let lex = match resolver::resolve_with_resolver(&ast, &reg, &resolver::FsFileResolver, &base_dir_of(file)) {
         Ok(lex) => lex,
         Err(errs) => {
             eprintln!("Resolution errors:");
@@ -221,7 +221,7 @@ fn cmd_tree(args: &[String]) {
     }
 
     let reg = core::registry::Registry::empty();
-    let lex = match resolver::resolve(&ast, &reg) {
+    let lex = match resolver::resolve_with_resolver(&ast, &reg, &resolver::FsFileResolver, &base_dir_of(file)) {
         Ok(lex) => lex,
         Err(errs) => {
             for e in &errs {
@@ -339,7 +339,7 @@ fn cmd_ask(args: &[String]) {
         process::exit(1);
     }
     let reg = core::registry::Registry::empty();
-    let mut lex = match resolver::resolve(&ast, &reg) {
+    let mut lex = match resolver::resolve_with_resolver(&ast, &reg, &resolver::FsFileResolver, &base_dir_of(&flags.file)) {
         Ok(lex) => lex,
         Err(errs) => {
             for e in &errs {
@@ -1566,7 +1566,7 @@ fn cmd_init(args: &[String]) {
 
     // Also try resolving
     let reg = core::registry::Registry::empty();
-    match resolver::resolve(&ast, &reg) {
+    match resolver::resolve_with_resolver(&ast, &reg, &resolver::FsFileResolver, &base_dir_of(file)) {
         Ok(lex) => {
             let atom_count = lex.atoms.len();
             let prod_count = lex.productions.len();
@@ -1619,4 +1619,11 @@ fn read_file(path: &str) -> String {
         eprintln!("montague: cannot read `{path}`: {e}");
         process::exit(1);
     })
+}
+
+fn base_dir_of(file: &str) -> String {
+    std::path::Path::new(file)
+        .parent()
+        .map(|p| p.to_string_lossy().to_string())
+        .unwrap_or_else(|| ".".to_string())
 }

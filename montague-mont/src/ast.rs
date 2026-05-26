@@ -87,6 +87,10 @@ pub enum Directive {
         path: Vec<String>,
         alias: Option<String>,
     },
+    /// `extend <namespace>.` — bulk-import another module by namespace.
+    Extend { namespace: Vec<String> },
+    /// `extend by "<uri>".` — bulk-import by URI.
+    ExtendBy { uri: String },
 }
 
 // ---------------------------------------------------------------------------
@@ -113,6 +117,10 @@ pub enum Declaration {
         ty: Spanned<TypeExpr>,
         strips: Vec<SpellingClass>,
     },
+    /// `type A.` — single type declaration (open, incremental).
+    SingleTypeDecl(String),
+    /// `namespace foo.bar.baz.`
+    NamespaceDecl(Vec<String>),
 }
 
 // ---------------------------------------------------------------------------
@@ -170,6 +178,12 @@ impl fmt::Display for Directive {
                 }
                 write!(f, ".")
             }
+            Directive::Extend { namespace } => {
+                write!(f, "extend {}.", namespace.join("."))
+            }
+            Directive::ExtendBy { uri } => {
+                write!(f, "extend by \"{uri}\".")
+            }
         }
     }
 }
@@ -205,6 +219,11 @@ impl fmt::Display for Declaration {
                         .collect();
                     write!(f, " STRIPS {}", classes.join(", "))?;
                 }
+                write!(f, ".")
+            }
+            Declaration::SingleTypeDecl(t) => write!(f, "type {t}."),
+            Declaration::NamespaceDecl(parts) => {
+                write!(f, "namespace {}", parts.join("."))?;
                 write!(f, ".")
             }
         }

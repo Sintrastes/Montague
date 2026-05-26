@@ -5,14 +5,15 @@
 --   mont parse examples/example.mont
 --   mont lower examples/example.mont sexp
 
-Type =
-    Noun
-  | Sentence
-  | Person
-  | Adjective
-  | Determiner
-  | Instrument
-  | VerbPhrase.
+namespace montague.example.
+
+type Noun.
+type Sentence.
+type Person.
+type Adjective.
+type Determiner.
+type Instrument.
+type VerbPhrase.
 
 -- Subtypes.
 Person :< Noun.

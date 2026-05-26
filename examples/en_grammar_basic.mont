@@ -9,58 +9,37 @@
 -- Type Hierarchy
 -- ==========================================================================
 
-Type =
-    S       -- Sentence (proposition)
-  | Q       -- Question
-  | NP      -- Noun Phrase (argument)
-  | N       -- Common Noun (predicate, sortal)
-  | Adj     -- Adjective (predicative + modifier)
-  | Adv     -- Adverb
-  | PP      -- Prepositional Phrase
-  | Aux     -- Auxiliary / Modal
-  | Comp    -- Complementizer
-  | Rel     -- Relative pronoun (used for Rel type)
-  | Conj.   -- Conjunction (marker type, not used for individual coordinators)
+namespace montague.en_grammar_basic.
+
+type S.     -- Sentence (proposition)
+type Q.     -- Question
+type NP.    -- Noun Phrase (argument)
+type N.     -- Common Noun (predicate, sortal)
+type Adj.   -- Adjective (predicative + modifier)
+type Adv.   -- Adverb
+type PP.    -- Prepositional Phrase
+type Aux.   -- Auxiliary / Modal
+type Comp.  -- Complementizer
+type Rel.   -- Relative pronoun (used for Rel type)
+type Conj.  -- Conjunction (marker type, not used for individual coordinators)
 
 -- ==========================================================================
--- Content Words (minimal set for testing — ~25)
+-- §0  Expletive Subject & Predicative Article
 -- ==========================================================================
 
--- Proper names
-socrates: NP.
-plato: NP.
-alice: NP.
-bob: NP.
+-- Expletive "it" (dummy subject for weather expressions etc.)
+-- Subtype of NP so regular copulas work with it too.
+type Expletive.
+Expletive :< NP.
 
--- Common nouns
-man: N.
-men: N.
-cat: N.
-dog: N.
-bird: N.
-animal: N.
-philosopher: N.
+it_subj: Expletive.
 
--- Adjectives
-mortal: Adj.
-happy: Adj.
-wise: Adj.
-tall: Adj.
-good: Adj.
-red: Adj.
+-- Copula for expletive subjects: "it is raining"
+is_cop_expletive: (Expletive \ S) / Adj.
 
--- Intransitive verbs (bare VP: NP\S)
-runs: NP \ S.
-sleeps: NP \ S.
-talks: NP \ S.
-thinks: NP \ S.
-walks: NP \ S.
-
--- Transitive verbs ((NP\S)/NP)
-likes: (NP \ S) / NP.
-sees: (NP \ S) / NP.
-knows: (NP \ S) / NP.
-eats: (NP \ S) / NP.
+-- Predicative article "a" — produces Adjective from Noun for copula predication
+-- ("Socrates is a man" via is_cop(a_art(man))(socrates)).
+a_art: Adj / N.
 
 -- ==========================================================================
 -- §1  Determiners & Quantifiers
@@ -302,7 +281,15 @@ have_main: (NP \ S) / NP.
 has_main:  (NP \ S) / NP.
 
 -- ==========================================================================
--- §13  Inflectional Morphemes
+-- §13  Question operator & expletive
+-- ==========================================================================
+
+-- Question operator: "Socrates is mortal?" → ask_op(S) : Q
+-- Used for polar questions with statement syntax + "?".
+ask_op: Q / S.
+
+-- ==========================================================================
+-- §14  Inflectional Morphemes
 -- ==========================================================================
 -- Morphemes are bound suffixes that attach to stems.  The segmenter produces
 -- ambiguous stem+suffix splits that compete with whole-word productions in
@@ -502,37 +489,9 @@ just --> just_pre.
 only --> only_pre.
 also --> also_pre.
 
--- ==========================================================================
--- Productions — Content Words (minimal test set)
--- ==========================================================================
+-- Expletive
+it --> it_subj.
+is --> is_cop_expletive.
 
-socrates --> socrates.
-plato --> plato.
-alice --> alice.
-bob --> bob.
-
-man --> man.
-men --> men.
-cat --> cat.
-dog --> dog.
-bird --> bird.
-animal --> animal.
-philosopher --> philosopher.
-
-mortal --> mortal.
-happy --> happy.
-wise --> wise.
-tall --> tall.
-good --> good.
-red --> red.
-
-run, runs --> runs.
-sleep, sleeps --> sleeps.
-talk, talks --> talks.
-think, thinks --> thinks.
-walk, walks --> walks.
-
-like, likes --> likes.
-see, sees --> sees.
-know, knows --> knows.
-eat, eats --> eats.
+-- Predicative article
+a, an --> a_art.

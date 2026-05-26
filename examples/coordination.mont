@@ -9,7 +9,12 @@
 --   > Socrates and Plato are mortal.
 --   > Socrates is mortal and wise.
 
-Type = Sentence | Noun | Adjective | Person.
+namespace montague.coordination.
+
+type Sentence.
+type Noun.
+type Adjective.
+type Person.
 
 Person :< Noun.
 

@@ -6,11 +6,12 @@
 --   mont tree examples/syllogism.mont "Socrates is a man"
 --   mont tree examples/syllogism.mont "all men are mortal"
 
-Type =
-    Noun
-  | Sentence
-  | Adjective
-  | Person.
+namespace montague.syllogism.
+
+type Noun.
+type Sentence.
+type Adjective.
+type Person.
 
 -- Subtype hierarchy.
 Person :< Noun.
