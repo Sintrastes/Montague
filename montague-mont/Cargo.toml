@@ -10,3 +10,5 @@ description = ".mont DSL parser and resolver for Montague"
 [dependencies]
 montague-core = { workspace = true }
 thiserror = { workspace = true }
+chumsky = { version = "=0.13.0", features = ["pratt"] }
+ariadne = "=0.6.0"

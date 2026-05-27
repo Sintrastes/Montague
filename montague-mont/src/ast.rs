@@ -76,6 +76,16 @@ pub struct MontFile {
     pub declarations: Vec<Spanned<Declaration>>,
 }
 
+impl MontFile {
+    /// An empty file with no directives or declarations.
+    pub fn empty() -> Self {
+        MontFile {
+            directives: Vec::new(),
+            declarations: Vec::new(),
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Directives
 // ---------------------------------------------------------------------------

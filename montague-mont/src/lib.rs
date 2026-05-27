@@ -9,6 +9,9 @@
 
 pub mod ast;
 pub mod error;
+mod lex;
+mod parse;
 pub mod parser;
 pub mod resolver;
 pub mod sort;
+pub(crate) mod token;

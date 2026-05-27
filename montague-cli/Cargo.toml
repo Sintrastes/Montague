@@ -15,6 +15,8 @@ path = "src/main.rs"
 montague = { path = "../montague", version = "0.3.0" }
 scryer-prolog = { workspace = true }
 montague-llm = { path = "../montague-llm", version = "0.3.0", optional = true }
+ariadne = "=0.6.0"
+strsim = "0.11"
 
 [features]
 default = []
