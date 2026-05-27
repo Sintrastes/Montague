@@ -1104,3 +1104,161 @@ fn morph_no_false_segmentation() {
     let o = ask_en(&["a man runs."]);
     assert!(!o.contains("no parse"), "{o}");
 }
+
+// ===========================================================================
+// Polish grammar tests (pl_grammar_basic.mont + pl_common_vocabulary.mont)
+// ===========================================================================
+
+fn ask_pl(inputs: &[&str]) -> String {
+    let path = "../examples/pl_common_vocabulary.mont";
+    run_ask_session(path, &[], inputs)
+}
+
+/// SVO word order — subject Nom, verb, object Acc.
+#[test]
+fn pl_svo_transitive() {
+    let o = ask_pl(&["Kot widzi psa."]);
+    assert!(!o.contains("no parse"), "SVO 'Kot widzi psa' should parse:\n{o}");
+}
+
+/// Wrong case on object — object must be Acc, not Nom.
+#[test]
+fn pl_svo_wrong_case_object() {
+    let o = ask_pl(&["Kot widzi pies."]);
+    assert!(o.contains("no parse"), "SVO with Nom object should fail:\n{o}");
+}
+
+/// OVS word order — object Acc, verb, subject Nom.
+#[test]
+fn pl_ovs_transitive() {
+    let o = ask_pl(&["Psa widzi kot."]);
+    assert!(!o.contains("no parse"), "OVS 'Psa widzi kot' should parse:\n{o}");
+}
+
+/// Same truth conditions via SVO and OVS should both parse.
+#[test]
+fn pl_svo_ovs_same_meaning() {
+    let o1 = ask_pl(&["Kot widzi psa."]);
+    let o2 = ask_pl(&["Psa widzi kot."]);
+    assert!(!o1.contains("no parse"), "SVO should parse:\n{o1}");
+    assert!(!o2.contains("no parse"), "OVS should parse:\n{o2}");
+}
+
+/// Intransitive verb with Nom subject.
+#[test]
+fn pl_intransitive_nom() {
+    let o = ask_pl(&["Kot śpi."]);
+    assert!(!o.contains("no parse"), "Intransitive Nom should parse:\n{o}");
+}
+
+/// Intransitive verb rejects Acc subject.
+#[test]
+fn pl_intransitive_rejects_acc() {
+    let o = ask_pl(&["Kota śpi."]);
+    assert!(o.contains("no parse"), "Acc subject with intransitive should fail:\n{o}");
+}
+
+/// Adjective-noun agreement — duży (masc) with kot (masc).
+#[test]
+fn pl_adjective_agreement() {
+    let o = ask_pl(&["Duży kot śpi."]);
+    assert!(!o.contains("no parse"), "Adj-noun agreement should parse:\n{o}");
+}
+
+/// Adjective-noun disagreement — duża (fem) with kot (masc).
+#[test]
+fn pl_adjective_disagreement() {
+    let o = ask_pl(&["Duża kot śpi."]);
+    assert!(o.contains("no parse"), "Fem adj with masc noun should fail:\n{o}");
+}
+
+/// Copula predication — subject masc, adjective masc.
+#[test]
+fn pl_copula_predication() {
+    let o = ask_pl(&["Kot jest mądry."]);
+    assert!(!o.contains("no parse"), "Copula predication should parse:\n{o}");
+}
+
+/// Copula gender mismatch — subject masc, adjective fem.
+#[test]
+fn pl_copula_gender_mismatch() {
+    let o = ask_pl(&["Kot jest mądra."]);
+    assert!(o.contains("no parse"), "Copula gender mismatch should fail:\n{o}");
+}
+
+/// Preposition + Locative — "w domu" (in house-LOC).
+#[test]
+fn pl_preposition_locative() {
+    let o = ask_pl(&["Kot śpi w domu."]);
+    assert!(!o.contains("no parse"), "w + Loc should parse:\n{o}");
+}
+
+/// Preposition with wrong case — "w dom" (in house-NOM).
+#[test]
+fn pl_preposition_wrong_case() {
+    let o = ask_pl(&["Kot śpi w dom."]);
+    assert!(o.contains("no parse"), "w + Nom should fail:\n{o}");
+}
+
+/// Preposition + Genitive — "do domu" (to house-GEN).
+#[test]
+fn pl_preposition_genitive() {
+    let o = ask_pl(&["Kot idzie do domu."]);
+    assert!(!o.contains("no parse"), "do + Gen should parse:\n{o}");
+}
+
+/// Preposition "do" with wrong case — "do dom" (to house-NOM).
+#[test]
+fn pl_preposition_genitive_wrong() {
+    let o = ask_pl(&["Kot idzie do dom."]);
+    assert!(o.contains("no parse"), "do + Nom should fail:\n{o}");
+}
+
+/// Selectional restriction — inanimate subject can't sleep.
+#[test]
+fn pl_selectional_restriction() {
+    let o = ask_pl(&["Kamień śpi."]);
+    assert!(o.contains("no parse"), "Inanimate subject with 'sleeps' should fail:\n{o}");
+}
+
+/// Selectional restriction control — animate subject can sleep.
+#[test]
+fn pl_selectional_animate_ok() {
+    let o = ask_pl(&["Kot śpi."]);
+    assert!(!o.contains("no parse"), "Animate subject with 'sleeps' should parse:\n{o}");
+}
+
+/// Negation with genitive — "nie widzi" + Gen object.
+#[test]
+fn pl_genitive_of_negation() {
+    let o = ask_pl(&["Kot nie widzi myszy."]);
+    assert!(!o.contains("no parse"), "Genitive of negation should parse:\n{o}");
+}
+
+/// Affirmative with accusative object.
+#[test]
+fn pl_affirmative_accusative() {
+    let o = ask_pl(&["Kot widzi mysz."]);
+    assert!(!o.contains("no parse"), "Affirmative with Acc object should parse:\n{o}");
+}
+
+/// Adjective coordination via copula — "duży i czarny".
+#[test]
+fn pl_adj_coordination() {
+    let o = ask_pl(&["Kot jest duży i czarny."]);
+    assert!(!o.contains("no parse"), "Adjective coordination should parse:\n{o}");
+}
+
+/// Complex sentence: adjective + noun + verb + PP.
+#[test]
+fn pl_complex_sentence() {
+    let o = ask_pl(&["Duży kot śpi w domu."]);
+    assert!(!o.contains("no parse"), "Complex sentence should parse:\n{o}");
+}
+
+/// Another OVS variant — "Mysz widzi kot." (mouse-Acc sees cat-Nom with Acc/Nom syncretism)
+#[test]
+fn pl_svo_mouse_cat() {
+    let o = ask_pl(&["Kot widzi mysz."]);
+    assert!(!o.contains("no parse"), "SVO mouse-cat should parse:\n{o}");
+}

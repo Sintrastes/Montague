@@ -342,7 +342,7 @@ fn cmd_ask(args: &[String]) {
         process::exit(1);
     }
     let reg = core::registry::Registry::empty();
-    let lex = match resolver::resolve_with_resolver(&ast, &reg, &resolver::FsFileResolver, &base_dir_of(&flags.file)) {
+    let mut lex = match resolver::resolve_with_resolver(&ast, &reg, &resolver::FsFileResolver, &base_dir_of(&flags.file)) {
         Ok(lex) => lex,
         Err(errs) => {
             for e in &errs {
@@ -351,16 +351,16 @@ fn cmd_ask(args: &[String]) {
             process::exit(1);
         }
     };
-    let sem: Semantics<String, AtomType, core::AnnotatedTerm<String, AtomType>> =
+    let mut sem: Semantics<String, AtomType, core::AnnotatedTerm<String, AtomType>> =
         resolver::build_semantics(&lex);
-    let segmenter = resolver::build_segmenter(&lex);
+    let mut segmenter = resolver::build_segmenter(&lex);
     let engine = if flags.compose {
         ReductionEngine::with_composition()
     } else {
         ReductionEngine::standard()
     };
     let core_sorts = lex.sorts.to_core();
-    let ctx = ReductionCtx::new(&lex.lattice).with_sort_registry(&core_sorts);
+    let mut ctx = ReductionCtx::new(&lex.lattice).with_sort_registry(&core_sorts);
 
     // 2. Initialize Scryer Prolog with a session knowledge base.
     let mut machine = MachineBuilder::default().build();
@@ -538,7 +538,7 @@ fn cmd_ask(args: &[String]) {
                                     lex.atoms.push(montague::mont::ast::AtomEntry {
                                         entity: name.clone(),
                                         doc: None,
-                                        type_expr: montague::core::LambekType::Basic(ty.clone()),
+                                        type_expr: montague::core::LambekType::Basic(montague::core::AtomType::new(ty)),
                                         span: montague::mont::ast::Span::new(0, 0),
                                     });
                                 }
@@ -1318,7 +1318,7 @@ fn suggest_knowledge_gap(
 fn llm_pick_parse(
     llm: &mut Box<dyn Llm>,
     sentence: &str,
-    parses: &[montague::core::AnnotatedTerm<String, String>],
+    parses: &[montague::core::AnnotatedTerm<String, montague::core::AtomType>],
     debug: bool,
 ) -> Option<usize> {
     if parses.len() <= 1 {

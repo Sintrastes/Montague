@@ -1,0 +1,420 @@
+-- ==========================================================================
+-- Polish Common Vocabulary — Open-Class Words
+-- ==========================================================================
+-- Extends pl_grammar_basic with content words: nouns (with case forms),
+-- verbs (with SVO + OVS type assignments for free word order),
+-- adjectives (with case/gender/number agreement forms).
+-- ==========================================================================
+
+namespace montague.pl_common_vocabulary.
+
+extend montague.pl_grammar_basic.
+
+-- ==========================================================================
+-- Nouns — Nom, Acc, Gen forms with entity sort and inherent gender
+-- ==========================================================================
+
+-- Animals (MascAnimate = M2)
+kot:   NP[Animal, Nom, MascAnimate, Sg].    -- cat (subject)
+kota:  NP[Animal, Acc, MascAnimate, Sg].    -- cat (object)
+kota:  NP[Animal, Gen, MascAnimate, Sg].    -- cat (possessor / negated)
+kotu:  NP[Animal, Dat, MascAnimate, Sg].    -- cat (indirect object)
+kotem: NP[Animal, Inst, MascAnimate, Sg].   -- cat (instrumental)
+kocie: NP[Animal, Loc, MascAnimate, Sg].    -- cat (locative)
+koty:  NP[Animal, Nom, MascAnimate, Pl].    -- cats (subject)
+koty:  NP[Animal, Acc, MascAnimate, Pl].    -- cats (object)
+kotów: NP[Animal, Gen, MascAnimate, Pl].    -- cats (genitive)
+
+pies:  NP[Animal, Nom, MascAnimate, Sg].    -- dog
+psa:   NP[Animal, Acc, MascAnimate, Sg].
+psa:   NP[Animal, Gen, MascAnimate, Sg].
+psu:   NP[Animal, Dat, MascAnimate, Sg].
+psem:  NP[Animal, Inst, MascAnimate, Sg].
+psie:  NP[Animal, Loc, MascAnimate, Sg].
+psy:   NP[Animal, Nom, MascAnimate, Pl].
+psy:   NP[Animal, Acc, MascAnimate, Pl].
+psów:  NP[Animal, Gen, MascAnimate, Pl].
+
+ptak:  NP[Animal, Nom, MascAnimate, Sg].    -- bird
+ptaka: NP[Animal, Acc, MascAnimate, Sg].
+ptaka: NP[Animal, Gen, MascAnimate, Sg].
+
+koń:   NP[Animal, Nom, MascAnimate, Sg].    -- horse
+konia: NP[Animal, Acc, MascAnimate, Sg].
+konia: NP[Animal, Gen, MascAnimate, Sg].
+
+lew:   NP[Animal, Nom, MascAnimate, Sg].    -- lion
+lwa:   NP[Animal, Acc, MascAnimate, Sg].
+lwa:   NP[Animal, Gen, MascAnimate, Sg].
+
+wilk:  NP[Animal, Nom, MascAnimate, Sg].    -- wolf
+wilka: NP[Animal, Acc, MascAnimate, Sg].
+wilka: NP[Animal, Gen, MascAnimate, Sg].
+
+-- Animals (Feminine)
+mysz:   NP[Animal, Nom, Fem, Sg].           -- mouse
+mysz:   NP[Animal, Acc, Fem, Sg].
+myszy:  NP[Animal, Gen, Fem, Sg].
+myszy:  NP[Animal, Nom, Fem, Pl].
+myszy:  NP[Animal, Acc, Fem, Pl].
+myszy:  NP[Animal, Gen, Fem, Pl].
+
+ryba:   NP[Animal, Nom, Fem, Sg].           -- fish
+rybę:   NP[Animal, Acc, Fem, Sg].
+ryby:   NP[Animal, Gen, Fem, Sg].
+
+krowa:  NP[Animal, Nom, Fem, Sg].           -- cow
+krowę:  NP[Animal, Acc, Fem, Sg].
+krowy:  NP[Animal, Gen, Fem, Sg].
+
+-- People (MascPersonal = M1)
+człowiek: NP[Person, Nom, MascPersonal, Sg].   -- man/human
+człowieka: NP[Person, Acc, MascPersonal, Sg].
+człowieka: NP[Person, Gen, MascPersonal, Sg].
+
+chłopiec: NP[Person, Nom, MascPersonal, Sg].   -- boy
+chłopca: NP[Person, Acc, MascPersonal, Sg].
+chłopca: NP[Person, Gen, MascPersonal, Sg].
+
+mężczyzna: NP[Person, Nom, MascPersonal, Sg].  -- man
+mężczyznę: NP[Person, Acc, MascPersonal, Sg].
+mężczyzny: NP[Person, Gen, MascPersonal, Sg].
+
+-- People (Feminine)
+kobieta: NP[Person, Nom, Fem, Sg].          -- woman
+kobietę: NP[Person, Acc, Fem, Sg].
+kobiety: NP[Person, Gen, Fem, Sg].
+
+dziewczyna: NP[Person, Nom, Fem, Sg].       -- girl
+dziewczynę: NP[Person, Acc, Fem, Sg].
+dziewczyny: NP[Person, Gen, Fem, Sg].
+
+matka: NP[Person, Nom, Fem, Sg].            -- mother
+matkę: NP[Person, Acc, Fem, Sg].
+matki: NP[Person, Gen, Fem, Sg].
+
+-- Food (MascInanimate = M3)
+chleb: NP[Food, Nom, MascInanimate, Sg].    -- bread
+chleb: NP[Food, Acc, MascInanimate, Sg].
+chleba: NP[Food, Gen, MascInanimate, Sg].
+
+ser:   NP[Food, Nom, MascInanimate, Sg].    -- cheese
+ser:   NP[Food, Acc, MascInanimate, Sg].
+sera:  NP[Food, Gen, MascInanimate, Sg].
+
+-- Food (Feminine)
+woda:  NP[Substance, Nom, Fem, Sg].         -- water
+wodę:  NP[Substance, Acc, Fem, Sg].
+wody:  NP[Substance, Gen, Fem, Sg].
+
+kawa:  NP[Substance, Nom, Fem, Sg].         -- coffee
+kawę:  NP[Substance, Acc, Fem, Sg].
+kawy:  NP[Substance, Gen, Fem, Sg].
+
+-- Buildings / Locations (MascInanimate = M3)
+dom:   NP[Building, Nom, MascInanimate, Sg].   -- house/home
+dom:   NP[Building, Acc, MascInanimate, Sg].
+domu:  NP[Building, Gen, MascInanimate, Sg].
+domu:  NP[Building, Loc, MascInanimate, Sg].
+
+pokój: NP[Building, Nom, MascInanimate, Sg].   -- room
+pokój: NP[Building, Acc, MascInanimate, Sg].
+pokoju: NP[Building, Gen, MascInanimate, Sg].
+
+las:   NP[Location, Nom, MascInanimate, Sg].   -- forest
+las:   NP[Location, Acc, MascInanimate, Sg].
+lasu:  NP[Location, Gen, MascInanimate, Sg].
+lesie: NP[Location, Loc, MascInanimate, Sg].
+
+-- Inanimate objects (MascInanimate = M3)
+kamień: NP[NaturalObject, Nom, MascInanimate, Sg].  -- stone
+kamień: NP[NaturalObject, Acc, MascInanimate, Sg].
+kamienia: NP[NaturalObject, Gen, MascInanimate, Sg].
+
+stół:  NP[Furniture, Nom, MascInanimate, Sg].  -- table
+stół:  NP[Furniture, Acc, MascInanimate, Sg].
+stołu: NP[Furniture, Gen, MascInanimate, Sg].
+
+-- Inanimate objects (Feminine)
+książka: NP[Artifact, Nom, Fem, Sg].        -- book
+książkę: NP[Artifact, Acc, Fem, Sg].
+książki: NP[Artifact, Gen, Fem, Sg].
+
+-- Inanimate objects (Neuter)
+okno:   NP[Artifact, Nom, Neut, Sg].        -- window
+okno:   NP[Artifact, Acc, Neut, Sg].
+okna:   NP[Artifact, Gen, Neut, Sg].
+
+miasto: NP[Location, Nom, Neut, Sg].        -- city
+miasto: NP[Location, Acc, Neut, Sg].
+miasta: NP[Location, Gen, Neut, Sg].
+
+mleko:  NP[Substance, Nom, Neut, Sg].       -- milk
+mleko:  NP[Substance, Acc, Neut, Sg].
+mleka:  NP[Substance, Gen, Neut, Sg].
+
+-- Plants (Feminine)
+róża:  NP[Plant, Nom, Fem, Sg].             -- rose
+różę:  NP[Plant, Acc, Fem, Sg].
+róży:  NP[Plant, Gen, Fem, Sg].
+
+-- Abstract nouns (Feminine)
+miłość: NP[Emotion, Nom, Fem, Sg].          -- love
+miłość: NP[Emotion, Acc, Fem, Sg].
+miłości: NP[Emotion, Gen, Fem, Sg].
+
+prawda: NP[Idea, Nom, Fem, Sg].             -- truth
+prawdę: NP[Idea, Acc, Fem, Sg].
+prawdy: NP[Idea, Gen, Fem, Sg].
+
+-- Abstract nouns (MascInanimate)
+czas:   NP[Time, Nom, MascInanimate, Sg].   -- time
+czas:   NP[Time, Acc, MascInanimate, Sg].
+czasu:  NP[Time, Gen, MascInanimate, Sg].
+
+-- ==========================================================================
+-- Verbs — Intransitive, with SVO + OVS and SOV where applicable
+-- ==========================================================================
+
+-- Intransitive (subject only, Nom required)
+śpi:   NP[Animate, Nom, g, Sg] \ S.        -- sleeps (3sg, animate subject)
+śpią:  NP[Animate, Nom, g, Pl] \ S.        -- sleep (3pl, animate subject)
+idzie: NP[Animate, Nom, g, Sg] \ S.        -- goes (3sg)
+idą:   NP[Animate, Nom, g, Pl] \ S.        -- go (3pl)
+biegnie: NP[Animate, Nom, g, Sg] \ S.      -- runs (3sg)
+mówi:  NP[Animate, Nom, g, Sg] \ S.        -- speaks (3sg)
+myśli: NP[Animate, Nom, g, Sg] \ S.        -- thinks (3sg)
+żyje:  NP[Animate, Nom, g, Sg] \ S.        -- lives (3sg)
+umiera: NP[Animate, Nom, g, Sg] \ S.       -- dies (3sg)
+istnieje: NP[a, Nom, g, Sg] \ S.           -- exists (3sg, any entity)
+
+-- Transitive SVO: subject Nom precedes verb, object Acc follows
+widzi_svo:   (NP[Animate, Nom, g1, n] \ S) / NP[b, Acc, g2, n2].   -- sees
+lubi_svo:    (NP[Animate, Nom, g1, n] \ S) / NP[b, Acc, g2, n2].   -- likes
+je_svo:      (NP[Animate, Nom, g1, n] \ S) / NP[b, Acc, g2, n2].   -- eats
+pije_svo:    (NP[Animate, Nom, g1, n] \ S) / NP[b, Acc, g2, n2].   -- drinks
+zna_svo:     (NP[Animate, Nom, g1, n] \ S) / NP[b, Acc, g2, n2].   -- knows
+czyta_svo:   (NP[Animate, Nom, g1, n] \ S) / NP[b, Acc, g2, n2].   -- reads
+kocha_svo:   (NP[Animate, Nom, g1, n] \ S) / NP[b, Acc, g2, n2].   -- loves
+szuka_svo:   (NP[Animate, Nom, g1, n] \ S) / NP[b, Gen, g2, n2].   -- looks for (+Gen)
+słucha_svo:  (NP[Animate, Nom, g1, n] \ S) / NP[b, Gen, g2, n2].   -- listens to (+Gen)
+
+-- Transitive OVS: object Acc precedes verb, subject Nom follows (free word order)
+widzi_ovs:   (NP[a, Acc, g1, n] \ S) / NP[Animate, Nom, g2, n2].   -- sees (inverted)
+lubi_ovs:    (NP[a, Acc, g1, n] \ S) / NP[Animate, Nom, g2, n2].   -- likes (inverted)
+je_ovs:      (NP[a, Acc, g1, n] \ S) / NP[Animate, Nom, g2, n2].   -- eats (inverted)
+pije_ovs:    (NP[a, Acc, g1, n] \ S) / NP[Animate, Nom, g2, n2].   -- drinks (inverted)
+zna_ovs:     (NP[a, Acc, g1, n] \ S) / NP[Animate, Nom, g2, n2].   -- knows (inverted)
+czyta_ovs:   (NP[a, Acc, g1, n] \ S) / NP[Animate, Nom, g2, n2].   -- reads (inverted)
+kocha_ovs:   (NP[a, Acc, g1, n] \ S) / NP[Animate, Nom, g2, n2].   -- loves (inverted)
+
+-- Negated transitive verbs (genitive of negation — object shifts to Gen)
+nie_widzi:  (NP[a, Nom, g1, n] \ S) / NP[b, Gen, g2, n2].    -- does not see
+nie_lubi:   (NP[a, Nom, g1, n] \ S) / NP[b, Gen, g2, n2].    -- does not like
+nie_je:     (NP[a, Nom, g1, n] \ S) / NP[b, Gen, g2, n2].    -- does not eat
+nie_pije:   (NP[a, Nom, g1, n] \ S) / NP[b, Gen, g2, n2].    -- does not drink
+
+-- Ditransitive SVO: subject Nom, indirect object Dat, direct object Acc
+daje_svo:  ((NP[a, Nom, g1, n] \ S) / NP[b, Dat, g2, n2]) / NP[c, Acc, g3, n3].   -- gives
+mówi_svo:  ((NP[a, Nom, g1, n] \ S) / NP[b, Dat, g2, n2]) / NP[c, Acc, g3, n3].   -- tells
+
+-- ==========================================================================
+-- Adjectives — Predicative (Adj) and Attributive (NP modifier) forms
+-- ==========================================================================
+
+-- "duży" (big) — masculine animate nominative singular
+duży:       Adj[a, Nom, MascAnimate, Sg].
+duży_mod:   NP[a, Nom, MascAnimate, Sg] / NP[a, Nom, MascAnimate, Sg].
+
+-- "duża" (big) — feminine nominative singular
+duża:       Adj[a, Nom, Fem, Sg].
+duża_mod:   NP[a, Nom, Fem, Sg] / NP[a, Nom, Fem, Sg].
+
+-- "duże" (big) — neuter nominative singular
+duże:       Adj[a, Nom, Neut, Sg].
+duże_mod:   NP[a, Nom, Neut, Sg] / NP[a, Nom, Neut, Sg].
+
+-- "mały" (small) — masculine animate nominative singular
+mały:       Adj[a, Nom, MascAnimate, Sg].
+mały_mod:   NP[a, Nom, MascAnimate, Sg] / NP[a, Nom, MascAnimate, Sg].
+
+-- "mała" (small) — feminine nominative singular
+mała:       Adj[a, Nom, Fem, Sg].
+mała_mod:   NP[a, Nom, Fem, Sg] / NP[a, Nom, Fem, Sg].
+
+-- "małe" (small) — neuter nominative singular
+małe:       Adj[a, Nom, Neut, Sg].
+małe_mod:   NP[a, Nom, Neut, Sg] / NP[a, Nom, Neut, Sg].
+
+-- "dobry" (good) — masculine animate nominative singular
+dobry:      Adj[a, Nom, MascAnimate, Sg].
+dobry_mod:  NP[a, Nom, MascAnimate, Sg] / NP[a, Nom, MascAnimate, Sg].
+
+-- "dobra" (good) — feminine nominative singular
+dobra:      Adj[a, Nom, Fem, Sg].
+dobra_mod:  NP[a, Nom, Fem, Sg] / NP[a, Nom, Fem, Sg].
+
+-- "dobre" (good) — neuter nominative singular
+dobre:      Adj[a, Nom, Neut, Sg].
+dobre_mod:  NP[a, Nom, Neut, Sg] / NP[a, Nom, Neut, Sg].
+
+-- "stary" (old) — masculine animate nominative singular
+stary:      Adj[a, Nom, MascAnimate, Sg].
+stary_mod:  NP[a, Nom, MascAnimate, Sg] / NP[a, Nom, MascAnimate, Sg].
+
+-- "stara" (old) — feminine nominative singular
+stara:      Adj[a, Nom, Fem, Sg].
+stara_mod:  NP[a, Nom, Fem, Sg] / NP[a, Nom, Fem, Sg].
+
+-- "nowy" (new) — masculine animate nominative singular
+nowy:       Adj[a, Nom, MascAnimate, Sg].
+nowy_mod:   NP[a, Nom, MascAnimate, Sg] / NP[a, Nom, MascAnimate, Sg].
+
+-- "nowa" (new) — feminine nominative singular
+nowa:       Adj[a, Nom, Fem, Sg].
+nowa_mod:   NP[a, Nom, Fem, Sg] / NP[a, Nom, Fem, Sg].
+
+-- "piękny" (beautiful) — masculine animate nominative singular
+piękny:     Adj[a, Nom, MascAnimate, Sg].
+piękny_mod: NP[a, Nom, MascAnimate, Sg] / NP[a, Nom, MascAnimate, Sg].
+
+-- "piękna" (beautiful) — feminine nominative singular
+piękna:     Adj[a, Nom, Fem, Sg].
+piękna_mod: NP[a, Nom, Fem, Sg] / NP[a, Nom, Fem, Sg].
+
+-- "szybki" (fast) — masculine animate nominative singular
+szybki:     Adj[a, Nom, MascAnimate, Sg].
+szybki_mod: NP[a, Nom, MascAnimate, Sg] / NP[a, Nom, MascAnimate, Sg].
+
+-- "wysoki" (tall) — masculine animate nominative singular
+wysoki:     Adj[a, Nom, MascAnimate, Sg].
+wysoki_mod: NP[a, Nom, MascAnimate, Sg] / NP[a, Nom, MascAnimate, Sg].
+
+-- "mądry" (wise) — masculine animate nominative singular
+mądry:      Adj[a, Nom, MascAnimate, Sg].
+mądry_mod:  NP[a, Nom, MascAnimate, Sg] / NP[a, Nom, MascAnimate, Sg].
+
+-- "mądra" (wise) — feminine nominative singular
+mądra:      Adj[a, Nom, Fem, Sg].
+mądra_mod:  NP[a, Nom, Fem, Sg] / NP[a, Nom, Fem, Sg].
+
+-- "szczęśliwy" (happy) — masculine animate nominative singular
+szczęśliwy:     Adj[a, Nom, MascAnimate, Sg].
+szczęśliwy_mod: NP[a, Nom, MascAnimate, Sg] / NP[a, Nom, MascAnimate, Sg].
+
+-- "szczęśliwa" (happy) — feminine nominative singular
+szczęśliwa:     Adj[a, Nom, Fem, Sg].
+szczęśliwa_mod: NP[a, Nom, Fem, Sg] / NP[a, Nom, Fem, Sg].
+
+-- "czerwony" (red) — masculine animate nominative singular
+czerwony:     Adj[a, Nom, MascAnimate, Sg].
+czerwony_mod: NP[a, Nom, MascAnimate, Sg] / NP[a, Nom, MascAnimate, Sg].
+
+-- "czerwona" (red) — feminine nominative singular
+czerwona:     Adj[a, Nom, Fem, Sg].
+czerwona_mod: NP[a, Nom, Fem, Sg] / NP[a, Nom, Fem, Sg].
+
+-- "czerwone" (red) — neuter nominative singular
+czerwone:     Adj[a, Nom, Neut, Sg].
+czerwone_mod: NP[a, Nom, Neut, Sg] / NP[a, Nom, Neut, Sg].
+
+-- "biały" (white) — masculine animate nominative singular
+biały:     Adj[a, Nom, MascAnimate, Sg].
+biały_mod: NP[a, Nom, MascAnimate, Sg] / NP[a, Nom, MascAnimate, Sg].
+
+-- "czarny" (black) — masculine animate nominative singular
+czarny:     Adj[a, Nom, MascAnimate, Sg].
+czarny_mod: NP[a, Nom, MascAnimate, Sg] / NP[a, Nom, MascAnimate, Sg].
+
+-- ==========================================================================
+-- Productions — Content Words
+-- ==========================================================================
+
+-- Nouns
+kot --> kot.      kota --> kota.    kotu --> kotu.
+kotem --> kotem.  kocie --> kocie.  koty --> koty.
+kotów --> kotów.
+pies --> pies.    psa --> psa.      psu --> psu.
+psem --> psem.    psie --> psie.    psy --> psy.
+psów --> psów.
+ptak --> ptak.    ptaka --> ptaka.
+koń --> koń.      konia --> konia.
+lew --> lew.      lwa --> lwa.
+wilk --> wilk.    wilka --> wilka.
+mysz --> mysz.    myszy --> myszy.
+ryba --> ryba.    rybę --> rybę.    ryby --> ryby.
+krowa --> krowa.  krowę --> krowę.  krowy --> krowy.
+człowiek --> człowiek.  człowieka --> człowieka.
+chłopiec --> chłopiec.  chłopca --> chłopca.
+mężczyzna --> mężczyzna.  mężczyznę --> mężczyznę.  mężczyzny --> mężczyzny.
+kobieta --> kobieta.  kobietę --> kobietę.  kobiety --> kobiety.
+dziewczyna --> dziewczyna.  dziewczynę --> dziewczynę.  dziewczyny --> dziewczyny.
+matka --> matka.  matkę --> matkę.  matki --> matki.
+chleb --> chleb.  chleba --> chleba.
+ser --> ser.      sera --> sera.
+woda --> woda.    wodę --> wodę.    wody --> wody.
+kawa --> kawa.    kawę --> kawę.    kawy --> kawy.
+dom --> dom.      domu --> domu.
+pokój --> pokój.  pokoju --> pokoju.
+las --> las.      lasu --> lasu.    lesie --> lesie.
+kamień --> kamień.  kamienia --> kamienia.
+stół --> stół.    stołu --> stołu.
+książka --> książka.  książkę --> książkę.  książki --> książki.
+okno --> okno.    okna --> okna.
+miasto --> miasto.  miasta --> miasta.
+mleko --> mleko.  mleka --> mleka.
+róża --> róża.    różę --> różę.    róży --> róży.
+miłość --> miłość.  miłości --> miłości.
+prawda --> prawda.  prawdę --> prawdę.  prawdy --> prawdy.
+czas --> czas.    czasu --> czasu.
+
+-- Verbs
+śpi --> śpi.        śpią --> śpią.
+idzie --> idzie.    idą --> idą.
+biegnie --> biegnie.
+mówi --> mówi.      myśli --> myśli.
+żyje --> żyje.      umiera --> umiera.
+istnieje --> istnieje.
+widzi --> widzi_svo.    widzi --> widzi_ovs.
+lubi --> lubi_svo.      lubi --> lubi_ovs.
+je --> je_svo.          je --> je_ovs.
+pije --> pije_svo.      pije --> pije_ovs.
+zna --> zna_svo.        zna --> zna_ovs.
+czyta --> czyta_svo.    czyta --> czyta_ovs.
+kocha --> kocha_svo.    kocha --> kocha_ovs.
+szuka --> szuka_svo.
+słucha --> słucha_svo.
+"nie widzi" --> nie_widzi.
+"nie lubi" --> nie_lubi.
+"nie je" --> nie_je.
+"nie pije" --> nie_pije.
+daje --> daje_svo.
+mówi --> mówi_svo.
+
+-- Adjectives
+duży --> duży.          duży --> duży_mod.
+duża --> duża.          duża --> duża_mod.
+duże --> duże.          duże --> duże_mod.
+mały --> mały.          mały --> mały_mod.
+mała --> mała.          mała --> mała_mod.
+małe --> małe.          małe --> małe_mod.
+dobry --> dobry.        dobry --> dobry_mod.
+dobra --> dobra.        dobra --> dobra_mod.
+dobre --> dobre.        dobre --> dobre_mod.
+stary --> stary.        stary --> stary_mod.
+stara --> stara.        stara --> stara_mod.
+nowy --> nowy.          nowy --> nowy_mod.
+nowa --> nowa.          nowa --> nowa_mod.
+piękny --> piękny.      piękny --> piękny_mod.
+piękna --> piękna.      piękna --> piękna_mod.
+szybki --> szybki.      szybki --> szybki_mod.
+wysoki --> wysoki.      wysoki --> wysoki_mod.
+mądry --> mądry.        mądry --> mądry_mod.
+mądra --> mądra.        mądra --> mądra_mod.
+szczęśliwy --> szczęśliwy.    szczęśliwy --> szczęśliwy_mod.
+szczęśliwa --> szczęśliwa.    szczęśliwa --> szczęśliwa_mod.
+czerwony --> czerwony.        czerwony --> czerwony_mod.
+czerwona --> czerwona.        czerwona --> czerwona_mod.
+czerwone --> czerwone.        czerwone --> czerwone_mod.
+biały --> biały.        biały --> biały_mod.
+czarny --> czarny.      czarny --> czarny_mod.

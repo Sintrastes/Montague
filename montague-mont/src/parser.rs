@@ -69,6 +69,18 @@ impl<'a> Scanner<'a> {
         Scanner { src, pos: 0 }
     }
 
+    /// Return the character at the current position, or None if at end.
+    fn current_char(&self) -> Option<char> {
+        self.src[self.pos..].chars().next()
+    }
+
+    /// Advance past the current character, returning it. Does nothing at EOF.
+    fn advance_char(&mut self) {
+        if let Some(ch) = self.current_char() {
+            self.pos += ch.len_utf8();
+        }
+    }
+
     fn skip_ws(&mut self) {
         loop {
             while self.pos < self.src.len() {
@@ -79,7 +91,10 @@ impl<'a> Scanner<'a> {
                     break;
                 }
             }
-            if self.pos + 1 < self.src.len() && &self.src[self.pos..self.pos + 2] == "--" {
+            if self.pos + 1 < self.src.len()
+                && self.src.as_bytes()[self.pos] == b'-'
+                && self.src.as_bytes()[self.pos + 1] == b'-'
+            {
                 if self.pos + 2 < self.src.len() {
                     let third = self.src.as_bytes()[self.pos + 2];
                     if third == b'>' {
@@ -93,7 +108,7 @@ impl<'a> Scanner<'a> {
                     } // -- |
                 }
                 while self.pos < self.src.len() && self.src.as_bytes()[self.pos] != b'\n' {
-                    self.pos += 1;
+                    self.advance_char();
                 }
                 continue;
             }
@@ -109,11 +124,16 @@ impl<'a> Scanner<'a> {
         let start = self.pos;
 
         // doc string
-        if self.pos + 3 < self.src.len() && &self.src[self.pos..self.pos + 4] == "-- |" {
+        if self.pos + 3 < self.src.len()
+            && self.src.as_bytes()[self.pos] == b'-'
+            && self.src.as_bytes()[self.pos + 1] == b'-'
+            && self.src.as_bytes()[self.pos + 2] == b' '
+            && self.src.as_bytes()[self.pos + 3] == b'|'
+        {
             self.pos += 4;
             let cs = self.pos;
             while self.pos < self.src.len() && self.src.as_bytes()[self.pos] != b'\n' {
-                self.pos += 1;
+                self.advance_char();
             }
             return Some(TokenWithSpan {
                 token: Token::DocString(self.src[cs..self.pos].trim().to_string()),
@@ -121,28 +141,29 @@ impl<'a> Scanner<'a> {
             });
         }
 
-        // multi-char ops
+        // multi-char ops (byte-level checks to avoid UTF-8 boundary panics)
         if self.pos + 1 < self.src.len() {
-            let two = &self.src[self.pos..self.pos + 2];
-            match two {
-                ":<" => {
-                    self.pos += 2;
-                    return Some(TokenWithSpan {
-                        token: Token::Subtype,
-                        span: Span::new(start, self.pos),
-                    });
-                }
-                "->" => {
-                    self.pos += 2;
-                    return Some(TokenWithSpan {
-                        token: Token::RArrow,
-                        span: Span::new(start, self.pos),
-                    });
-                }
-                _ => {}
+            let b = self.src.as_bytes();
+            if b[self.pos] == b':' && b[self.pos + 1] == b'<' {
+                self.pos += 2;
+                return Some(TokenWithSpan {
+                    token: Token::Subtype,
+                    span: Span::new(start, self.pos),
+                });
+            }
+            if b[self.pos] == b'-' && b[self.pos + 1] == b'>' {
+                self.pos += 2;
+                return Some(TokenWithSpan {
+                    token: Token::RArrow,
+                    span: Span::new(start, self.pos),
+                });
             }
         }
-        if self.pos + 2 < self.src.len() && &self.src[self.pos..self.pos + 3] == "-->" {
+        if self.pos + 2 < self.src.len()
+            && self.src.as_bytes()[self.pos] == b'-'
+            && self.src.as_bytes()[self.pos + 1] == b'-'
+            && self.src.as_bytes()[self.pos + 2] == b'>'
+        {
             self.pos += 3;
             return Some(TokenWithSpan {
                 token: Token::Arrow,
@@ -151,7 +172,7 @@ impl<'a> Scanner<'a> {
         }
 
         // single char
-        let c = self.src.as_bytes()[self.pos] as char;
+        let c = self.current_char().unwrap_or('\0');
         match c {
             '=' => {
                 self.pos += 1;
@@ -256,7 +277,7 @@ impl<'a> Scanner<'a> {
                             span: Span::new(start, self.pos),
                         });
                     }
-                    self.pos += 1;
+                    self.advance_char();
                 }
                 // Unterminated quote — treat rest as content
                 let content = self.src[cs..].to_string();
@@ -267,10 +288,9 @@ impl<'a> Scanner<'a> {
             }
             '+' => {
                 self.pos += 1; // consume +
-                while self.pos < self.src.len() {
-                    let ch = self.src.as_bytes()[self.pos] as char;
+                while let Some(ch) = self.current_char() {
                     if ch.is_alphanumeric() || ch == '\'' || ch == '_' {
-                        self.pos += 1;
+                        self.advance_char();
                     } else {
                         break;
                     }
@@ -282,10 +302,9 @@ impl<'a> Scanner<'a> {
                 })
             }
             _c if _c.is_alphabetic() => {
-                while self.pos < self.src.len() {
-                    let ch = self.src.as_bytes()[self.pos] as char;
+                while let Some(ch) = self.current_char() {
                     if ch.is_alphanumeric() || ch == '_' {
-                        self.pos += 1;
+                        self.advance_char();
                     } else {
                         break;
                     }
@@ -309,7 +328,7 @@ impl<'a> Scanner<'a> {
                 })
             }
             _ => {
-                self.pos += 1;
+                self.advance_char();
                 self.next()
             }
         }

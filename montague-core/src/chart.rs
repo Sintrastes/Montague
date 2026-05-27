@@ -19,7 +19,7 @@ use crate::types::{AnnotatedTerm, LambekType, Term, TypeCheck};
 
 /// Maximum category depth allowed in the chart.  Composition rules can build
 /// unboundedly deep categories; this guard keeps the chart finite.
-const MAX_DEPTH: usize = 5;
+const MAX_DEPTH: usize = 8;
 
 // ---------------------------------------------------------------------------
 // Derivation store

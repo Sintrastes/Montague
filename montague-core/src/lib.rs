@@ -37,7 +37,7 @@ pub use sem::{
 pub use semantics::Semantics;
 pub use sort::SortRegistry;
 pub use subtyping::{SubtypeLattice, Variance};
-pub use types::{AnnotatedTerm, LambekFold, LambekType, NonDet, SortVarTable, Term, TypeCheck};
+pub use types::{AnnotatedTerm, AtomType, LambekFold, LambekType, NonDet, SortArg, SortVarId, SortVarTable, Term, TypeCheck};
 
 use std::hash::Hash;
 use types::AnnotatedTerm as AT;

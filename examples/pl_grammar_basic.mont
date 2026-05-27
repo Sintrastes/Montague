@@ -1,0 +1,666 @@
+-- ==========================================================================
+-- Basic Polish Grammar — Closed-Class Words & Type System
+-- ==========================================================================
+-- Defines sorts: entity (semantic hierarchy), case (7 grammatical cases),
+-- gender (5 genders), number (sg/pl). Parameterized types NP[entity,case,gender,number],
+-- Adj[entity,case,gender,number], Adv[entity], PP[case].
+-- All closed-class Polish words: pronouns, prepositions, conjunctions,
+-- complementizers, copula, negation, adverbs, pro-drop null pronouns.
+-- ==========================================================================
+
+namespace montague.pl_grammar_basic.
+
+-- ==========================================================================
+-- Sort: entity — semantic noun hierarchy (same universal hierarchy as English)
+-- ==========================================================================
+
+sort entity.
+
+entity Person, Animal, Plant, BodyPart, Animate.
+entity Artifact, NaturalObject, Substance, Location, Inanimate.
+entity Time, Quantity, Idea, Event, State, Communication, Attribute, Emotion, Relation, Shape, Abstract.
+entity SocialGroup, Collection, Group.
+
+-- Animate branch
+Person   :< Animate.
+Animal   :< Animate.
+Plant    :< Animate.
+BodyPart :< Animate.
+
+-- Inanimate branch
+Artifact      :< Inanimate.
+NaturalObject :< Inanimate.
+Substance     :< Inanimate.
+Location      :< Inanimate.
+
+-- Artifact subtypes
+entity Building, Furniture, Clothing, Tool, Vehicle,
+       Container, Food, Weapon, Instrument.
+Building   :< Artifact.
+Furniture  :< Artifact.
+Clothing   :< Artifact.
+Tool       :< Artifact.
+Vehicle    :< Artifact.
+Container  :< Artifact.
+Food       :< Artifact.
+Weapon     :< Artifact.
+Instrument :< Artifact.
+
+-- Substance subtypes
+entity Material, Liquid.
+Material :< Substance.
+Liquid   :< Substance.
+
+-- Location subtypes
+entity GeographicArea, Structure.
+GeographicArea :< Location.
+Structure      :< Location.
+
+-- Abstract branch
+Time          :< Abstract.
+Quantity      :< Abstract.
+Idea          :< Abstract.
+Event         :< Abstract.
+State         :< Abstract.
+Communication :< Abstract.
+Attribute     :< Abstract.
+Emotion       :< Abstract.
+Relation      :< Abstract.
+Shape         :< Abstract.
+
+-- Group branch
+SocialGroup :< Group.
+Collection  :< Group.
+
+-- ==========================================================================
+-- Sort: case — 7 grammatical cases (flat, no subtyping in v1)
+-- ==========================================================================
+
+sort case.
+case Nom, Acc, Gen, Dat, Inst, Loc, Voc.
+
+-- ==========================================================================
+-- Sort: gender — 5 grammatical genders
+-- ==========================================================================
+
+sort gender.
+gender MascPersonal, MascAnimate, MascInanimate, Fem, Neut.
+
+-- ==========================================================================
+-- Sort: number — singular / plural
+-- ==========================================================================
+
+sort number.
+number Sg, Pl.
+
+-- ==========================================================================
+-- Types
+-- ==========================================================================
+
+type S.                                  -- Sentence
+type Q.                                  -- Question
+type NP[entity, case, gender, number].   -- Noun Phrase (full feature bundle)
+type N[entity, gender, number].          -- Common Noun (inherent features, no case)
+type Adj[entity, case, gender, number].  -- Adjective (agrees with noun)
+type Adv[entity].                        -- Adverb (entity-restricted)
+type PP[case].                           -- Prepositional Phrase (governed case)
+type Comp.                               -- Complementizer
+type Rel.                                -- Relative pronoun
+
+-- ==========================================================================
+-- §1  Personal Pronouns — all cases, sg + pl
+-- ==========================================================================
+
+-- 1st person singular
+ja:     NP[a, Nom, g, Sg].
+mnie:   NP[a, Gen, g, Sg].
+mnie:   NP[a, Acc, g, Sg].
+mi:     NP[a, Dat, g, Sg].
+mną:    NP[a, Inst, g, Sg].
+mnie:   NP[a, Loc, g, Sg].
+
+-- 1st person plural
+my:     NP[a, Nom, g, Pl].
+nas:    NP[a, Gen, g, Pl].
+nas:    NP[a, Acc, g, Pl].
+nam:    NP[a, Dat, g, Pl].
+nami:   NP[a, Inst, g, Pl].
+nas:    NP[a, Loc, g, Pl].
+
+-- 2nd person singular
+ty:     NP[a, Nom, g, Sg].
+ciebie: NP[a, Gen, g, Sg].
+cię:    NP[a, Acc, g, Sg].
+tobie:  NP[a, Dat, g, Sg].
+ci:     NP[a, Dat, g, Sg].
+tobą:   NP[a, Inst, g, Sg].
+tobie:  NP[a, Loc, g, Sg].
+
+-- 2nd person plural
+wy:     NP[a, Nom, g, Pl].
+was:    NP[a, Gen, g, Pl].
+was:    NP[a, Acc, g, Pl].
+wam:    NP[a, Dat, g, Pl].
+wami:   NP[a, Inst, g, Pl].
+was:    NP[a, Loc, g, Pl].
+
+-- 3rd person singular masculine
+on:     NP[a, Nom, MascPersonal, Sg].
+jego:   NP[a, Gen, MascPersonal, Sg].
+go:     NP[a, Gen, MascPersonal, Sg].
+jego:   NP[a, Acc, MascPersonal, Sg].
+go:     NP[a, Acc, MascPersonal, Sg].
+jemu:   NP[a, Dat, MascPersonal, Sg].
+mu:     NP[a, Dat, MascPersonal, Sg].
+nim:    NP[a, Inst, MascPersonal, Sg].
+nim:    NP[a, Loc, MascPersonal, Sg].
+
+-- 3rd person singular feminine
+ona:    NP[a, Nom, Fem, Sg].
+jej:    NP[a, Gen, Fem, Sg].
+ją:     NP[a, Acc, Fem, Sg].
+jej:    NP[a, Dat, Fem, Sg].
+nią:    NP[a, Inst, Fem, Sg].
+niej:   NP[a, Loc, Fem, Sg].
+
+-- 3rd person singular neuter
+ono:    NP[a, Nom, Neut, Sg].
+jego:   NP[a, Gen, Neut, Sg].
+go:     NP[a, Gen, Neut, Sg].
+je:     NP[a, Acc, Neut, Sg].
+jemu:   NP[a, Dat, Neut, Sg].
+mu:     NP[a, Dat, Neut, Sg].
+nim:    NP[a, Inst, Neut, Sg].
+nim:    NP[a, Loc, Neut, Sg].
+
+-- 3rd person plural masculine personal
+oni:    NP[a, Nom, MascPersonal, Pl].
+ich:    NP[a, Gen, MascPersonal, Pl].
+nich:   NP[a, Gen, MascPersonal, Pl].
+ich:    NP[a, Acc, MascPersonal, Pl].
+nich:   NP[a, Acc, MascPersonal, Pl].
+im:     NP[a, Dat, MascPersonal, Pl].
+nim:    NP[a, Dat, MascPersonal, Pl].
+nimi:   NP[a, Inst, MascPersonal, Pl].
+nich:   NP[a, Loc, MascPersonal, Pl].
+
+-- 3rd person plural non-masculine-personal
+one:    NP[a, Nom, Fem, Pl].
+ich:    NP[a, Gen, Fem, Pl].
+nich:   NP[a, Gen, Fem, Pl].
+je:     NP[a, Acc, Fem, Pl].
+nie:    NP[a, Acc, Fem, Pl].
+im:     NP[a, Dat, Fem, Pl].
+nim:    NP[a, Dat, Fem, Pl].
+nimi:   NP[a, Inst, Fem, Pl].
+nich:   NP[a, Loc, Fem, Pl].
+
+-- ==========================================================================
+-- §2  Reflexive Pronouns
+-- ==========================================================================
+
+się:      NP[a, Acc, g, n].
+siebie:   NP[a, Gen, g, n].
+siebie:   NP[a, Acc, g, n].
+sobie:    NP[a, Dat, g, n].
+sobą:     NP[a, Inst, g, n].
+sobie:    NP[a, Loc, g, n].
+
+-- ==========================================================================
+-- §3  Possessive Pronouns — nominative singular forms (full paradigm deferred)
+-- ==========================================================================
+
+mój:   NP[a, Nom, MascPersonal, Sg] / N[a, MascPersonal, Sg].
+moja:  NP[a, Nom, Fem, Sg] / N[a, Fem, Sg].
+moje:  NP[a, Nom, Neut, Sg] / N[a, Neut, Sg].
+
+twój:  NP[a, Nom, MascPersonal, Sg] / N[a, MascPersonal, Sg].
+twoja: NP[a, Nom, Fem, Sg] / N[a, Fem, Sg].
+twoje: NP[a, Nom, Neut, Sg] / N[a, Neut, Sg].
+
+nasz:  NP[a, Nom, MascPersonal, Sg] / N[a, MascPersonal, Sg].
+nasza: NP[a, Nom, Fem, Sg] / N[a, Fem, Sg].
+nasze: NP[a, Nom, Neut, Sg] / N[a, Neut, Sg].
+
+wasz:  NP[a, Nom, MascPersonal, Sg] / N[a, MascPersonal, Sg].
+wasza: NP[a, Nom, Fem, Sg] / N[a, Fem, Sg].
+wasze: NP[a, Nom, Neut, Sg] / N[a, Neut, Sg].
+
+-- 3rd person possessives (indeclinable for person, but declinable for case/gender/number)
+jego_poss:  NP[a, Nom, MascAnimate, Sg] / N[a, MascAnimate, Sg].
+jej_poss:   NP[a, Nom, Fem, Sg] / N[a, Fem, Sg].
+ich_poss:   NP[a, Nom, MascPersonal, Pl] / N[a, MascPersonal, Pl].
+
+-- ==========================================================================
+-- §4  Demonstratives
+-- ==========================================================================
+
+-- "ten" (this) — nominative forms
+ten:  NP[a, Nom, MascPersonal, Sg] / N[a, MascPersonal, Sg].
+ta:   NP[a, Nom, Fem, Sg] / N[a, Fem, Sg].
+to:   NP[a, Nom, Neut, Sg] / N[a, Neut, Sg].
+ci:   NP[a, Nom, MascPersonal, Pl] / N[a, MascPersonal, Pl].
+te:   NP[a, Nom, Fem, Pl] / N[a, Fem, Pl].
+
+-- "tamten" (that) — nominative forms
+tamten:  NP[a, Nom, MascPersonal, Sg] / N[a, MascPersonal, Sg].
+tamta:   NP[a, Nom, Fem, Sg] / N[a, Fem, Sg].
+tamto:   NP[a, Nom, Neut, Sg] / N[a, Neut, Sg].
+
+-- ==========================================================================
+-- §5  Copula "być" (to be)
+-- ==========================================================================
+
+-- Predicative copula: subject Nom, adjective agrees in case/gender/number
+jest: (NP[a, Nom, g, n] \ S) / Adj[a, Nom, g, n].
+są:   (NP[a, Nom, g, Pl] \ S) / Adj[a, Nom, g, Pl].
+
+-- Identity copula (both NPs nominative — "to" pattern)
+jest_ident: (NP[a, Nom, g, n] \ S) / NP[b, Nom, g2, n2].
+są_ident:   (NP[a, Nom, g, Pl] \ S) / NP[b, Nom, g2, Pl].
+
+-- Past tense copula forms (3rd person)
+był:   (NP[a, Nom, MascPersonal, Sg] \ S) / Adj[a, Nom, MascPersonal, Sg].
+była:  (NP[a, Nom, Fem, Sg] \ S) / Adj[a, Nom, Fem, Sg].
+było:  (NP[a, Nom, Neut, Sg] \ S) / Adj[a, Nom, Neut, Sg].
+byli:  (NP[a, Nom, MascPersonal, Pl] \ S) / Adj[a, Nom, MascPersonal, Pl].
+były:  (NP[a, Nom, Fem, Pl] \ S) / Adj[a, Nom, Fem, Pl].
+
+-- Question inversion for copula
+czy_jest:  Q / (NP[a, Nom, g, n] \ S) / Adj[a, Nom, g, n].
+czy_są:    Q / (NP[a, Nom, g, Pl] \ S) / Adj[a, Nom, g, Pl].
+
+-- ==========================================================================
+-- §6  Modals & Auxiliaries
+-- ==========================================================================
+
+móc:      (NP[a, Nom, g, n] \ S) / (NP[a, Nom, g, n] \ S).
+może:     (NP[a, Nom, g, n] \ S) / (NP[a, Nom, g, n] \ S).
+mogą:     (NP[a, Nom, g, Pl] \ S) / (NP[a, Nom, g, Pl] \ S).
+
+musieć:   (NP[a, Nom, g, n] \ S) / (NP[a, Nom, g, n] \ S).
+musi:     (NP[a, Nom, g, n] \ S) / (NP[a, Nom, g, n] \ S).
+muszą:    (NP[a, Nom, g, Pl] \ S) / (NP[a, Nom, g, Pl] \ S).
+
+chcieć:   (NP[a, Nom, g, n] \ S) / (NP[a, Nom, g, n] \ S).
+chce:     (NP[a, Nom, g, n] \ S) / (NP[a, Nom, g, n] \ S).
+chcą:     (NP[a, Nom, g, Pl] \ S) / (NP[a, Nom, g, Pl] \ S).
+
+powinien: (NP[a, Nom, MascPersonal, Sg] \ S) / (NP[a, Nom, MascPersonal, Sg] \ S).
+powinna:  (NP[a, Nom, Fem, Sg] \ S) / (NP[a, Nom, Fem, Sg] \ S).
+powinni:  (NP[a, Nom, MascPersonal, Pl] \ S) / (NP[a, Nom, MascPersonal, Pl] \ S).
+
+-- ==========================================================================
+-- §7  Conjunctions — polymorphic coordinators (same pattern as English)
+-- ==========================================================================
+
+i_conj: (NP[a, c, g, n] \ NP[a, c, g, n]) / NP[a, c, g, n].
+i_conj: (Adj[a, c, g, n] \ Adj[a, c, g, n]) / Adj[a, c, g, n].
+i_conj: ((NP[a, c, g, n] \ S) \ (NP[a, c, g, n] \ S)) / (NP[a, c, g, n] \ S).
+i_conj: (S \ S) / S.
+
+lub: (NP[a, c, g, n] \ NP[a, c, g, n]) / NP[a, c, g, n].
+lub: (Adj[a, c, g, n] \ Adj[a, c, g, n]) / Adj[a, c, g, n].
+lub: ((NP[a, c, g, n] \ S) \ (NP[a, c, g, n] \ S)) / (NP[a, c, g, n] \ S).
+lub: (S \ S) / S.
+
+albo: (NP[a, c, g, n] \ NP[a, c, g, n]) / NP[a, c, g, n].
+albo: (Adj[a, c, g, n] \ Adj[a, c, g, n]) / Adj[a, c, g, n].
+albo: ((NP[a, c, g, n] \ S) \ (NP[a, c, g, n] \ S)) / (NP[a, c, g, n] \ S).
+albo: (S \ S) / S.
+
+ale: (Adj[a, c, g, n] \ Adj[a, c, g, n]) / Adj[a, c, g, n].
+ale: (S \ S) / S.
+
+lecz: (Adj[a, c, g, n] \ Adj[a, c, g, n]) / Adj[a, c, g, n].
+lecz: (S \ S) / S.
+
+ani: (NP[a, c, g, n] \ NP[a, c, g, n]) / NP[a, c, g, n].
+ani: (Adj[a, c, g, n] \ Adj[a, c, g, n]) / Adj[a, c, g, n].
+ani: ((NP[a, c, g, n] \ S) \ (NP[a, c, g, n] \ S)) / (NP[a, c, g, n] \ S).
+ani: (S \ S) / S.
+
+-- Correlative pairs
+zarówno: NP[a, c, g, n] / NP[a, c, g, n].
+jak_i:   (NP[a, c, g, n] \ NP[a, c, g, n]) / NP[a, c, g, n].
+
+albo_focus: (NP[a, c, g, n] / NP[a,c, g, n]) / (NP[a, c, g, n] / NP[a,c, g, n]).
+
+-- ==========================================================================
+-- §8  Prepositions — Nominal Modifier + VP Modifier (case-governing)
+-- ==========================================================================
+
+-- + Genitive
+do:     (NP[a, c, g1, n1] \ NP[a,c, g1, n1]) / NP[b, Gen, g2, n2].
+od:     (NP[a, c, g1, n1] \ NP[a,c, g1, n1]) / NP[b, Gen, g2, n2].
+z_gen:  (NP[a, c, g1, n1] \ NP[a,c, g1, n1]) / NP[b, Gen, g2, n2].
+bez:    (NP[a, c, g1, n1] \ NP[a,c, g1, n1]) / NP[b, Gen, g2, n2].
+dla:    (NP[a, c, g1, n1] \ NP[a,c, g1, n1]) / NP[b, Gen, g2, n2].
+u:      (NP[a, c, g1, n1] \ NP[a,c, g1, n1]) / NP[b, Gen, g2, n2].
+
+-- + Dative
+ku:       (NP[a, c, g1, n1] \ NP[a,c, g1, n1]) / NP[b, Dat, g2, n2].
+dzięki:   (NP[a, c, g1, n1] \ NP[a,c, g1, n1]) / NP[b, Dat, g2, n2].
+przeciw:  (NP[a, c, g1, n1] \ NP[a,c, g1, n1]) / NP[b, Dat, g2, n2].
+
+-- + Accusative
+przez:  (NP[a, c, g1, n1] \ NP[a,c, g1, n1]) / NP[b, Acc, g2, n2].
+
+-- + Instrumental
+z_inst:  (NP[a, c, g1, n1] \ NP[a,c, g1, n1]) / NP[b, Inst, g2, n2].
+przed:   (NP[a, c, g1, n1] \ NP[a,c, g1, n1]) / NP[b, Inst, g2, n2].
+nad:     (NP[a, c, g1, n1] \ NP[a,c, g1, n1]) / NP[b, Inst, g2, n2].
+pod:     (NP[a, c, g1, n1] \ NP[a,c, g1, n1]) / NP[b, Inst, g2, n2].
+za:      (NP[a, c, g1, n1] \ NP[a,c, g1, n1]) / NP[b, Inst, g2, n2].
+między:  (NP[a, c, g1, n1] \ NP[a,c, g1, n1]) / NP[b, Inst, g2, n2].
+
+-- + Locative
+w_loc:   (NP[a, c, g1, n1] \ NP[a,c, g1, n1]) / NP[b, Loc, g2, n2].
+na_loc:  (NP[a, c, g1, n1] \ NP[a,c, g1, n1]) / NP[b, Loc, g2, n2].
+o_loc:   (NP[a, c, g1, n1] \ NP[a,c, g1, n1]) / NP[b, Loc, g2, n2].
+po:      (NP[a, c, g1, n1] \ NP[a,c, g1, n1]) / NP[b, Loc, g2, n2].
+przy:    (NP[a, c, g1, n1] \ NP[a,c, g1, n1]) / NP[b, Loc, g2, n2].
+
+-- VP-modifier prepositions
+w_vp:   ((NP[a, Nom, g, n] \ S) \ (NP[a, Nom, g, n] \ S)) / NP[b, Loc, g2, n2].
+na_vp:  ((NP[a, Nom, g, n] \ S) \ (NP[a, Nom, g, n] \ S)) / NP[b, Loc, g2, n2].
+do_vp:  ((NP[a, Nom, g, n] \ S) \ (NP[a, Nom, g, n] \ S)) / NP[b, Gen, g2, n2].
+z_vp:   ((NP[a, Nom, g, n] \ S) \ (NP[a, Nom, g, n] \ S)) / NP[b, Inst, g2, n2].
+przez_vp: ((NP[a, Nom, g, n] \ S) \ (NP[a, Nom, g, n] \ S)) / NP[b, Acc, g2, n2].
+dla_vp: ((NP[a, Nom, g, n] \ S) \ (NP[a, Nom, g, n] \ S)) / NP[b, Gen, g2, n2].
+od_vp:  ((NP[a, Nom, g, n] \ S) \ (NP[a, Nom, g, n] \ S)) / NP[b, Gen, g2, n2].
+
+-- ==========================================================================
+-- §9  Complementizers & Subordinators
+-- ==========================================================================
+
+że:     Comp / S.
+czy:    Comp / S.
+iż:     Comp / S.
+żeby:   Comp / S.
+aby:    Comp / S.
+jeśli:  Comp / S.
+jeżeli: Comp / S.
+gdyby:  Comp / S.
+gdy:   (S \ S) / S.
+kiedy: (S \ S) / S.
+ponieważ: (S \ S) / S.
+bo:    (S \ S) / S.
+chociaż: (S \ S) / S.
+choć:  (S \ S) / S.
+zanim: (S \ S) / S.
+
+-- ==========================================================================
+-- §10  Wh-words — Questions
+-- ==========================================================================
+
+kto:    Q / (NP[a, Nom, MascPersonal, n] \ S).
+co:     Q / (NP[a, Nom, Neut, n] \ S).
+kogo:   Q / (NP[a, Gen, MascPersonal, n] \ S).
+kogo:   Q / (NP[a, Acc, MascPersonal, n] \ S).
+komu:   Q / (NP[a, Dat, MascPersonal, n] \ S).
+kim:    Q / (NP[a, Inst, MascPersonal, n] \ S).
+gdzie:  Q / S.
+kiedy:  Q / S.
+dlaczego: Q / S.
+jak:    Q / S.
+czyj:   Q / S.
+który:  Q / NP[a,Nom, MascPersonal, Sg].
+która:  Q / NP[a,Nom, Fem, Sg].
+które:  Q / NP[a,Nom, Neut, Sg].
+
+-- ==========================================================================
+-- §11  Relative Pronouns
+-- ==========================================================================
+
+który_rel:  (NP[a, Nom, MascPersonal, n] \ NP[a,Nom, MascPersonal, n]) / (NP[a, Nom, MascPersonal, n] \ S).
+która_rel:  (NP[a, Nom, Fem, n] \ NP[a,Nom, Fem, n]) / (NP[a, Nom, Fem, n] \ S).
+które_rel:  (NP[a, Nom, Neut, n] \ NP[a,Nom, Neut, n]) / (NP[a, Nom, Neut, n] \ S).
+co_rel:     (NP[a, Nom, g, n] \ NP[a,Nom, g, n]) / (NP[a, Nom, g, n] \ S).
+
+-- ==========================================================================
+-- §12  Negation
+-- ==========================================================================
+
+nie: (NP[a, Nom, g, n] \ S) / (NP[a, Nom, g, n] \ S).
+nigdy: (NP[a, Nom, g, n] \ S) \ (NP[a, Nom, g, n] \ S).
+
+-- ==========================================================================
+-- §13  Adverbs — Degree, Frequency, Manner
+-- ==========================================================================
+
+bardzo: Adj[a, c, g, n] / Adj[a, c, g, n].
+zbyt:   Adj[a, c, g, n] / Adj[a, c, g, n].
+
+zawsze:     (NP[a, Nom, g, n] \ S) \ (NP[a, Nom, g, n] \ S).
+często:     (NP[a, Nom, g, n] \ S) \ (NP[a, Nom, g, n] \ S).
+rzadko:     (NP[a, Nom, g, n] \ S) \ (NP[a, Nom, g, n] \ S).
+nigdy_post: (NP[a, Nom, g, n] \ S) \ (NP[a, Nom, g, n] \ S).
+już:        (NP[a, Nom, g, n] \ S) \ (NP[a, Nom, g, n] \ S).
+jeszcze:    (NP[a, Nom, g, n] \ S) \ (NP[a, Nom, g, n] \ S).
+tylko:      (NP[a, Nom, g, n] \ S) \ (NP[a, Nom, g, n] \ S).
+też:        (NP[a, Nom, g, n] \ S) \ (NP[a, Nom, g, n] \ S).
+także:      (NP[a, Nom, g, n] \ S) \ (NP[a, Nom, g, n] \ S).
+
+-- VP-preposing adverbs
+zawsze_pre: (NP[a, Nom, g, n] \ S) / (NP[a, Nom, g, n] \ S).
+często_pre: (NP[a, Nom, g, n] \ S) / (NP[a, Nom, g, n] \ S).
+rzadko_pre: (NP[a, Nom, g, n] \ S) / (NP[a, Nom, g, n] \ S).
+tylko_pre:  (NP[a, Nom, g, n] \ S) / (NP[a, Nom, g, n] \ S).
+też_pre:    (NP[a, Nom, g, n] \ S) / (NP[a, Nom, g, n] \ S).
+
+-- ==========================================================================
+-- §14  Null Pronouns — Pro-Drop
+-- ==========================================================================
+
+pro_1sg: NP[a, Nom, g, Sg].
+pro_2sg: NP[a, Nom, g, Sg].
+pro_3sg: NP[a, Nom, g, Sg].
+pro_1pl: NP[a, Nom, g, Pl].
+pro_2pl: NP[a, Nom, g, Pl].
+pro_3pl: NP[a, Nom, g, Pl].
+
+-- ==========================================================================
+-- §15  Question operator
+-- ==========================================================================
+
+czy_q: Q / S.
+
+-- ==========================================================================
+-- Productions — Closed-Class Words
+-- ==========================================================================
+
+-- Personal pronouns
+ja --> ja.
+mnie --> mnie.
+mi --> mi.
+mną --> mną.
+my --> my.
+nas --> nas.
+nam --> nam.
+nami --> nami.
+ty --> ty.
+ciebie --> ciebie.
+cię --> cię.
+tobie --> tobie.
+ci --> ci.
+tobą --> tobą.
+wy --> wy.
+was --> was.
+wam --> wam.
+wami --> wami.
+on --> on.
+jego --> jego.
+go --> go.
+jemu --> jemu.
+mu --> mu.
+nim --> nim.
+ona --> ona.
+jej --> jej.
+ją --> ją.
+nią --> nią.
+niej --> niej.
+ono --> ono.
+je --> je.
+oni --> oni.
+ich --> ich.
+nich --> nich.
+im --> im.
+nimi --> nimi.
+one --> one.
+nie --> nie.
+
+-- Reflexive
+się --> się.
+siebie --> siebie.
+sobie --> sobie.
+sobą --> sobą.
+
+-- Possessive
+mój --> mój.
+moja --> moja.
+moje --> moje.
+twój --> twój.
+twoja --> twoja.
+twoje --> twoje.
+nasz --> nasz.
+nasza --> nasza.
+nasze --> nasze.
+wasz --> wasz.
+wasza --> wasza.
+wasze --> wasze.
+jego --> jego_poss.
+jej --> jej_poss.
+ich --> ich_poss.
+
+-- Demonstratives
+ten --> ten.
+ta --> ta.
+to --> to.
+ci --> ci.
+te --> te.
+tamten --> tamten.
+tamta --> tamta.
+tamto --> tamto.
+
+-- Copula
+jest --> jest.
+jest --> jest_ident.
+są --> są.
+są --> są_ident.
+był --> był.
+była --> była.
+było --> było.
+byli --> byli.
+były --> były.
+
+-- Modals
+móc --> móc.
+może --> może.
+mogą --> mogą.
+musieć --> musieć.
+musi --> musi.
+muszą --> muszą.
+chcieć --> chcieć.
+chce --> chce.
+chcą --> chcą.
+powinien --> powinien.
+powinna --> powinna.
+powinni --> powinni.
+
+-- Conjunctions
+i --> i_conj.
+lub --> lub.
+albo --> albo.
+ale --> ale.
+lecz --> lecz.
+ani --> ani.
+zarówno --> zarówno.
+"jak i" --> jak_i.
+albo --> albo_focus.
+
+-- Prepositions
+do --> do.        do --> do_vp.
+od --> od.        od --> od_vp.
+z --> z_gen.      z --> z_inst.    z --> z_vp.
+bez --> bez.
+dla --> dla.      dla --> dla_vp.
+u --> u.
+ku --> ku.
+dzięki --> dzięki.
+przeciw --> przeciw.
+przez --> przez.  przez --> przez_vp.
+przed --> przed.
+nad --> nad.
+pod --> pod.
+za --> za.
+między --> między.
+w --> w_loc.      w --> w_vp.
+na --> na_loc.    na --> na_vp.
+o --> o_loc.
+po --> po.
+przy --> przy.
+
+-- Complementizers
+że --> że.
+czy --> czy.
+iż --> iż.
+żeby --> żeby.
+aby --> aby.
+jeśli --> jeśli.
+jeżeli --> jeżeli.
+gdyby --> gdyby.
+gdy --> gdy.
+kiedy --> kiedy.
+ponieważ --> ponieważ.
+bo --> bo.
+chociaż --> chociaż.
+choć --> choć.
+zanim --> zanim.
+
+-- Wh-words
+kto --> kto.
+co --> co.
+kogo --> kogo.
+komu --> komu.
+kim --> kim.
+gdzie --> gdzie.
+kiedy --> kiedy.
+dlaczego --> dlaczego.
+jak --> jak.
+czyj --> czyj.
+który --> który.
+która --> która.
+które --> które.
+
+-- Relative pronouns
+który --> który_rel.
+która --> która_rel.
+które --> które_rel.
+co --> co_rel.
+
+-- Negation
+nie --> nie.
+nigdy --> nigdy.
+nigdy --> nigdy_post.
+
+-- Adverbs
+bardzo --> bardzo.
+zbyt --> zbyt.
+zawsze --> zawsze_pre.    zawsze --> zawsze.
+często --> często_pre.    często --> często.
+rzadko --> rzadko_pre.    rzadko --> rzadko.
+już --> już.
+jeszcze --> jeszcze.
+tylko --> tylko_pre.      tylko --> tylko.
+też --> też_pre.          też --> też.
+także --> także.
+
+-- Question operator
+czy --> czy_q.
+
+-- Null pronouns (empty string — these compete with overt pronouns via ambiguity)
+-- Omitted from productions since they have no surface form.
+-- They are available as entity names but must be inserted by the parser.
+-- In practice, the CLI will need a mechanism to insert them, or we handle
+-- pro-drop via multiple verb type assignments instead.
