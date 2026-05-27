@@ -24,6 +24,8 @@ use montague::pretty::{display_lambek_as_sexp, display_term_as_sexp, tree};
 use montague::prolog::lower_term_to_prolog;
 use scryer_prolog::MachineBuilder;
 
+mod diag;
+
 #[cfg(feature = "llm")]
 use montague_llm::{self as llm_mod, BackendPreference, Llm};
 
@@ -80,14 +82,11 @@ fn cmd_parse(args: &[String]) {
     let src = read_file(file);
     let (ast, errs) = parser::parse(&src);
 
-    for e in &errs {
-        eprintln!("parse error: {e}");
-    }
-    if errs.is_empty() {
-        println!("{ast}");
-    } else {
+    if !errs.is_empty() {
+        diag::render_parse_errors(&errs, file, &src);
         process::exit(1);
     }
+    println!("{ast}");
 }
 
 // ---------------------------------------------------------------------------
@@ -102,10 +101,7 @@ fn cmd_lower(args: &[String]) {
     let src = read_file(file);
     let (ast, parse_errs) = parser::parse(&src);
     if !parse_errs.is_empty() {
-        eprintln!("Parse errors:");
-        for e in &parse_errs {
-            eprintln!("  {e}");
-        }
+        diag::render_parse_errors(&parse_errs, file, &src);
         process::exit(1);
     }
 
@@ -113,10 +109,8 @@ fn cmd_lower(args: &[String]) {
     let lex = match resolver::resolve_with_resolver(&ast, &reg, &resolver::FsFileResolver, &base_dir_of(file)) {
         Ok(lex) => lex,
         Err(errs) => {
-            eprintln!("Resolution errors:");
-            for e in &errs {
-                eprintln!("  {e}");
-            }
+            let (tc, ec) = diag::extract_candidates(&ast);
+            diag::render_resolve_errors(&errs, file, &src, &tc, &ec);
             process::exit(1);
         }
     };
@@ -132,7 +126,8 @@ fn cmd_lower(args: &[String]) {
         let parses = core::get_all_parses_with_morphology(&engine, &ctx, &sem, &segmenter, sent);
 
         if parses.is_empty() {
-            eprintln!("No parse found for: {sent:?}");
+            let fails: Vec<_> = ctx.failures.borrow().iter().cloned().collect();
+            diag::render_no_parse(sent, &fails, file);
             process::exit(1);
         }
 
@@ -216,9 +211,7 @@ fn cmd_tree(args: &[String]) {
     let src = read_file(file);
     let (ast, parse_errs) = parser::parse(&src);
     if !parse_errs.is_empty() {
-        for e in &parse_errs {
-            eprintln!("parse error: {e}");
-        }
+        diag::render_parse_errors(&parse_errs, file, &src);
         process::exit(1);
     }
 
@@ -226,9 +219,8 @@ fn cmd_tree(args: &[String]) {
     let lex = match resolver::resolve_with_resolver(&ast, &reg, &resolver::FsFileResolver, &base_dir_of(file)) {
         Ok(lex) => lex,
         Err(errs) => {
-            for e in &errs {
-                eprintln!("resolve error: {e}");
-            }
+            let (tc, ec) = diag::extract_candidates(&ast);
+            diag::render_resolve_errors(&errs, file, &src, &tc, &ec);
             process::exit(1);
         }
     };
@@ -243,7 +235,8 @@ fn cmd_tree(args: &[String]) {
     let parses = core::get_all_parses_with_morphology(&engine, &ctx, &sem, &segmenter, &sentence);
 
     if parses.is_empty() {
-        eprintln!("No parse found for: {sentence:?}");
+        let fails: Vec<_> = ctx.failures.borrow().iter().cloned().collect();
+        diag::render_no_parse(&sentence, &fails, file);
         process::exit(1);
     }
 
@@ -336,18 +329,15 @@ fn cmd_ask(args: &[String]) {
     let src = read_file(&flags.file);
     let (ast, parse_errs) = parser::parse(&src);
     if !parse_errs.is_empty() {
-        for e in &parse_errs {
-            eprintln!("parse error: {e}");
-        }
+        diag::render_parse_errors(&parse_errs, &flags.file, &src);
         process::exit(1);
     }
     let reg = core::registry::Registry::empty();
     let mut lex = match resolver::resolve_with_resolver(&ast, &reg, &resolver::FsFileResolver, &base_dir_of(&flags.file)) {
         Ok(lex) => lex,
         Err(errs) => {
-            for e in &errs {
-                eprintln!("resolve error: {e}");
-            }
+            let (tc, ec) = diag::extract_candidates(&ast);
+            diag::render_resolve_errors(&errs, &flags.file, &src, &tc, &ec);
             process::exit(1);
         }
     };
@@ -710,7 +700,8 @@ fn cmd_ask(args: &[String]) {
                     }
                 }
 
-                eprintln!("  No parse found for: {sent:?}");
+                let fails: Vec<_> = ctx.failures.borrow().iter().cloned().collect();
+                diag::render_no_parse(sent, &fails, &flags.file);
                 continue;
             }
 

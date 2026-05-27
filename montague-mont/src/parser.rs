@@ -52,6 +52,15 @@ pub fn parse(src: &str) -> (MontFile, Vec<MontParseError>) {
 }
 
 fn convert_lex_error(e: &chumsky::error::Rich<'_, char>) -> MontParseError {
+    let contexts: Vec<(String, Span)> = e
+        .contexts()
+        .map(|(pat, s)| {
+            (
+                format!("{pat}"),
+                Span::new(s.start, s.end),
+            )
+        })
+        .collect();
     MontParseError::UnexpectedToken {
         expected: format!("{}", e.reason()),
         found: e
@@ -59,12 +68,22 @@ fn convert_lex_error(e: &chumsky::error::Rich<'_, char>) -> MontParseError {
             .map(|c| c.to_string())
             .unwrap_or_else(|| "end of input".to_string()),
         span: Span::new(e.span().start, e.span().end),
+        contexts,
     }
 }
 
 fn convert_parse_error(
     e: &chumsky::error::Rich<'_, crate::token::Token<'_>>,
 ) -> MontParseError {
+    let contexts: Vec<(String, Span)> = e
+        .contexts()
+        .map(|(pat, s)| {
+            (
+                format!("{pat}"),
+                Span::new(s.start, s.end),
+            )
+        })
+        .collect();
     MontParseError::UnexpectedToken {
         expected: format!("{}", e.reason()),
         found: e
@@ -72,6 +91,7 @@ fn convert_parse_error(
             .map(|t| t.to_string())
             .unwrap_or_else(|| "end of input".to_string()),
         span: Span::new(e.span().start, e.span().end),
+        contexts,
     }
 }
 
@@ -152,7 +172,7 @@ mod tests {
         let f = check(r#""as well as" --> as_well_as."#);
         match &f.declarations[0].item {
             Declaration::ProductionDecl { words, entity } => {
-                assert_eq!(words, &["as well as"]);
+                assert_eq!(words, &["as_well_as"]);
                 assert_eq!(entity, "as_well_as");
             }
             _ => panic!(),
@@ -163,7 +183,7 @@ mod tests {
         let f = check(r#"man, "as well as" --> man_noun."#);
         match &f.declarations[0].item {
             Declaration::ProductionDecl { words, entity } => {
-                assert_eq!(words, &["man", "as well as"]);
+                assert_eq!(words, &["man", "as_well_as"]);
                 assert_eq!(entity, "man_noun");
             }
             _ => panic!(),

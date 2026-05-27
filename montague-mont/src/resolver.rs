@@ -48,8 +48,8 @@ impl ResolvedLexicon {
                 errors.push(ResolveError::DuplicateEntity {
                     entity: a.entity.clone(),
                     original_span: a.span,
-                    span: a.span,
-                });
+                    span: a.span,            file_path: None,
+                            });
             }
         }
 
@@ -67,8 +67,8 @@ impl ResolvedLexicon {
             for msg in sort_errs {
                 errors.push(ResolveError::UnknownNamespace {
                     name: msg,
-                    span: Span::new(0, 0),
-                });
+                    span: Span::new(0, 0),            file_path: None,
+                            });
             }
         }
 
@@ -78,10 +78,11 @@ impl ResolvedLexicon {
                 if existing != params {
                     errors.push(ResolveError::UnknownNamespace {
                         name: format!(
-                            "conflicting arity for type `{name}`: {:?} vs {:?}",
+                            "conflicting arity for type `{name
+                    }`: {:?} vs {:?}",
                             existing, params
                         ),
-                        span: Span::new(0, 0),
+                        span: Span::new(0, 0),            file_path: None,
                     });
                 }
             } else {
@@ -94,6 +95,16 @@ impl ResolvedLexicon {
         }
 
         Ok(())
+    }
+
+    /// Iterator over all known type names (for "did you mean?" suggestions).
+    pub fn known_types(&self) -> impl Iterator<Item = &str> {
+        self.type_names.iter().map(|s| s.as_str())
+    }
+
+    /// Iterator over all known entity names (for "did you mean?" suggestions).
+    pub fn known_entities(&self) -> impl Iterator<Item = &str> {
+        self.atoms.iter().map(|a| a.entity.as_str())
     }
 }
 
@@ -130,26 +141,26 @@ impl FileResolver for FsFileResolver {
             .last()
             .ok_or_else(|| ResolveError::UnknownNamespace {
                 name: namespace.join("."),
-                span: Span::new(0, 0),
-            })?;
+                span: Span::new(0, 0),            file_path: None,
+                            })?;
         let path = std::path::Path::new(base_dir).join(format!("{last}.mont"));
         std::fs::read_to_string(&path).map_err(|_| ResolveError::UnknownNamespace {
             name: namespace.join("."),
-            span: Span::new(0, 0),
-        })
+            span: Span::new(0, 0),            file_path: None,
+                            })
     }
 
     fn resolve_uri(&self, uri: &str) -> Result<String, ResolveError> {
         if let Some(path) = uri.strip_prefix("file://") {
             std::fs::read_to_string(path).map_err(|_| ResolveError::UnknownNamespace {
                 name: uri.to_string(),
-                span: Span::new(0, 0),
-            })
+                span: Span::new(0, 0),            file_path: None,
+                            })
         } else {
             Err(ResolveError::UnknownNamespace {
                 name: uri.to_string(),
-                span: Span::new(0, 0),
-            })
+                span: Span::new(0, 0),            file_path: None,
+                            })
         }
     }
 }
@@ -182,8 +193,8 @@ pub fn resolve_with_resolver(
                 errors.push(ResolveError::DuplicateEntity {
                     entity: parts.join("."),
                     original_span: decl.span,
-                    span: decl.span,
-                });
+                    span: decl.span,            file_path: None,
+                            });
             } else {
                 namespace = Some(parts.clone());
             }
@@ -221,8 +232,8 @@ pub fn resolve_with_resolver(
             for _e in &parse_errs {
                 errors.push(ResolveError::UnknownNamespace {
                     name: ext_ns.as_ref().map(|v| v.join(".")).unwrap_or_else(|| "(uri)".into()),
-                    span: dir.span,
-                });
+                    span: dir.span,            file_path: None,
+                            });
             }
             return Err(errors);
         }
@@ -273,8 +284,8 @@ pub fn resolve_with_resolver(
             for msg in sort_errs {
                 errors.push(ResolveError::UnknownNamespace {
                     name: msg,
-                    span: Span::new(0, 0),
-                });
+                    span: Span::new(0, 0),            file_path: None,
+                            });
             }
         }
         // Merge extended type arities
@@ -282,8 +293,9 @@ pub fn resolve_with_resolver(
             if let Some(existing) = type_arity.get(name) {
                 if existing != params {
                     errors.push(ResolveError::UnknownNamespace {
-                        name: format!("type `{name}` redeclared with different arity"),
-                        span: Span::new(0, 0),
+                        name: format!("type `{name
+                    }` redeclared with different arity"),
+                        span: Span::new(0, 0),            file_path: None,
                     });
                 }
             } else {
@@ -298,8 +310,8 @@ pub fn resolve_with_resolver(
                 if let Err(msg) = sorts.add_sort(name.clone()) {
                     errors.push(ResolveError::UnknownNamespace {
                         name: msg,
-                        span: decl.span,
-                    });
+                        span: decl.span,            file_path: None,
+                            });
                 }
             }
             Declaration::SortMemberDecl { sort, members } => {
@@ -307,8 +319,8 @@ pub fn resolve_with_resolver(
                     if let Err(msg) = sorts.add_member(sort, member.clone()) {
                         errors.push(ResolveError::UnknownNamespace {
                             name: msg,
-                            span: decl.span,
-                        });
+                            span: decl.span,            file_path: None,
+                            });
                     }
                 }
             }
@@ -331,22 +343,24 @@ pub fn resolve_with_resolver(
                     if let Err(msg) = sorts.add_subtype(sub, sup) {
                         errors.push(ResolveError::UnknownNamespace {
                             name: msg,
-                            span: decl.span,
-                        });
+                            span: decl.span,            file_path: None,
+                            });
                     }
                     continue;
                 }
                 (Some(_), Some(_)) => {
                     errors.push(ResolveError::UnknownNamespace {
-                        name: format!("`{sub}` and `{sup}` belong to different sorts — cross-sort subtyping is not allowed"),
-                        span: decl.span,
+                        name: format!("`{sub
+                    }` and `{sup}` belong to different sorts — cross-sort subtyping is not allowed"),
+                        span: decl.span,            file_path: None,
                     });
                     continue;
                 }
                 (Some(_), None) | (None, Some(_)) => {
                     errors.push(ResolveError::UnknownNamespace {
-                        name: format!("`{sub}` or `{sup}` is a sort member while the other is a grammatical type — mixed edges are not allowed"),
-                        span: decl.span,
+                        name: format!("`{sub
+                    }` or `{sup}` is a sort member while the other is a grammatical type — mixed edges are not allowed"),
+                        span: decl.span,            file_path: None,
                     });
                     continue;
                 }
@@ -356,15 +370,15 @@ pub fn resolve_with_resolver(
             if !known_types.contains(sub) {
                 errors.push(ResolveError::SubtypeUnknownType {
                     name: sub.clone(),
-                    span: decl.span,
-                });
+                    span: decl.span,            file_path: None,
+                            });
                 continue;
             }
             if !known_types.contains(sup) {
                 errors.push(ResolveError::SubtypeUnknownType {
                     name: sup.clone(),
-                    span: decl.span,
-                });
+                    span: decl.span,            file_path: None,
+                            });
                 continue;
             }
             lattice.add_subtype(AtomType::new(sub), AtomType::new(sup));
@@ -536,8 +550,8 @@ fn resolve_type_expr(
             if !known_types.contains(name) {
                 errors.push(ResolveError::UnknownType {
                     name: name.clone(),
-                    span,
-                });
+                    span,            file_path: None,
+                            });
                 return None;
             }
             let expected_sorts = type_arity.get(name).cloned().unwrap_or_default();
@@ -550,6 +564,7 @@ fn resolve_type_expr(
                         args.len()
                     ),
                     span,
+                    file_path: None,
                 });
                 return None;
             }
@@ -568,18 +583,20 @@ fn resolve_type_expr(
                             Some(s) => {
                                 errors.push(ResolveError::UnknownType {
                                     name: format!(
-                                        "`{member}` is in sort `{s}`, expected sort `{expected_sort}`"
+                                        "`{member
+                    }` is in sort `{s}`, expected sort `{expected_sort}`"
                                     ),
-                                    span: arg.span,
+                                    span: arg.span,            file_path: None,
                                 });
                                 return None;
                             }
                             None => {
                                 errors.push(ResolveError::UnknownType {
                                     name: format!(
-                                        "`{member}` is not a declared sort member of `{expected_sort}`"
+                                        "`{member
+                    }` is not a declared sort member of `{expected_sort}`"
                                     ),
-                                    span: arg.span,
+                                    span: arg.span,            file_path: None,
                                 });
                                 return None;
                             }
@@ -605,19 +622,19 @@ fn resolve_type_expr(
             } else {
                 errors.push(ResolveError::UnknownType {
                     name: name.clone(),
-                    span,
-                });
+                    span,            file_path: None,
+                            });
                 None
             }
         }
         TypeExpr::Qualified(path) => {
             let name = path.join(".");
-            errors.push(ResolveError::UnresolvedConnective { name, span });
+            errors.push(ResolveError::UnresolvedConnective { name, span, file_path: None });
             None
         }
         TypeExpr::CustomApp { path, args: _ } => {
             let name = path.join(".");
-            errors.push(ResolveError::UnresolvedConnective { name, span });
+            errors.push(ResolveError::UnresolvedConnective { name, span, file_path: None });
             None
         }
         TypeExpr::LeftArrow(a, b) => {
@@ -792,7 +809,8 @@ mod tests {
         let errs = resolve_str(src).unwrap_err();
         assert!(!errs.is_empty());
         match &errs[0] {
-            ResolveError::UnknownType { name, .. } => assert_eq!(name, "Person"),
+            ResolveError::UnknownType { name, ..
+                    } => assert_eq!(name, "Person"),
             _ => panic!("expected UnknownType"),
         }
     }

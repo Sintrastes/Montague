@@ -9,11 +9,157 @@
 //! `Person :< Noun.` first-class (see D0/D1).
 
 use std::collections::HashMap;
+use std::fmt;
 use std::hash::Hash;
 
 use crate::registry::CustomTag;
 use crate::sort::SortRegistry;
 use crate::subtyping::SubtypeLattice;
+
+// ---------------------------------------------------------------------------
+// Unification error types (for chart-failure diagnostics)
+// ---------------------------------------------------------------------------
+
+/// Reason a sort unification or type-check failed.
+#[derive(Debug, Clone)]
+pub enum UnifyError {
+    /// Sort mismatch: expected sort `A`, got sort `B`.
+    SortMismatch {
+        expected_sort: String,
+        actual_sort: String,
+        position: TypePath,
+    },
+    /// Sort-internal subtyping failure: `expected` is not above `actual`.
+    SortMemberLeq {
+        sort: String,
+        expected: String,
+        actual: String,
+        position: TypePath,
+    },
+    /// Different atom names (e.g. `NP` vs `S`).
+    NameMismatch {
+        expected: String,
+        actual: String,
+        position: TypePath,
+    },
+    /// Wrong arity for an atom.
+    ArityMismatch {
+        name: String,
+        expected: usize,
+        actual: usize,
+        position: TypePath,
+    },
+    /// Structural mismatch (e.g. `LeftArrow` vs `Basic`).
+    StructureMismatch {
+        expected_shape: String,
+        actual_shape: String,
+        position: TypePath,
+    },
+    /// Occurs-check failure when binding a variable.
+    OccursCheck {
+        var: SortVarId,
+        position: TypePath,
+    },
+}
+
+impl UnifyError {
+    /// Update the `position` field by applying a function to the current path.
+    pub fn with_position(mut self, f: impl FnOnce(TypePath) -> TypePath) -> Self {
+        let new_pos = f(TypePath::default());
+        match &mut self {
+            UnifyError::SortMismatch { position, .. }
+            | UnifyError::SortMemberLeq { position, .. }
+            | UnifyError::NameMismatch { position, .. }
+            | UnifyError::ArityMismatch { position, .. }
+            | UnifyError::StructureMismatch { position, .. }
+            | UnifyError::OccursCheck { position, .. } => *position = new_pos,
+        }
+        self
+    }
+}
+
+impl fmt::Display for UnifyError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::SortMismatch { expected_sort, actual_sort, .. } => {
+                write!(f, "sort mismatch: expected sort `{expected_sort}`, got sort `{actual_sort}`")
+            }
+            Self::SortMemberLeq { sort, expected, actual, .. } => {
+                write!(f, "expected `{expected}`, got `{actual}` (both in sort `{sort}`)")
+            }
+            Self::NameMismatch { expected, actual, .. } => {
+                write!(f, "expected type `{expected}`, got `{actual}`")
+            }
+            Self::ArityMismatch { name, expected, actual, .. } => {
+                write!(f, "`{name}` expects {expected} parameter(s), got {actual}")
+            }
+            Self::StructureMismatch { expected_shape, actual_shape, .. } => {
+                write!(f, "expected {expected_shape} but found {actual_shape}")
+            }
+            Self::OccursCheck { var, .. } => {
+                write!(f, "occurs check failure for variable {var:?}")
+            }
+        }
+    }
+}
+
+/// Position in a type tree, e.g. "left arg's right arg's first sort param".
+#[derive(Debug, Clone, Default)]
+pub struct TypePath(pub Vec<TypePathStep>);
+
+#[derive(Debug, Clone)]
+pub enum TypePathStep {
+    LeftArrowArg,
+    LeftArrowResult,
+    RightArrowArg,
+    RightArrowResult,
+    ExtractArg,
+    ExtractResult,
+    ScopedArg,
+    ScopedResult,
+    ConjLeft,
+    ConjRight,
+    DisjLeft,
+    DisjRight,
+    AtomArg(usize),
+}
+
+impl TypePath {
+    pub fn push(&self, step: TypePathStep) -> Self {
+        let mut new = self.0.clone();
+        new.push(step);
+        TypePath(new)
+    }
+}
+
+impl fmt::Display for TypePath {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.0.is_empty() {
+            return Ok(());
+        }
+        for (i, step) in self.0.iter().enumerate() {
+            if i > 0 {
+                write!(f, " → ")?;
+            }
+            match step {
+                TypePathStep::LeftArrowArg => write!(f, "left arg")?,
+                TypePathStep::LeftArrowResult => write!(f, "left result")?,
+                TypePathStep::RightArrowArg => write!(f, "right arg")?,
+                TypePathStep::RightArrowResult => write!(f, "right result")?,
+                TypePathStep::AtomArg(n) => write!(f, "param {}", n + 1)?,
+                TypePathStep::ExtractArg => write!(f, "extract arg")?,
+                TypePathStep::ExtractResult => write!(f, "extract result")?,
+                TypePathStep::ScopedArg => write!(f, "scoped arg")?,
+                TypePathStep::ScopedResult => write!(f, "scoped result")?,
+                TypePathStep::ConjLeft => write!(f, "left conjunct")?,
+                TypePathStep::ConjRight => write!(f, "right conjunct")?,
+                TypePathStep::DisjLeft => write!(f, "left disjunct")?,
+                TypePathStep::DisjRight => write!(f, "right disjunct")?,
+            }
+        }
+        Ok(())
+    }
+}
 
 // ---------------------------------------------------------------------------
 // AtomType — leaf types with sort parameters
@@ -36,13 +182,14 @@ pub enum SortArg {
 
 impl SortArg {
     /// Try to unify `self ≤ other` (subtyping direction), recording variable
-    /// bindings in `var_table`.  Returns `true` on success.
+    /// bindings in `var_table`.  Returns `Ok(())` on success, `Err(UnifyError)` with
+    /// diagnostic details on failure.
     pub fn unify_with(
         &self,
         other: &SortArg,
         sort_registry: Option<&SortRegistry>,
         var_table: &mut SortVarTable,
-    ) -> bool {
+    ) -> Result<(), UnifyError> {
         let a = var_table.resolve(self);
         let b = var_table.resolve(other);
         match (&a, &b) {
@@ -57,16 +204,46 @@ impl SortArg {
                 },
             ) => {
                 if sa != sb {
-                    return false;
+                    return Err(UnifyError::SortMismatch {
+                        expected_sort: sa.clone(),
+                        actual_sort: sb.clone(),
+                        position: TypePath::default(),
+                    });
                 }
                 if let Some(sr) = sort_registry {
-                    sr.leq(ma, mb)
+                    if sr.leq(ma, mb) {
+                        Ok(())
+                    } else {
+                        Err(UnifyError::SortMemberLeq {
+                            sort: sa.clone(),
+                            expected: ma.clone(),
+                            actual: mb.clone(),
+                            position: TypePath::default(),
+                        })
+                    }
+                } else if ma == mb {
+                    Ok(())
                 } else {
-                    ma == mb
+                    Err(UnifyError::SortMemberLeq {
+                        sort: sa.clone(),
+                        expected: ma.clone(),
+                        actual: mb.clone(),
+                        position: TypePath::default(),
+                    })
                 }
             }
-            (SortArg::Var(id), sup) => var_table.bind(*id, sup.clone()).is_ok(),
-            (sub, SortArg::Var(id)) => var_table.bind(*id, sub.clone()).is_ok(),
+            (SortArg::Var(id), sup) => var_table
+                .bind(*id, sup.clone())
+                .map_err(|_| UnifyError::OccursCheck {
+                    var: *id,
+                    position: TypePath::default(),
+                }),
+            (sub, SortArg::Var(id)) => var_table
+                .bind(*id, sub.clone())
+                .map_err(|_| UnifyError::OccursCheck {
+                    var: *id,
+                    position: TypePath::default(),
+                }),
         }
     }
 
@@ -90,12 +267,15 @@ impl SortArg {
 pub struct SortVarTable {
     /// Mapping from variable ID to its binding (may be concrete or another var).
     bindings: HashMap<SortVarId, SortArg>,
+    /// Last sort-level unification error for diagnostics.
+    pub last_error: Option<UnifyError>,
 }
 
 impl SortVarTable {
     pub fn new() -> Self {
         SortVarTable {
             bindings: HashMap::new(),
+            last_error: None,
         }
     }
 
@@ -246,6 +426,11 @@ pub trait TypeCheck: Hash + Eq + Clone {
     fn head_name(&self) -> Option<String> {
         None
     }
+
+    /// Human-readable display of this basic type including sort parameters.
+    fn basic_display(&self) -> String {
+        self.head_name().unwrap_or_else(|| "?".into())
+    }
 }
 
 impl TypeCheck for AtomType {
@@ -267,12 +452,15 @@ impl TypeCheck for AtomType {
             return Some(false);
         }
         for (a, b) in self.args.iter().zip(other.args.iter()) {
-            if !a.unify_with(b, sort_registry, var_table) {
+            if let Err(e) = a.unify_with(b, sort_registry, var_table) {
+                var_table.last_error = Some(e);
                 return Some(false);
             }
         }
         Some(true)
     }
+
+// (SortArg errors are captured via SortVarTable::last_error for diagnostics)
 
     fn substitute_atom(&self, var_table: &SortVarTable) -> Self {
         AtomType {
@@ -283,6 +471,11 @@ impl TypeCheck for AtomType {
 
     fn head_name(&self) -> Option<String> {
         Some(self.name.clone())
+    }
+
+    fn basic_display(&self) -> String {
+        // Use the Display impl which shows sort args: "NP[Animate]"
+        format!("{self}")
     }
 }
 
@@ -304,6 +497,27 @@ macro_rules! impl_type_check_trivial {
                 _var_table: &$crate::types::SortVarTable,
             ) -> Self {
                 self.clone()
+            }
+        }
+    };
+    ($t:ty, display) => {
+        impl $crate::types::TypeCheck for $t {
+            fn check_atoms(
+                &self,
+                _other: &Self,
+                _sort_registry: Option<&$crate::sort::SortRegistry>,
+                _var_table: &mut $crate::types::SortVarTable,
+            ) -> Option<bool> {
+                None
+            }
+            fn substitute_atom(
+                &self,
+                _var_table: &$crate::types::SortVarTable,
+            ) -> Self {
+                self.clone()
+            }
+            fn basic_display(&self) -> String {
+                format!("{self}")
             }
         }
     };
@@ -444,64 +658,112 @@ impl<T: Hash + Eq + Clone> LambekType<T> {
 }
 
 impl<T: TypeCheck> LambekType<T> {
-    /// Sort-aware subtyping check.  Like [`leq`](Self::leq) but also unifies
-    /// sort variables via `var_table`.  Variance of arrows is preserved:
-    /// first argument contravariant, second covariant.
+    /// Shape name for error messages.
+    fn shape_name(&self) -> &'static str {
+        use LambekType::*;
+        match self {
+            Basic(_) => "a type",
+            LeftArrow(_, _) => "function `/`",
+            RightArrow(_, _) => "function `\\`",
+            Extract(_, _) => "extraction",
+            Scoped(_, _) => "scope",
+            Conj(_, _) => "conjunction",
+            Disj(_, _) => "disjunction",
+            Custom { .. } => "custom connective",
+        }
+    }
+
+    /// Sort-aware subtyping check that unifies variables and returns diagnostic
+    /// errors on failure.  Variance: first arg contravariant, second covariant.
     pub fn unify_with(
         &self,
         other: &Self,
         lattice: &SubtypeLattice<T>,
         sort_registry: Option<&SortRegistry>,
         var_table: &mut SortVarTable,
-    ) -> bool {
+    ) -> Result<(), UnifyError> {
         use LambekType::*;
         match (self, other) {
             (Basic(a), Basic(b)) => match a.check_atoms(b, sort_registry, var_table) {
-                Some(passed) => passed,
-                None => lattice.leq(a, b),
+                Some(true) => Ok(()),
+                Some(false) => {
+                    // Prefer the sort-level error if available; fall back to name mismatch.
+                    if let Some(e) = var_table.last_error.take() {
+                        Err(e)
+                    } else {
+                        let a_name = a.head_name().unwrap_or_else(|| "?".into());
+                        let b_name = b.head_name().unwrap_or_else(|| "?".into());
+                        Err(UnifyError::NameMismatch {
+                            expected: format!("compatible with `{a_name}`"),
+                            actual: format!("`{b_name}`"),
+                            position: TypePath::default(),
+                        })
+                    }
+                }
+                None => {
+                    if lattice.leq(a, b) {
+                        Ok(())
+                    } else {
+                        let a_name = a.head_name().unwrap_or_else(|| "?".into());
+                        let b_name = b.head_name().unwrap_or_else(|| "?".into());
+                        Err(UnifyError::NameMismatch {
+                            expected: format!("subtype of `{a_name}`"),
+                            actual: format!("`{b_name}`"),
+                            position: TypePath::default(),
+                        })
+                    }
+                }
             },
             (LeftArrow(x1, y1), LeftArrow(x2, y2)) => {
                 x2.unify_with(x1, lattice, sort_registry, var_table)
-                    && y1.unify_with(y2, lattice, sort_registry, var_table)
+                    .map_err(|e| e.with_position(|p| p.push(TypePathStep::LeftArrowArg)))?;
+                y1.unify_with(y2, lattice, sort_registry, var_table)
+                    .map_err(|e| e.with_position(|p| p.push(TypePathStep::LeftArrowResult)))
             }
             (RightArrow(x1, y1), RightArrow(x2, y2)) => {
                 x2.unify_with(x1, lattice, sort_registry, var_table)
-                    && y1.unify_with(y2, lattice, sort_registry, var_table)
+                    .map_err(|e| e.with_position(|p| p.push(TypePathStep::RightArrowArg)))?;
+                y1.unify_with(y2, lattice, sort_registry, var_table)
+                    .map_err(|e| e.with_position(|p| p.push(TypePathStep::RightArrowResult)))
             }
             (Extract(x1, y1), Extract(x2, y2)) => {
                 x2.unify_with(x1, lattice, sort_registry, var_table)
-                    && y1.unify_with(y2, lattice, sort_registry, var_table)
+                    .map_err(|e| e.with_position(|p| p.push(TypePathStep::ExtractArg)))?;
+                y1.unify_with(y2, lattice, sort_registry, var_table)
+                    .map_err(|e| e.with_position(|p| p.push(TypePathStep::ExtractResult)))
             }
             (Scoped(x1, y1), Scoped(x2, y2)) => {
                 x2.unify_with(x1, lattice, sort_registry, var_table)
-                    && y1.unify_with(y2, lattice, sort_registry, var_table)
+                    .map_err(|e| e.with_position(|p| p.push(TypePathStep::ScopedArg)))?;
+                y1.unify_with(y2, lattice, sort_registry, var_table)
+                    .map_err(|e| e.with_position(|p| p.push(TypePathStep::ScopedResult)))
             }
             (Conj(x1, y1), Conj(x2, y2)) => {
                 x1.unify_with(x2, lattice, sort_registry, var_table)
-                    && y1.unify_with(y2, lattice, sort_registry, var_table)
+                    .map_err(|e| e.with_position(|p| p.push(TypePathStep::ConjLeft)))?;
+                y1.unify_with(y2, lattice, sort_registry, var_table)
+                    .map_err(|e| e.with_position(|p| p.push(TypePathStep::ConjRight)))
             }
             (Disj(x1, y1), Disj(x2, y2)) => {
                 x1.unify_with(x2, lattice, sort_registry, var_table)
-                    && y1.unify_with(y2, lattice, sort_registry, var_table)
+                    .map_err(|e| e.with_position(|p| p.push(TypePathStep::DisjLeft)))?;
+                y1.unify_with(y2, lattice, sort_registry, var_table)
+                    .map_err(|e| e.with_position(|p| p.push(TypePathStep::DisjRight)))
             }
-            (
-                Custom {
-                    tag: t1,
-                    args: a1,
-                },
-                Custom {
-                    tag: t2,
-                    args: a2,
-                },
-            ) => {
-                t1 == t2
-                    && a1.len() == a2.len()
-                    && a1.iter().zip(a2).all(|(x, y)| {
-                        x.unify_with(y, lattice, sort_registry, var_table)
-                            && y.unify_with(x, lattice, sort_registry, var_table)
-                    })
+            (Custom { tag: t1, args: a1 }, Custom { tag: t2, args: a2 })
+                if t1 == t2 && a1.len() == a2.len() =>
+            {
+                for (i, (x, y)) in a1.iter().zip(a2).enumerate() {
+                    x.unify_with(y, lattice, sort_registry, var_table)
+                        .map_err(|e| e.with_position(|p| p.push(TypePathStep::AtomArg(i))))?;
+                }
+                Ok(())
             }
-            _ => false,
+            (a, b) => Err(UnifyError::StructureMismatch {
+                expected_shape: a.shape_name().to_string(),
+                actual_shape: b.shape_name().to_string(),
+                position: TypePath::default(),
+            }),
         }
     }
 

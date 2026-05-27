@@ -167,9 +167,9 @@ pub fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
 
     // ── Declarations ─────────────────────────────────────────────────────
 
-    // `type A[p1, p2].` or `type A.`
-    let single_type_decl = just(Token::TypeKw)
-        .ignore_then(ident.clone().labelled("type name"))
+    // `type A[p1, p2].` or `type A.` — and comma-separated sugar:
+    // `type A[B], C, D[E].`  →  three SingleTypeDecl.
+    let single_type_entry = ident.clone()
         .then(
             ident.clone()
                 .separated_by(just(Token::Comma))
@@ -178,12 +178,22 @@ pub fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
                 .delimited_by(just(Token::LBracket), just(Token::RBracket))
                 .or_not(),
         )
+        .map(|(name, params)| Declaration::SingleTypeDecl {
+            name: name.to_string(),
+            params: params.unwrap_or_default().into_iter().map(str::to_string).collect(),
+        });
+
+    let single_type_decl = just(Token::TypeKw)
+        .ignore_then(
+            single_type_entry
+                .separated_by(just(Token::Comma))
+                .at_least(1)
+                .collect::<Vec<Declaration>>()
+        )
         .then_ignore(just(Token::End))
-        .map_with(|(name, params), e| {
-            AstSpanned::new(Declaration::SingleTypeDecl {
-                name: name.to_string(),
-                params: params.unwrap_or_default().into_iter().map(str::to_string).collect(),
-            }, span_of(e.span()))
+        .map_with(|decls, e| {
+            let span = span_of(e.span());
+            decls.into_iter().map(move |d| AstSpanned::new(d, span)).collect::<Vec<_>>()
         })
         .labelled("single type declaration")
         .as_context()
@@ -273,10 +283,11 @@ pub fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
         .boxed();
 
     // `word1, word2 --> entity.` or `"multi word" --> entity.`
-    let production_decl = choice((
-        quoted.clone().map(|s: &str| vec![s.to_string()]),
-        ident.clone().map(|s: &str| vec![s.to_string()]),
-    ))
+    // Quoted strings have spaces replaced with underscores to match the
+    // multi-word tokenizer convention (tokenize_multiword in montague-cli).
+    let production_word_quoted = quoted.clone().map(|s: &str| vec![s.replace(' ', "_")]);
+    let production_word_ident = ident.clone().map(|s: &str| vec![s.to_string()]);
+    let production_decl = choice((production_word_quoted, production_word_ident))
     .separated_by(just(Token::Comma))
     .collect::<Vec<Vec<String>>>()
     .map(|nested: Vec<Vec<String>>| nested.into_iter().flatten().collect::<Vec<String>>())
@@ -344,6 +355,8 @@ pub fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
     enum Item {
         Directive(AstSpanned<Directive>),
         Declaration(AstSpanned<Declaration>),
+        /// Comma-separated sugar: one `type A, B, C.` → multiple decls.
+        MultiDecl(Vec<AstSpanned<Declaration>>),
     }
 
     let directive_item = choice((
@@ -352,8 +365,11 @@ pub fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
     ))
     .boxed();
 
-    let decl_item = choice((
-        single_type_decl,
+    let multi_decl_item = single_type_decl
+        .map_with(|decls, e| (Item::MultiDecl(decls), e.span()))
+        .boxed();
+
+    let single_decl_item = choice((
         type_decl,
         sort_decl,
         morpheme_decl,
@@ -363,10 +379,11 @@ pub fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
         production_decl,
         atom_decl,
     ))
-    .map_with(|d, e| (Item::Declaration(d), e.span()));
+    .map_with(|d, e| (Item::Declaration(d), e.span()))
+    .boxed();
 
     // ── Top-level ────────────────────────────────────────────────────────
-    let item = choice((directive_item, decl_item)).boxed();
+    let item = choice((directive_item, multi_decl_item, single_decl_item)).boxed();
 
     item.repeated()
         .collect::<Vec<(Item, ChSpan)>>()
@@ -377,6 +394,7 @@ pub fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
                 match item {
                     Item::Directive(d) => directives.push(d),
                     Item::Declaration(d) => declarations.push(d),
+                    Item::MultiDecl(ds) => declarations.extend(ds),
                 }
             }
             MontFile { directives, declarations }

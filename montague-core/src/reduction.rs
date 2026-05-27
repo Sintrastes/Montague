@@ -25,6 +25,59 @@ use crate::types::{AnnotatedTerm, LambekType, SortVarTable, Term, TypeCheck};
 /// Holds the subtyping lattice (always required), optionally a
 /// [`Registry`], optionally a [`SortRegistry`] for sort-variable unification,
 /// and a [`SortVarTable`] for polymorphic parameter resolution.
+use std::cell::RefCell;
+
+/// A collected unification failure for diagnostics.
+#[derive(Debug, Clone)]
+pub struct FailureTrace {
+    pub error: crate::types::UnifyError,
+    /// Which reduction rule attempted (e.g. "BackwardApp", "ForwardComposition")
+    pub rule_name: &'static str,
+    /// Token-index span of the left operand cell.
+    pub left_span: (usize, usize),
+    /// Token-index span of the right operand cell.
+    pub right_span: (usize, usize),
+    /// Human-readable type of the left operand (e.g. "NP[Inanimate]").
+    pub left_ty: String,
+    /// Human-readable type of the right operand (e.g. "NP[Animate]\\S").
+    pub right_ty: String,
+    /// Human-readable type of the expected argument/result for this rule.
+    pub expected_ty: String,
+}
+
+/// Format a LambekType for diagnostic display.
+/// For `AtomType` this shows sort parameters (e.g. "NP[Animate]").
+pub fn format_lambek_type<T: TypeCheck>(ty: &LambekType<T>) -> String {
+    use LambekType::*;
+    match ty {
+        Basic(a) => format_basic_type(a),
+        LeftArrow(l, r) => {
+            format!("({} / {})", format_lambek_type(l), format_lambek_type(r))
+        }
+        RightArrow(l, r) => {
+            format!("({} \\ {})", format_lambek_type(l), format_lambek_type(r))
+        }
+        Extract(l, r) => {
+            format!("({} ↑ {})", format_lambek_type(l), format_lambek_type(r))
+        }
+        Scoped(l, r) => {
+            format!("({} ⇑ {})", format_lambek_type(l), format_lambek_type(r))
+        }
+        Conj(l, r) => {
+            format!("({} ∧ {})", format_lambek_type(l), format_lambek_type(r))
+        }
+        Disj(l, r) => {
+            format!("({} ∨ {})", format_lambek_type(l), format_lambek_type(r))
+        }
+        Custom { .. } => "custom connective".into(),
+    }
+}
+
+/// Format a basic type with sort parameters (via `TypeCheck::basic_display`).
+fn format_basic_type<T: TypeCheck>(t: &T) -> String {
+    t.basic_display()
+}
+
 pub struct ReductionCtx<'a, T: Hash + Eq + Clone> {
     pub lattice: &'a SubtypeLattice<T>,
     pub registry: Option<&'a Registry>,
@@ -32,6 +85,8 @@ pub struct ReductionCtx<'a, T: Hash + Eq + Clone> {
     /// When set, reduction rules use sort-aware unification rather than
     /// plain lattice `leq`.
     pub sort_registry: Option<&'a SortRegistry>,
+    /// Failure traces collected during chart fill.
+    pub failures: RefCell<Vec<FailureTrace>>,
 }
 
 impl<'a, T: Hash + Eq + Clone> ReductionCtx<'a, T> {
@@ -41,6 +96,7 @@ impl<'a, T: Hash + Eq + Clone> ReductionCtx<'a, T> {
             lattice,
             registry: None,
             sort_registry: None,
+            failures: RefCell::new(Vec::new()),
         }
     }
 
@@ -311,7 +367,16 @@ where
             return vec![];
         };
         let mut var_table = SortVarTable::new();
-        if !left.ty.unify_with(x_prime, ctx.lattice, ctx.sort_registry, &mut var_table) {
+        if let Err(e) = left.ty.unify_with(x_prime, ctx.lattice, ctx.sort_registry, &mut var_table) {
+            ctx.failures.borrow_mut().push(FailureTrace {
+                error: e,
+                rule_name: "BackwardApp",
+                left_span: (0, 0),
+                right_span: (0, 0),
+                left_ty: format_lambek_type(&left.ty),
+                right_ty: format_lambek_type(&right.ty),
+                expected_ty: format_lambek_type(x_prime),
+            });
             return vec![];
         }
         let new_term = if right.term.is_partial_pred() {
@@ -354,7 +419,16 @@ where
             return vec![];
         };
         let mut var_table = SortVarTable::new();
-        if !right.ty.unify_with(y, ctx.lattice, ctx.sort_registry, &mut var_table) {
+        if let Err(e) = right.ty.unify_with(y, ctx.lattice, ctx.sort_registry, &mut var_table) {
+            ctx.failures.borrow_mut().push(FailureTrace {
+                error: e,
+                rule_name: "RightAbsorption",
+                left_span: (0, 0),
+                right_span: (0, 0),
+                left_ty: format_lambek_type(&left.ty),
+                right_ty: format_lambek_type(&right.ty),
+                expected_ty: format_lambek_type(y),
+            });
             return vec![];
         }
         let new_term = if left.term.is_partial_pred() {
@@ -404,7 +478,16 @@ where
         let LambekType::LeftArrow(y_prime, z) = &right.ty else { return vec![] };
         // The output of the right function must fit the input of the left.
         let mut var_table = SortVarTable::new();
-        if !y_prime.unify_with(y, ctx.lattice, ctx.sort_registry, &mut var_table) {
+        if let Err(e) = y_prime.unify_with(y, ctx.lattice, ctx.sort_registry, &mut var_table) {
+            ctx.failures.borrow_mut().push(FailureTrace {
+                error: e,
+                rule_name: "ForwardComposition",
+                left_span: (0, 0),
+                right_span: (0, 0),
+                left_ty: format_lambek_type(&left.ty),
+                right_ty: format_lambek_type(&right.ty),
+                expected_ty: format_lambek_type(y),
+            });
             return vec![];
         }
         // λv. left(right(v))
@@ -455,7 +538,16 @@ where
         let LambekType::RightArrow(y_prime, x) = &right.ty else { return vec![] };
         // The output of the left function must fit the input of the right.
         let mut var_table = SortVarTable::new();
-        if !y.unify_with(y_prime, ctx.lattice, ctx.sort_registry, &mut var_table) {
+        if let Err(e) = y.unify_with(y_prime, ctx.lattice, ctx.sort_registry, &mut var_table) {
+            ctx.failures.borrow_mut().push(FailureTrace {
+                error: e,
+                rule_name: "BackwardComposition",
+                left_span: (0, 0),
+                right_span: (0, 0),
+                left_ty: format_lambek_type(&left.ty),
+                right_ty: format_lambek_type(&right.ty),
+                expected_ty: format_lambek_type(y_prime),
+            });
             return vec![];
         }
         // λv. right(left(v))

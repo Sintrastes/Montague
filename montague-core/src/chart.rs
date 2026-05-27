@@ -173,6 +173,10 @@ where
                 let mut local_results: Vec<AnnotatedTerm<A, T>> = Vec::new();
 
                 for k in (i + 1)..j {
+                    // Snapshot failure count so we can annotate new failures
+                    // with this cell's coordinates.
+                    let fail_count_before = ctx.failures.borrow().len();
+
                     // Collect type-derivation pairs into locals so the immutable
                     // borrows from cell_ref drop before the mutable cell_mut below.
                     let left_pairs: Vec<_> = {
@@ -222,6 +226,14 @@ where
                             }
                         }
                     }
+
+                    // Annotate newly-collected failures with this split's coordinates.
+                    let mut fails = ctx.failures.borrow_mut();
+                    for t in &mut fails[fail_count_before..] {
+                        t.left_span = (i, k);
+                        t.right_span = (k, j);
+                    }
+                    drop(fails);
                 }
 
                 // Deduplicate by (term, type) before insertion.
