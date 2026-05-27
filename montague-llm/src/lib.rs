@@ -24,13 +24,22 @@ pub struct ChatMessage {
 
 impl ChatMessage {
     pub fn system(content: impl Into<String>) -> Self {
-        ChatMessage { role: "system".into(), content: content.into() }
+        ChatMessage {
+            role: "system".into(),
+            content: content.into(),
+        }
     }
     pub fn user(content: impl Into<String>) -> Self {
-        ChatMessage { role: "user".into(), content: content.into() }
+        ChatMessage {
+            role: "user".into(),
+            content: content.into(),
+        }
     }
     pub fn assistant(content: impl Into<String>) -> Self {
-        ChatMessage { role: "assistant".into(), content: content.into() }
+        ChatMessage {
+            role: "assistant".into(),
+            content: content.into(),
+        }
     }
 }
 
@@ -66,9 +75,24 @@ impl std::error::Error for LlmError {}
 // ---------------------------------------------------------------------------
 
 pub trait Llm {
-    fn complete_chat(&mut self, messages: &[ChatMessage], max_tokens: usize) -> Result<String, LlmError>;
-    fn complete(&mut self, system_prompt: &str, user_prompt: &str, max_tokens: usize) -> Result<String, LlmError> {
-        self.complete_chat(&[ChatMessage::system(system_prompt), ChatMessage::user(user_prompt)], max_tokens)
+    fn complete_chat(
+        &mut self,
+        messages: &[ChatMessage],
+        max_tokens: usize,
+    ) -> Result<String, LlmError>;
+    fn complete(
+        &mut self,
+        system_prompt: &str,
+        user_prompt: &str,
+        max_tokens: usize,
+    ) -> Result<String, LlmError> {
+        self.complete_chat(
+            &[
+                ChatMessage::system(system_prompt),
+                ChatMessage::user(user_prompt),
+            ],
+            max_tokens,
+        )
     }
 }
 
@@ -86,37 +110,50 @@ impl AnthropicBackend {
     pub fn from_env() -> Result<Self, LlmError> {
         let auth_token = env::var("ANTHROPIC_AUTH_TOKEN")
             .map_err(|_| LlmError::NoBackend("Set ANTHROPIC_AUTH_TOKEN for Anthropic.".into()))?;
-        let base_url = env::var("ANTHROPIC_BASE_URL").unwrap_or_else(|_| "https://api.anthropic.com".into());
+        let base_url =
+            env::var("ANTHROPIC_BASE_URL").unwrap_or_else(|_| "https://api.anthropic.com".into());
         let model = env::var("ANTHROPIC_MODEL").unwrap_or_else(|_| "claude-sonnet-4-6".into());
-        Ok(AnthropicBackend { base_url, auth_token, model })
+        Ok(AnthropicBackend {
+            base_url,
+            auth_token,
+            model,
+        })
     }
 }
 
 impl Llm for AnthropicBackend {
-    fn complete_chat(&mut self, messages: &[ChatMessage], max_tokens: usize) -> Result<String, LlmError> {
+    fn complete_chat(
+        &mut self,
+        messages: &[ChatMessage],
+        max_tokens: usize,
+    ) -> Result<String, LlmError> {
         let url = format!("{}/v1/messages", self.base_url);
 
         // Separate system message (goes in top-level "system" field) from
         // conversation messages (DeepSeek only accepts user/assistant roles).
-        let system_prompt = messages.iter()
+        let system_prompt = messages
+            .iter()
             .find(|m| m.role == "system")
             .map(|m| m.content.as_str());
-        let conversation: Vec<&ChatMessage> = messages.iter()
-            .filter(|m| m.role != "system")
-            .collect();
+        let conversation: Vec<&ChatMessage> =
+            messages.iter().filter(|m| m.role != "system").collect();
 
-        let mut body = format!(
-            r#"{{"model":"{}","max_tokens":{max_tokens}"#,
-            self.model
-        );
+        let mut body = format!(r#"{{"model":"{}","max_tokens":{max_tokens}"#, self.model);
         if let Some(sys) = system_prompt {
             write!(body, r#","system":"{}""#, json_escape(sys)).unwrap();
         }
         body.push_str(r#","messages":["#);
         for (i, msg) in conversation.iter().enumerate() {
-            if i > 0 { body.push(','); }
+            if i > 0 {
+                body.push(',');
+            }
             let c = json_escape(&msg.content);
-            write!(body, r#"{{"role":"{}","content":[{{"type":"text","text":"{}"}}]}}"#, msg.role, c).unwrap();
+            write!(
+                body,
+                r#"{{"role":"{}","content":[{{"type":"text","text":"{}"}}]}}"#,
+                msg.role, c
+            )
+            .unwrap();
         }
         body.push_str("]}");
 
@@ -141,7 +178,9 @@ impl Llm for AnthropicBackend {
         };
 
         let status = resp.status();
-        let resp_body = resp.into_string().map_err(|e| LlmError::Http(e.to_string()))?;
+        let resp_body = resp
+            .into_string()
+            .map_err(|e| LlmError::Http(e.to_string()))?;
         if status != 200 {
             return Err(LlmError::Api {
                 status,
@@ -153,7 +192,11 @@ impl Llm for AnthropicBackend {
 }
 
 fn json_escape(s: &str) -> String {
-    s.replace('\\', "\\\\").replace('"', "\\\"").replace('\n', "\\n").replace('\r', "\\r").replace('\t', "\\t")
+    s.replace('\\', "\\\\")
+        .replace('"', "\\\"")
+        .replace('\n', "\\n")
+        .replace('\r', "\\r")
+        .replace('\t', "\\t")
 }
 
 /// Extract text from an LLM JSON response. Tries OpenAI `content` field first,
@@ -172,8 +215,10 @@ fn text_from_json(json: &str) -> Result<String, LlmError> {
     while let Some(c) = chars.next() {
         if c == '\\' {
             match chars.next() {
-                Some('n') => result.push('\n'), Some('t') => result.push('\t'),
-                Some('r') => result.push('\r'), Some('"') => result.push('"'),
+                Some('n') => result.push('\n'),
+                Some('t') => result.push('\t'),
+                Some('r') => result.push('\r'),
+                Some('"') => result.push('"'),
                 Some('\\') => result.push('\\'),
                 Some('u') => {
                     let mut hex = String::new();
@@ -204,11 +249,17 @@ fn text_from_json(json: &str) -> Result<String, LlmError> {
                         result.push_str(&hex);
                     }
                 }
-                Some(o) => { result.push('\\'); result.push(o); }
+                Some(o) => {
+                    result.push('\\');
+                    result.push(o);
+                }
                 None => result.push('\\'),
             }
-        } else if c == '"' { break; }
-        else { result.push(c); }
+        } else if c == '"' {
+            break;
+        } else {
+            result.push(c);
+        }
     }
     Ok(result)
 }
@@ -236,7 +287,10 @@ impl MistralRsBackend {
         #[cfg(feature = "mistralrs")]
         {
             let model = load_mistral_model(&model_path)?;
-            return Ok(MistralRsBackend { model_path, model: Some(model) });
+            return Ok(MistralRsBackend {
+                model_path,
+                model: Some(model),
+            });
         }
         #[cfg(not(feature = "mistralrs"))]
         {
@@ -244,7 +298,9 @@ impl MistralRsBackend {
         }
     }
 
-    pub fn with_default_model() -> Result<Self, LlmError> { Self::new(None, None) }
+    pub fn with_default_model() -> Result<Self, LlmError> {
+        Self::new(None, None)
+    }
 }
 
 #[cfg(feature = "mistralrs")]
@@ -252,18 +308,24 @@ fn load_mistral_model(path: &PathBuf) -> Result<mistralrs::Model, LlmError> {
     let dir = path.parent().unwrap().to_str().unwrap();
     let file = path.file_name().unwrap().to_str().unwrap();
     let builder = mistralrs::GgufModelBuilder::new(dir, vec![file]);
-    let rt = tokio::runtime::Runtime::new()
-        .map_err(|e| LlmError::Model(e.to_string()))?;
+    let rt = tokio::runtime::Runtime::new().map_err(|e| LlmError::Model(e.to_string()))?;
     rt.block_on(async { builder.build().await })
         .map_err(|e| LlmError::Model(format!("build: {e}")))
 }
 
 impl Llm for MistralRsBackend {
-    fn complete_chat(&mut self, messages: &[ChatMessage], _max_tokens: usize) -> Result<String, LlmError> {
+    fn complete_chat(
+        &mut self,
+        messages: &[ChatMessage],
+        _max_tokens: usize,
+    ) -> Result<String, LlmError> {
         #[cfg(feature = "mistralrs")]
         {
             use mistralrs::{TextMessageRole, TextMessages};
-            let model = self.model.as_mut().ok_or_else(|| LlmError::Model("model not loaded".into()))?;
+            let model = self
+                .model
+                .as_mut()
+                .ok_or_else(|| LlmError::Model("model not loaded".into()))?;
 
             let mut chat = TextMessages::new();
             for msg in messages {
@@ -277,10 +339,13 @@ impl Llm for MistralRsBackend {
             }
 
             let rt = tokio::runtime::Runtime::new().map_err(|e| LlmError::Model(e.to_string()))?;
-            let response = rt.block_on(model.send_chat_request(chat))
+            let response = rt
+                .block_on(model.send_chat_request(chat))
                 .map_err(|e| LlmError::Model(format!("inference: {e}")))?;
 
-            Ok(response.choices.into_iter()
+            Ok(response
+                .choices
+                .into_iter()
                 .filter_map(|c| c.message.content)
                 .collect::<Vec<_>>()
                 .join("\n"))
@@ -290,7 +355,9 @@ impl Llm for MistralRsBackend {
             let _ = (messages, _max_tokens);
             Err(LlmError::Model(
                 "Local inference requires the `mistralrs` feature.\n\
-                 cargo build --features llm,mistralrs".into()))
+                 cargo build --features llm,mistralrs"
+                    .into(),
+            ))
         }
     }
 }
@@ -302,7 +369,9 @@ impl Llm for MistralRsBackend {
 fn ensure_model_downloaded(repo: &str, filename: &str) -> Result<PathBuf, LlmError> {
     let cache_dir = model_cache_dir();
     let model_path = cache_dir.join(filename);
-    if model_path.exists() { return Ok(model_path); }
+    if model_path.exists() {
+        return Ok(model_path);
+    }
 
     eprintln!("Downloading {filename} from {repo}... (~5GB, one-time)");
 
@@ -313,7 +382,8 @@ fn ensure_model_downloaded(repo: &str, filename: &str) -> Result<PathBuf, LlmErr
     let api = if token.is_empty() {
         return Err(LlmError::Model(
             "HuggingFace requires authentication. Set HF_TOKEN or HUGGINGFACE_TOKEN.\n\
-             Get a token at: https://huggingface.co/settings/tokens".into(),
+             Get a token at: https://huggingface.co/settings/tokens"
+                .into(),
         ));
     } else {
         hf_hub::api::sync::ApiBuilder::new()
@@ -323,7 +393,9 @@ fn ensure_model_downloaded(repo: &str, filename: &str) -> Result<PathBuf, LlmErr
     };
 
     let repo = api.model(repo.to_string());
-    let path = repo.get(filename).map_err(|e| LlmError::Model(format!("download: {e}")))?;
+    let path = repo
+        .get(filename)
+        .map_err(|e| LlmError::Model(format!("download: {e}")))?;
     eprintln!("Model downloaded to {}", path.display());
     Ok(path)
 }
@@ -335,12 +407,20 @@ fn model_cache_dir() -> PathBuf {
 
 #[cfg(not(target_os = "windows"))]
 fn dirs_cache() -> Option<PathBuf> {
-    env::var("XDG_CACHE_HOME").ok().map(PathBuf::from)
-        .or_else(|| env::var("HOME").ok().map(|h| PathBuf::from(h).join(".cache")))
+    env::var("XDG_CACHE_HOME")
+        .ok()
+        .map(PathBuf::from)
+        .or_else(|| {
+            env::var("HOME")
+                .ok()
+                .map(|h| PathBuf::from(h).join(".cache"))
+        })
 }
 
 #[cfg(target_os = "windows")]
-fn dirs_cache() -> Option<PathBuf> { env::var("LOCALAPPDATA").ok().map(PathBuf::from) }
+fn dirs_cache() -> Option<PathBuf> {
+    env::var("LOCALAPPDATA").ok().map(PathBuf::from)
+}
 
 // ---------------------------------------------------------------------------
 // Backend detection
@@ -372,22 +452,33 @@ pub fn detect_backend(pref: BackendPreference) -> Result<Box<dyn Llm>, LlmError>
 /// Backend using a local Ollama instance via its OpenAI-compatible API.
 ///
 /// Model defaults to `hermes3:8b`, overridable via `OLLAMA_MODEL` env var.
-pub struct OllamaBackend { url: String, model: String }
+pub struct OllamaBackend {
+    url: String,
+    model: String,
+}
 
 impl OllamaBackend {
     pub fn new() -> Result<Self, LlmError> {
         let url = env::var("OLLAMA_HOST").unwrap_or_else(|_| "http://localhost:11434".into());
         let model = env::var("OLLAMA_MODEL").unwrap_or_else(|_| "hermes3:8b".into());
-        ureq::get(&url).call().map_err(|e| LlmError::Model(format!("Ollama not reachable at {url}: {e}")))?;
+        ureq::get(&url)
+            .call()
+            .map_err(|e| LlmError::Model(format!("Ollama not reachable at {url}: {e}")))?;
         Ok(OllamaBackend { url, model })
     }
 }
 
 impl Llm for OllamaBackend {
-    fn complete_chat(&mut self, messages: &[ChatMessage], _max_tokens: usize) -> Result<String, LlmError> {
+    fn complete_chat(
+        &mut self,
+        messages: &[ChatMessage],
+        _max_tokens: usize,
+    ) -> Result<String, LlmError> {
         let mut body = format!(r#"{{"model":"{}","messages":["#, self.model);
         for (i, msg) in messages.iter().enumerate() {
-            if i > 0 { body.push(','); }
+            if i > 0 {
+                body.push(',');
+            }
             let c = json_escape(&msg.content);
             write!(body, r#"{{"role":"{}","content":"{}"}}"#, msg.role, c).unwrap();
         }
@@ -397,7 +488,11 @@ impl Llm for OllamaBackend {
             .set("Content-Type", "application/json")
             .send_string(&body)
             .map_err(|e: ureq::Error| LlmError::Http(e.to_string()))?;
-        text_from_json(&resp.into_string().map_err(|e| LlmError::Http(e.to_string()))?)
+        text_from_json(
+            &resp
+                .into_string()
+                .map_err(|e| LlmError::Http(e.to_string()))?,
+        )
     }
 }
 

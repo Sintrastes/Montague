@@ -8,32 +8,32 @@ use std::fmt;
 #[derive(Clone, Debug, PartialEq)]
 pub enum Token<'src> {
     // Keywords
-    Type,       // `Type` (legacy `Type = A | B.`)
-    TypeKw,     // `type` (new `type A.`)
-    SortKw,     // `sort`
-    Morph,      // `MORPH`
-    Strips,     // `STRIPS`
-    Namespace,  // `namespace`
-    Extend,     // `extend`
-    Import,     // `import`
-    As,         // `as`
+    Type,      // `Type` (legacy `Type = A | B.`)
+    TypeKw,    // `type` (new `type A.`)
+    SortKw,    // `sort`
+    Morph,     // `MORPH`
+    Strips,    // `STRIPS`
+    Namespace, // `namespace`
+    Extend,    // `extend`
+    Import,    // `import`
+    As,        // `as`
 
     // Operators / punctuation
-    ColonEq,    // `=` (used in `Type = A | B.`)
-    Pipe,       // `|`
-    End,        // `.` (statement terminator)
-    Subtype,    // `:<`
-    Colon,      // `:`
-    Slash,      // `/`
-    Backslash,  // `\`
-    RArrow,     // `->`
-    Arrow,      // `-->`
-    LParen,     // `(`
-    RParen,     // `)`
-    LBracket,   // `[`
-    RBracket,   // `]`
-    Comma,      // `,`
-    Dot,        // `.` (namespace separator, when followed by ident-start)
+    ColonEq,   // `=` (used in `Type = A | B.`)
+    Pipe,      // `|`
+    End,       // `.` (statement terminator)
+    Subtype,   // `:<`
+    Colon,     // `:`
+    Slash,     // `/`
+    Backslash, // `\`
+    RArrow,    // `->`
+    Arrow,     // `-->`
+    LParen,    // `(`
+    RParen,    // `)`
+    LBracket,  // `[`
+    RBracket,  // `]`
+    Comma,     // `,`
+    Dot,       // `.` (namespace separator, when followed by ident-start)
 
     // Data tokens
     Ident(&'src str),

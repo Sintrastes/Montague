@@ -56,10 +56,7 @@ pub enum UnifyError {
         position: TypePath,
     },
     /// Occurs-check failure when binding a variable.
-    OccursCheck {
-        var: SortVarId,
-        position: TypePath,
-    },
+    OccursCheck { var: SortVarId, position: TypePath },
 }
 
 impl UnifyError {
@@ -81,19 +78,45 @@ impl UnifyError {
 impl fmt::Display for UnifyError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::SortMismatch { expected_sort, actual_sort, .. } => {
-                write!(f, "sort mismatch: expected sort `{expected_sort}`, got sort `{actual_sort}`")
+            Self::SortMismatch {
+                expected_sort,
+                actual_sort,
+                ..
+            } => {
+                write!(
+                    f,
+                    "sort mismatch: expected sort `{expected_sort}`, got sort `{actual_sort}`"
+                )
             }
-            Self::SortMemberLeq { sort, expected, actual, .. } => {
-                write!(f, "expected `{expected}`, got `{actual}` (both in sort `{sort}`)")
+            Self::SortMemberLeq {
+                sort,
+                expected,
+                actual,
+                ..
+            } => {
+                write!(
+                    f,
+                    "expected `{expected}`, got `{actual}` (both in sort `{sort}`)"
+                )
             }
-            Self::NameMismatch { expected, actual, .. } => {
+            Self::NameMismatch {
+                expected, actual, ..
+            } => {
                 write!(f, "expected type `{expected}`, got `{actual}`")
             }
-            Self::ArityMismatch { name, expected, actual, .. } => {
+            Self::ArityMismatch {
+                name,
+                expected,
+                actual,
+                ..
+            } => {
                 write!(f, "`{name}` expects {expected} parameter(s), got {actual}")
             }
-            Self::StructureMismatch { expected_shape, actual_shape, .. } => {
+            Self::StructureMismatch {
+                expected_shape,
+                actual_shape,
+                ..
+            } => {
                 write!(f, "expected {expected_shape} but found {actual_shape}")
             }
             Self::OccursCheck { var, .. } => {
@@ -232,18 +255,22 @@ impl SortArg {
                     })
                 }
             }
-            (SortArg::Var(id), sup) => var_table
-                .bind(*id, sup.clone())
-                .map_err(|_| UnifyError::OccursCheck {
-                    var: *id,
-                    position: TypePath::default(),
-                }),
-            (sub, SortArg::Var(id)) => var_table
-                .bind(*id, sub.clone())
-                .map_err(|_| UnifyError::OccursCheck {
-                    var: *id,
-                    position: TypePath::default(),
-                }),
+            (SortArg::Var(id), sup) => {
+                var_table
+                    .bind(*id, sup.clone())
+                    .map_err(|_| UnifyError::OccursCheck {
+                        var: *id,
+                        position: TypePath::default(),
+                    })
+            }
+            (sub, SortArg::Var(id)) => {
+                var_table
+                    .bind(*id, sub.clone())
+                    .map_err(|_| UnifyError::OccursCheck {
+                        var: *id,
+                        position: TypePath::default(),
+                    })
+            }
         }
     }
 
@@ -283,14 +310,7 @@ impl SortVarTable {
     pub fn resolve(&self, arg: &SortArg) -> SortArg {
         match arg {
             SortArg::Var(id) => match self.bindings.get(id) {
-                Some(bound) => {
-                    let resolved = self.resolve(bound);
-                    if resolved == *bound {
-                        resolved
-                    } else {
-                        resolved
-                    }
-                }
+                Some(bound) => self.resolve(bound),
                 None => arg.clone(),
             },
             _ => arg.clone(),
@@ -460,7 +480,7 @@ impl TypeCheck for AtomType {
         Some(true)
     }
 
-// (SortArg errors are captured via SortVarTable::last_error for diagnostics)
+    // (SortArg errors are captured via SortVarTable::last_error for diagnostics)
 
     fn substitute_atom(&self, var_table: &SortVarTable) -> Self {
         AtomType {
@@ -492,10 +512,7 @@ macro_rules! impl_type_check_trivial {
             ) -> Option<bool> {
                 None
             }
-            fn substitute_atom(
-                &self,
-                _var_table: &$crate::types::SortVarTable,
-            ) -> Self {
+            fn substitute_atom(&self, _var_table: &$crate::types::SortVarTable) -> Self {
                 self.clone()
             }
         }
@@ -510,10 +527,7 @@ macro_rules! impl_type_check_trivial {
             ) -> Option<bool> {
                 None
             }
-            fn substitute_atom(
-                &self,
-                _var_table: &$crate::types::SortVarTable,
-            ) -> Self {
+            fn substitute_atom(&self, _var_table: &$crate::types::SortVarTable) -> Self {
                 self.clone()
             }
             fn basic_display(&self) -> String {
@@ -606,8 +620,12 @@ impl<T: Hash + Eq + Clone> LambekType<T> {
         use LambekType::*;
         match self {
             Basic(_) => 0,
-            LeftArrow(a, b) | RightArrow(a, b) | Extract(a, b) | Scoped(a, b)
-            | Conj(a, b) | Disj(a, b) => 1 + a.depth().max(b.depth()),
+            LeftArrow(a, b)
+            | RightArrow(a, b)
+            | Extract(a, b)
+            | Scoped(a, b)
+            | Conj(a, b)
+            | Disj(a, b) => 1 + a.depth().max(b.depth()),
             Custom { args, .. } => 1 + args.iter().map(|a| a.depth()).max().unwrap_or(0),
         }
     }
@@ -816,11 +834,7 @@ impl LambekType<AtomType> {
         self.freshen_with(&mut mapping, next_id)
     }
 
-    fn freshen_with(
-        &self,
-        mapping: &mut HashMap<SortVarId, SortVarId>,
-        next_id: &mut u32,
-    ) -> Self {
+    fn freshen_with(&self, mapping: &mut HashMap<SortVarId, SortVarId>, next_id: &mut u32) -> Self {
         use LambekType::*;
         match self {
             Basic(a) => Basic(AtomType {

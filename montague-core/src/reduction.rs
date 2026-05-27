@@ -293,10 +293,7 @@ where
     }
 
     /// Append a chart post-pass. Returns `self` for chaining.
-    pub fn with_postpass(
-        mut self,
-        pp: impl ChartPostpass<A, T> + 'static,
-    ) -> Self {
+    pub fn with_postpass(mut self, pp: impl ChartPostpass<A, T> + 'static) -> Self {
         self.postpasses.push(Box::new(pp));
         self
     }
@@ -367,7 +364,10 @@ where
             return vec![];
         };
         let mut var_table = SortVarTable::new();
-        if let Err(e) = left.ty.unify_with(x_prime, ctx.lattice, ctx.sort_registry, &mut var_table) {
+        if let Err(e) = left
+            .ty
+            .unify_with(x_prime, ctx.lattice, ctx.sort_registry, &mut var_table)
+        {
             ctx.failures.borrow_mut().push(FailureTrace {
                 error: e,
                 rule_name: "BackwardApp",
@@ -419,7 +419,10 @@ where
             return vec![];
         };
         let mut var_table = SortVarTable::new();
-        if let Err(e) = right.ty.unify_with(y, ctx.lattice, ctx.sort_registry, &mut var_table) {
+        if let Err(e) = right
+            .ty
+            .unify_with(y, ctx.lattice, ctx.sort_registry, &mut var_table)
+        {
             ctx.failures.borrow_mut().push(FailureTrace {
                 error: e,
                 rule_name: "RightAbsorption",
@@ -474,8 +477,12 @@ where
         left: &AnnotatedTerm<A, T>,
         right: &AnnotatedTerm<A, T>,
     ) -> Vec<AnnotatedTerm<A, T>> {
-        let LambekType::LeftArrow(x, y) = &left.ty else { return vec![] };
-        let LambekType::LeftArrow(y_prime, z) = &right.ty else { return vec![] };
+        let LambekType::LeftArrow(x, y) = &left.ty else {
+            return vec![];
+        };
+        let LambekType::LeftArrow(y_prime, z) = &right.ty else {
+            return vec![];
+        };
         // The output of the right function must fit the input of the left.
         let mut var_table = SortVarTable::new();
         if let Err(e) = y_prime.unify_with(y, ctx.lattice, ctx.sort_registry, &mut var_table) {
@@ -533,9 +540,13 @@ where
         right: &AnnotatedTerm<A, T>,
     ) -> Vec<AnnotatedTerm<A, T>> {
         // left: Y\Z = RightArrow(Z, Y) — consumes Z, produces Y
-        let LambekType::RightArrow(z, y) = &left.ty else { return vec![] };
+        let LambekType::RightArrow(z, y) = &left.ty else {
+            return vec![];
+        };
         // right: X\Y' = RightArrow(Y', X) — consumes Y', produces X
-        let LambekType::RightArrow(y_prime, x) = &right.ty else { return vec![] };
+        let LambekType::RightArrow(y_prime, x) = &right.ty else {
+            return vec![];
+        };
         // The output of the left function must fit the input of the right.
         let mut var_table = SortVarTable::new();
         if let Err(e) = y.unify_with(y_prime, ctx.lattice, ctx.sort_registry, &mut var_table) {

@@ -32,17 +32,14 @@ fn render_parse_error(e: &MontParseError, path: &str, src: &str) {
                 format!("found `{found}`, expected {expected}")
             };
 
-            let mut report = Report::build(
-                ReportKind::Error,
-                (path, span.start..span.end),
-            )
-            .with_config(Config::new().with_index_type(IndexType::Byte))
-            .with_message(primary_msg.clone())
-            .with_label(
-                Label::new((path, span.start..span.end))
-                    .with_message(primary_msg)
-                    .with_color(Color::Red),
-            );
+            let mut report = Report::build(ReportKind::Error, (path, span.start..span.end))
+                .with_config(Config::new().with_index_type(IndexType::Byte))
+                .with_message(primary_msg.clone())
+                .with_label(
+                    Label::new((path, span.start..span.end))
+                        .with_message(primary_msg)
+                        .with_color(Color::Red),
+                );
 
             for (ctx, ctx_span) in contexts {
                 report = report.with_label(
@@ -52,10 +49,7 @@ fn render_parse_error(e: &MontParseError, path: &str, src: &str) {
                 );
             }
 
-            report
-                .finish()
-                .print((path, Source::from(src)))
-                .unwrap();
+            report.finish().print((path, Source::from(src))).unwrap();
         }
 
         MontParseError::ExpectedDeclaration { span } => {
@@ -106,7 +100,7 @@ fn render_parse_error(e: &MontParseError, path: &str, src: &str) {
                 .with_message(format!("invalid character `{found}`"))
                 .with_label(
                     Label::new((path, span.start..span.end))
-                        .with_message(format!("this character is not valid in a .mont file"))
+                        .with_message("this character is not valid in a .mont file")
                         .with_color(Color::Red),
                 )
                 .finish()
@@ -207,7 +201,8 @@ fn render_resolve_error(
         ResolveError::DuplicateEntity {
             entity,
             original_span,
-            span, ..
+            span,
+            ..
         } => {
             Report::build(ReportKind::Error, (path, span.start..span.end))
                 .with_config(Config::new().with_index_type(IndexType::Byte))
@@ -230,12 +225,9 @@ fn render_resolve_error(
 
         ResolveError::SubtypeCycle { chain, spans, .. } => {
             let primary = spans.first().copied().unwrap_or(Span::new(0, 0));
-            let mut report = Report::build(
-                ReportKind::Error,
-                (path, primary.start..primary.end),
-            )
-            .with_config(Config::new().with_index_type(IndexType::Byte))
-            .with_message(format!("subtype cycle detected: {chain}"));
+            let mut report = Report::build(ReportKind::Error, (path, primary.start..primary.end))
+                .with_config(Config::new().with_index_type(IndexType::Byte))
+                .with_message(format!("subtype cycle detected: {chain}"));
             for (i, s) in spans.iter().enumerate() {
                 report = report.with_label(
                     Label::new((path, s.start..s.end))
@@ -286,7 +278,8 @@ fn render_resolve_error(
         ResolveError::AmbiguousReference {
             local,
             candidates,
-            span, ..
+            span,
+            ..
         } => {
             let list = candidates
                 .iter()
@@ -331,8 +324,12 @@ pub fn extract_candidates(ast: &MontFile) -> (Vec<String>, Vec<String>) {
     for d in &ast.declarations {
         match &d.item {
             montague::mont::ast::Declaration::TypeDecl(names) => types.extend(names.clone()),
-            montague::mont::ast::Declaration::SingleTypeDecl { name, .. } => types.push(name.clone()),
-            montague::mont::ast::Declaration::AtomDecl { entity, .. } => entities.push(entity.clone()),
+            montague::mont::ast::Declaration::SingleTypeDecl { name, .. } => {
+                types.push(name.clone())
+            }
+            montague::mont::ast::Declaration::AtomDecl { entity, .. } => {
+                entities.push(entity.clone())
+            }
             _ => {}
         }
     }
@@ -350,7 +347,11 @@ fn did_you_mean(target: &str, candidates: &[String]) -> Option<String> {
         .iter()
         .filter_map(|c| {
             let d = strsim::levenshtein(target, c);
-            if d <= max_dist { Some((d, c.clone())) } else { None }
+            if d <= max_dist {
+                Some((d, c.clone()))
+            } else {
+                None
+            }
         })
         .min_by_key(|(d, _)| *d)
         .map(|(_, c)| c)
@@ -364,20 +365,14 @@ fn did_you_mean(target: &str, candidates: &[String]) -> Option<String> {
 ///
 /// Shows the sentence, highlights the span where unification failed, and
 /// describes the sort/type error.
-pub fn render_no_parse(
-    sentence: &str,
-    failures: &[FailureTrace],
-    path: &str,
-) {
+pub fn render_no_parse(sentence: &str, failures: &[FailureTrace], path: &str) {
     // Find the most useful failure: prefer SortMemberLeq over other kinds.
-    let best = failures
-        .iter()
-        .max_by_key(|t| match &t.error {
-            montague::core::types::UnifyError::SortMemberLeq { .. } => 3,
-            montague::core::types::UnifyError::SortMismatch { .. } => 2,
-            montague::core::types::UnifyError::ArityMismatch { .. } => 1,
-            _ => 0,
-        });
+    let best = failures.iter().max_by_key(|t| match &t.error {
+        montague::core::types::UnifyError::SortMemberLeq { .. } => 3,
+        montague::core::types::UnifyError::SortMismatch { .. } => 2,
+        montague::core::types::UnifyError::ArityMismatch { .. } => 1,
+        _ => 0,
+    });
 
     let Some(trace) = best else {
         eprintln!("  No parse found for: {sentence:?}");
@@ -410,13 +405,16 @@ pub fn render_no_parse(
     // Build the primary error message: what rule, what types, why it failed.
     let primary = format!(
         "{}: {} ⊀ {}",
-        trace.rule_name,
-        trace.left_ty,
-        trace.right_ty,
+        trace.rule_name, trace.left_ty, trace.right_ty,
     );
 
     let detail = match &trace.error {
-        montague::core::types::UnifyError::SortMemberLeq { sort, expected, actual, .. } => {
+        montague::core::types::UnifyError::SortMemberLeq {
+            sort,
+            expected,
+            actual,
+            ..
+        } => {
             format!(
                 "cannot combine `{} : {}` with `{} : {}`\n  required `{expected}` in sort `{sort}`, but got `{actual}` (`{actual}` ⊀ `{expected}`)",
                 left_words(&words, &trace.left_span),
@@ -425,7 +423,11 @@ pub fn render_no_parse(
                 trace.right_ty,
             )
         }
-        montague::core::types::UnifyError::SortMismatch { expected_sort, actual_sort, .. } => {
+        montague::core::types::UnifyError::SortMismatch {
+            expected_sort,
+            actual_sort,
+            ..
+        } => {
             format!(
                 "cannot combine `{} : {}` with `{} : {}`\n  sort mismatch: expected `{expected_sort}`, got `{actual_sort}`",
                 left_words(&words, &trace.left_span),
@@ -434,7 +436,11 @@ pub fn render_no_parse(
                 trace.right_ty,
             )
         }
-        montague::core::types::UnifyError::StructureMismatch { expected_shape, actual_shape, .. } => {
+        montague::core::types::UnifyError::StructureMismatch {
+            expected_shape,
+            actual_shape,
+            ..
+        } => {
             format!(
                 "cannot combine `{} : {}` with `{} : {}`\n  expected {expected_shape} but found {actual_shape}",
                 left_words(&words, &trace.left_span),
@@ -443,7 +449,9 @@ pub fn render_no_parse(
                 trace.right_ty,
             )
         }
-        montague::core::types::UnifyError::NameMismatch { expected, actual, .. } => {
+        montague::core::types::UnifyError::NameMismatch {
+            expected, actual, ..
+        } => {
             format!(
                 "cannot combine `{} : {}` with `{} : {}`\n  expected {expected}, found {actual}",
                 left_words(&words, &trace.left_span),
@@ -476,7 +484,7 @@ pub fn render_no_parse(
 }
 
 /// Extract the words covered by a span for display.
-fn left_words<'a>(words: &[&'a str], span: &(usize, usize)) -> String {
+fn left_words(words: &[&str], span: &(usize, usize)) -> String {
     let start = span.0.min(words.len());
     let end = span.1.min(words.len());
     if start < end && start < words.len() {
@@ -486,7 +494,7 @@ fn left_words<'a>(words: &[&'a str], span: &(usize, usize)) -> String {
     }
 }
 
-fn right_words<'a>(words: &[&'a str], span: &(usize, usize)) -> String {
+fn right_words(words: &[&str], span: &(usize, usize)) -> String {
     let start = span.0.min(words.len());
     let end = span.1.min(words.len());
     if start < end && start < words.len() {

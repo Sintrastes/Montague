@@ -294,7 +294,11 @@ where
     /// type.  Used when the goal type isn't known (e.g. Sentence vs Question).
     pub fn all_parses(&self) -> Vec<&Derivation<A, T>> {
         match self.cell_try(0, self.n) {
-            Some(c) => c.by_type.values().flat_map(|ids| ids.iter().map(|id| c.get(*id))).collect(),
+            Some(c) => c
+                .by_type
+                .values()
+                .flat_map(|ids| ids.iter().map(|id| c.get(*id)))
+                .collect(),
             None => vec![],
         }
     }
@@ -519,10 +523,7 @@ where
                         let already = target
                             .by_type
                             .get(&d.ty)
-                            .map(|ids| {
-                                ids.iter()
-                                    .any(|id| target.get(*id).term == d.term)
-                            })
+                            .map(|ids| ids.iter().any(|id| target.get(*id).term == d.term))
                             .unwrap_or(false);
                         if !already && d.ty.depth() <= MAX_DEPTH {
                             target.insert(Derivation {

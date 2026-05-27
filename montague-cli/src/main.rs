@@ -106,7 +106,12 @@ fn cmd_lower(args: &[String]) {
     }
 
     let reg = core::registry::Registry::empty();
-    let lex = match resolver::resolve_with_resolver(&ast, &reg, &resolver::FsFileResolver, &base_dir_of(file)) {
+    let lex = match resolver::resolve_with_resolver(
+        &ast,
+        &reg,
+        &resolver::FsFileResolver,
+        &base_dir_of(file),
+    ) {
         Ok(lex) => lex,
         Err(errs) => {
             let (tc, ec) = diag::extract_candidates(&ast);
@@ -122,7 +127,7 @@ fn cmd_lower(args: &[String]) {
         let segmenter = resolver::build_segmenter(&lex);
         let engine = ReductionEngine::standard();
         let core_sorts = lex.sorts.to_core();
-    let ctx = ReductionCtx::new(&lex.lattice).with_sort_registry(&core_sorts);
+        let ctx = ReductionCtx::new(&lex.lattice).with_sort_registry(&core_sorts);
         let parses = core::get_all_parses_with_morphology(&engine, &ctx, &sem, &segmenter, sent);
 
         if parses.is_empty() {
@@ -216,7 +221,12 @@ fn cmd_tree(args: &[String]) {
     }
 
     let reg = core::registry::Registry::empty();
-    let lex = match resolver::resolve_with_resolver(&ast, &reg, &resolver::FsFileResolver, &base_dir_of(file)) {
+    let lex = match resolver::resolve_with_resolver(
+        &ast,
+        &reg,
+        &resolver::FsFileResolver,
+        &base_dir_of(file),
+    ) {
         Ok(lex) => lex,
         Err(errs) => {
             let (tc, ec) = diag::extract_candidates(&ast);
@@ -333,7 +343,13 @@ fn cmd_ask(args: &[String]) {
         process::exit(1);
     }
     let reg = core::registry::Registry::empty();
-    let mut lex = match resolver::resolve_with_resolver(&ast, &reg, &resolver::FsFileResolver, &base_dir_of(&flags.file)) {
+    #[allow(unused_mut)]
+    let mut lex = match resolver::resolve_with_resolver(
+        &ast,
+        &reg,
+        &resolver::FsFileResolver,
+        &base_dir_of(&flags.file),
+    ) {
         Ok(lex) => lex,
         Err(errs) => {
             let (tc, ec) = diag::extract_candidates(&ast);
@@ -341,8 +357,10 @@ fn cmd_ask(args: &[String]) {
             process::exit(1);
         }
     };
+    #[allow(unused_mut)]
     let mut sem: Semantics<String, AtomType, core::AnnotatedTerm<String, AtomType>> =
         resolver::build_semantics(&lex);
+    #[allow(unused_mut)]
     let mut segmenter = resolver::build_segmenter(&lex);
     let engine = if flags.compose {
         ReductionEngine::with_composition()
@@ -350,6 +368,7 @@ fn cmd_ask(args: &[String]) {
         ReductionEngine::standard()
     };
     let core_sorts = lex.sorts.to_core();
+    #[allow(unused_mut)]
     let mut ctx = ReductionCtx::new(&lex.lattice).with_sort_registry(&core_sorts);
 
     // 2. Initialize Scryer Prolog with a session knowledge base.
@@ -388,7 +407,11 @@ fn cmd_ask(args: &[String]) {
                 }
             }
             let args_str = &body[open + 1..close];
-            let arity = if args_str.trim().is_empty() { 0 } else { args_str.matches(',').count() + 1 };
+            let arity = if args_str.trim().is_empty() {
+                0
+            } else {
+                args_str.matches(',').count() + 1
+            };
             format!("{name}/{arity}")
         } else {
             format!("{body}/0")
@@ -396,7 +419,7 @@ fn cmd_ask(args: &[String]) {
 
         // Declare predicate as dynamic the first time it appears.
         if dynamic_preds.insert(pred_sig.clone()) {
-            let _ = machine.run_query(&format!(":- dynamic({pred_sig})."));
+            let _ = machine.run_query(format!(":- dynamic({pred_sig})."));
         }
 
         // Assert the clause.
@@ -410,7 +433,10 @@ fn cmd_ask(args: &[String]) {
         match init_llm_backend(flags.backend.as_deref()) {
             Ok(backend) => {
                 if flags.debug {
-                    eprintln!("[debug] LLM backend initialized: {}", flags.backend.as_deref().unwrap_or("auto"));
+                    eprintln!(
+                        "[debug] LLM backend initialized: {}",
+                        flags.backend.as_deref().unwrap_or("auto")
+                    );
                 }
                 Some(backend)
             }
@@ -488,7 +514,8 @@ fn cmd_ask(args: &[String]) {
             let clean_input = sent.trim_end_matches('?').trim().to_string();
             let tokenized = tokenize_multiword(&clean_input, &lex.productions);
 
-            let mut parses = core::get_all_parses_with_morphology(&engine, &ctx, &sem, &segmenter, &tokenized);
+            let mut parses =
+                core::get_all_parses_with_morphology(&engine, &ctx, &sem, &segmenter, &tokenized);
             // Keep only Sentence / Question derivations — discard partial
             // parses like who_rel (N\N) that don't form complete utterances.
             parses.retain(|p| {
@@ -497,7 +524,10 @@ fn cmd_ask(args: &[String]) {
                     montague::core::LambekType::Basic(a) => &a.name,
                     _ => return false,
                 };
-                type_name == "Sentence" || type_name == "Question" || type_name == "S" || type_name == "Q"
+                type_name == "Sentence"
+                    || type_name == "Question"
+                    || type_name == "S"
+                    || type_name == "Q"
             });
 
             if parses.is_empty() {
@@ -528,7 +558,9 @@ fn cmd_ask(args: &[String]) {
                                     lex.atoms.push(montague::mont::ast::AtomEntry {
                                         entity: name.clone(),
                                         doc: None,
-                                        type_expr: montague::core::LambekType::Basic(montague::core::AtomType::new(ty)),
+                                        type_expr: montague::core::LambekType::Basic(
+                                            montague::core::AtomType::new(ty),
+                                        ),
                                         span: montague::mont::ast::Span::new(0, 0),
                                     });
                                 }
@@ -544,8 +576,15 @@ fn cmd_ask(args: &[String]) {
                                 sem = resolver::build_semantics(&lex);
                                 segmenter = resolver::build_segmenter(&lex);
                                 ctx = ReductionCtx::new(&lex.lattice);
-                                let retokenized = tokenize_multiword(&clean_input, &lex.productions);
-                                let retry_parses = core::get_all_parses_with_morphology(&engine, &ctx, &sem, &segmenter, &retokenized);
+                                let retokenized =
+                                    tokenize_multiword(&clean_input, &lex.productions);
+                                let retry_parses = core::get_all_parses_with_morphology(
+                                    &engine,
+                                    &ctx,
+                                    &sem,
+                                    &segmenter,
+                                    &retokenized,
+                                );
 
                                 if !retry_parses.is_empty() {
                                     eprintln!("  Re-parse succeeded with LLM suggestions.");
@@ -553,7 +592,8 @@ fn cmd_ask(args: &[String]) {
                                     if is_question {
                                         let query = lower_term_to_prolog(&at.term)
                                             .map(|clauses| {
-                                                clauses.iter()
+                                                clauses
+                                                    .iter()
                                                     .map(|s| s.trim_end_matches('.').to_string())
                                                     .collect::<Vec<_>>()
                                                     .join(", ")
@@ -567,7 +607,9 @@ fn cmd_ask(args: &[String]) {
                                             Ok(results) => {
                                                 if results.is_empty() {
                                                     eprintln!("  no.");
-                                                } else if results == vec![scryer_prolog::LeafAnswer::True] {
+                                                } else if results
+                                                    == vec![scryer_prolog::LeafAnswer::True]
+                                                {
                                                     eprintln!("  yes.");
                                                 } else {
                                                     for a in &results {
@@ -604,7 +646,11 @@ fn cmd_ask(args: &[String]) {
                                     } else {
                                         if let Some(clauses) = lower_term_to_prolog(&at.term) {
                                             for clause in &clauses {
-                                                assert_clause(&mut machine, clause, &mut dynamic_preds);
+                                                assert_clause(
+                                                    &mut machine,
+                                                    clause,
+                                                    &mut dynamic_preds,
+                                                );
                                                 eprintln!("  asserted: {clause}");
                                             }
                                         }
@@ -710,9 +756,7 @@ fn cmd_ask(args: &[String]) {
             #[cfg(feature = "llm")]
             if parses.len() > 1 && flags.llm_enabled {
                 if let Some(ref mut backend) = llm {
-                    if let Some(pick) =
-                        llm_pick_parse(backend, sent, &parses, flags.debug)
-                    {
+                    if let Some(pick) = llm_pick_parse(backend, sent, &parses, flags.debug) {
                         if pick > 0 && pick < parses.len() {
                             parses.swap(0, pick);
                         }
@@ -727,7 +771,8 @@ fn cmd_ask(args: &[String]) {
                 // Query
                 let query = lower_term_to_prolog(&at.term)
                     .map(|clauses| {
-                        clauses.iter()
+                        clauses
+                            .iter()
                             .map(|s| s.trim_end_matches('.').to_string())
                             .collect::<Vec<_>>()
                             .join(", ")
@@ -747,9 +792,7 @@ fn cmd_ask(args: &[String]) {
                             #[cfg(feature = "llm")]
                             if flags.llm_enabled {
                                 if let Some(ref mut backend) = llm {
-                                    suggest_knowledge_gap(
-                                        backend, &lex, &query_str, flags.debug,
-                                    );
+                                    suggest_knowledge_gap(backend, &lex, &query_str, flags.debug);
                                 }
                             }
                         } else if results == vec![scryer_prolog::LeafAnswer::True] {
@@ -764,14 +807,18 @@ fn cmd_ask(args: &[String]) {
                                             let parts: Vec<String> = bindings
                                                 .iter()
                                                 .map(|(k, v)| {
-    let val = match v {
-        scryer_prolog::Term::Atom(s) => s.clone(),
-        scryer_prolog::Term::Integer(n) => n.to_string(),
-        scryer_prolog::Term::Float(f) => f.to_string(),
-        other => format!("{other:?}"),
-    };
-    format!("{k} = {val}")
-})
+                                                    let val = match v {
+                                                        scryer_prolog::Term::Atom(s) => s.clone(),
+                                                        scryer_prolog::Term::Integer(n) => {
+                                                            n.to_string()
+                                                        }
+                                                        scryer_prolog::Term::Float(f) => {
+                                                            f.to_string()
+                                                        }
+                                                        other => format!("{other:?}"),
+                                                    };
+                                                    format!("{k} = {val}")
+                                                })
                                                 .collect();
                                             eprintln!("  {}", parts.join(", "));
                                         }
@@ -860,8 +907,8 @@ fn split_sentences(input: &str) -> Vec<String> {
         let ch = chars[i];
         current.push(ch);
 
-        if (ch == '.' || ch == '?' || ch == '!') &&
-            (i + 1 >= chars.len() || chars[i + 1] == ' ' || chars[i + 1] == '\n')
+        if (ch == '.' || ch == '?' || ch == '!')
+            && (i + 1 >= chars.len() || chars[i + 1] == ' ' || chars[i + 1] == '\n')
         {
             let trimmed = current.trim().to_string();
             if !trimmed.is_empty() {
@@ -943,7 +990,11 @@ fn init_llm_backend(backend_name: Option<&str>) -> Result<Box<dyn Llm>, String> 
         Some("anthropic") => BackendPreference::Anthropic,
         Some("mistralrs") => BackendPreference::MistralRs,
         Some("ollama") => BackendPreference::Ollama,
-        Some(other) => return Err(format!("unknown backend: {other}. Use anthropic, mistralrs, or ollama.")),
+        Some(other) => {
+            return Err(format!(
+                "unknown backend: {other}. Use anthropic, mistralrs, or ollama."
+            ))
+        }
         None => {
             // Auto-detect: Anthropic if token set, otherwise MistralRs (GGUF local)
             if env::var("ANTHROPIC_AUTH_TOKEN").is_ok() {
@@ -970,7 +1021,8 @@ fn debug_complete(
         eprintln!("\n[debug] --- LLM system prompt ---\n{system_prompt}");
         eprintln!("[debug] --- LLM user prompt ---\n{user_prompt}");
     }
-    let response = llm.complete(system_prompt, user_prompt, max_tokens)
+    let response = llm
+        .complete(system_prompt, user_prompt, max_tokens)
         .map_err(|e| format!("LLM error: {e}"))?;
     if debug {
         eprintln!("[debug] --- LLM response ---\n{response}");
@@ -1177,7 +1229,8 @@ fn try_llm_recover(
         .split_whitespace()
         .filter(|w| {
             let lower = w.to_lowercase();
-            let stripped = lower.trim_end_matches(|c: char| c == '.' || c == ',' || c == '!' || c == '?');
+            let stripped =
+                lower.trim_end_matches(|c: char| c == '.' || c == ',' || c == '!' || c == '?');
             !known_words.contains(stripped) && stripped.len() > 1
         })
         .map(|w| w.to_lowercase())
@@ -1479,7 +1532,9 @@ fn cmd_init(args: &[String]) {
     }
 
     if !llm_enabled {
-        eprintln!("montague: `init` requires --llm. Usage: montague init --llm [flags] <description>");
+        eprintln!(
+            "montague: `init` requires --llm. Usage: montague init --llm [flags] <description>"
+        );
         process::exit(1);
     }
 
@@ -1527,7 +1582,7 @@ fn cmd_init(args: &[String]) {
          \n\
          For questions, include: ask_op: Question / Sentence.\n\
          \n\
-         Respond ONLY with the .mont file content. No explanation."
+         Respond ONLY with the .mont file content. No explanation.",
     );
 
     let user = format!(

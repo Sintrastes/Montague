@@ -21,7 +21,7 @@ pub enum SpellingClass {
 
 impl SpellingClass {
     /// Map from STRIPS keyword to class.
-    pub fn from_str(s: &str) -> Option<Self> {
+    pub fn parse(s: &str) -> Option<Self> {
         match s {
             "EDeletion" | "e" => Some(SpellingClass::EDeletion),
             "ConsonantDoubling" | "CC" => Some(SpellingClass::ConsonantDoubling),
@@ -71,11 +71,7 @@ impl MorphSegmenter {
     ///
     /// `is_known` is a predicate that returns `true` if a candidate stem exists
     /// in the lexicon.
-    pub fn segment_word(
-        &self,
-        word: &str,
-        is_known: &dyn Fn(&str) -> bool,
-    ) -> Vec<Vec<String>> {
+    pub fn segment_word(&self, word: &str, is_known: &dyn Fn(&str) -> bool) -> Vec<Vec<String>> {
         let mut results = vec![vec![word.to_string()]];
 
         for morph in &self.morphemes {
@@ -113,11 +109,7 @@ impl MorphSegmenter {
 }
 
 /// Try to recover candidate stems from a word after stripping a suffix.
-fn recover_stems(
-    word: &str,
-    suffix: &str,
-    strips: &[SpellingClass],
-) -> Vec<String> {
+fn recover_stems(word: &str, suffix: &str, strips: &[SpellingClass]) -> Vec<String> {
     let base = match word.strip_suffix(suffix) {
         Some(b) => b.to_string(),
         None => return vec![],
@@ -163,19 +155,17 @@ fn recover_stems(
 /// Compute the cartesian product of a list of option-lists, flattening each
 /// combination into a single flat Vec.
 fn cartesian_product(lists: Vec<Vec<Vec<String>>>) -> Vec<Vec<String>> {
-    lists
-        .into_iter()
-        .fold(vec![vec![]], |acc, list| {
-            acc.into_iter()
-                .flat_map(|prefix| {
-                    list.iter().map(move |item| {
-                        let mut row = prefix.clone();
-                        row.extend(item.clone());
-                        row
-                    })
+    lists.into_iter().fold(vec![vec![]], |acc, list| {
+        acc.into_iter()
+            .flat_map(|prefix| {
+                list.iter().map(move |item| {
+                    let mut row = prefix.clone();
+                    row.extend(item.clone());
+                    row
                 })
-                .collect()
-        })
+            })
+            .collect()
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -285,7 +275,10 @@ mod tests {
         let known = known_set(&["Socrates"]);
         // "Socrates'" (possessive with trailing s) → "Socrates" + "+'s"
         let results = seg.segment_word("Socrates'", &known);
-        assert!(!results.iter().any(|r| r.len() == 2), "Socrates' ends with ' not 's, so no simple strip");
+        assert!(
+            !results.iter().any(|r| r.len() == 2),
+            "Socrates' ends with ' not 's, so no simple strip"
+        );
         // Actually "Socrates'" — the word ends with "'", and "+'s" suffix is "'s"
         // So word "Socrates'" doesn't end with suffix "'s". Let me fix the test.
         let results2 = seg.segment_word("Socrates's", &known);
@@ -329,10 +322,7 @@ mod tests {
         let known = known_set(&["run", "happy"]);
         // "runs" → ["runs"] or ["run", "+s"]
         // "happily" → ["happily"] or ["happy", "+ly"]
-        let results = seg.segment_sentence(
-            &["runs".into(), "happily".into()],
-            &known,
-        );
+        let results = seg.segment_sentence(&["runs".into(), "happily".into()], &known);
         // 2×2 = 4 candidates
         assert_eq!(results.len(), 4);
         // One should be ["run", "+s", "happy", "+ly"]

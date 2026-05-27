@@ -49,7 +49,11 @@ pub fn lexer<'src>(
 
     // ── `.` disambiguation: Dot vs End ───────────────────────────────────
     let dot_sep = just('.')
-        .then(any().filter(|c: &char| c.is_alphabetic() || *c == '_').rewind())
+        .then(
+            any()
+                .filter(|c: &char| c.is_alphabetic() || *c == '_')
+                .rewind(),
+        )
         .to(Token::Dot);
     let end_terminator = just('.').to(Token::End);
 
@@ -189,7 +193,11 @@ mod tests {
         let tokens = lex_ok("( NP ) [ a , b ]");
         // Tokens: ( NP ) [ a , b ]
         assert!(matches!(tokens[0].0, Token::LParen));
-        assert!(matches!(tokens[3].0, Token::LBracket), "tokens[3] = {:?}", tokens[3]);
+        assert!(
+            matches!(tokens[3].0, Token::LBracket),
+            "tokens[3] = {:?}",
+            tokens[3]
+        );
         assert!(matches!(tokens[5].0, Token::Comma));
         assert!(matches!(tokens[7].0, Token::RBracket));
     }
@@ -197,8 +205,14 @@ mod tests {
     #[test]
     fn dot_vs_end() {
         let tokens = lex_ok("namespace foo.bar.");
-        let dot_count = tokens.iter().filter(|(t, _)| matches!(t, Token::Dot)).count();
-        let end_count = tokens.iter().filter(|(t, _)| matches!(t, Token::End)).count();
+        let dot_count = tokens
+            .iter()
+            .filter(|(t, _)| matches!(t, Token::Dot))
+            .count();
+        let end_count = tokens
+            .iter()
+            .filter(|(t, _)| matches!(t, Token::End))
+            .count();
         assert_eq!(dot_count, 1, "expected one Dot (between foo and bar)");
         assert_eq!(end_count, 1, "expected one End (trailing)");
     }
@@ -212,7 +226,11 @@ mod tests {
     #[test]
     fn arrow_not_comment() {
         let tokens = lex_ok("kot --> cat.");
-        assert!(matches!(tokens[1].0, Token::Arrow), "expected Arrow, got {:?}", tokens[1].0);
+        assert!(
+            matches!(tokens[1].0, Token::Arrow),
+            "expected Arrow, got {:?}",
+            tokens[1].0
+        );
     }
 
     #[test]
@@ -236,7 +254,11 @@ mod tests {
     #[test]
     fn plus_ident() {
         let tokens = lex_ok("+s +ing +'s");
-        assert!(matches!(tokens[0].0, Token::PlusIdent("+s")), "got {:?}", tokens[0].0);
+        assert!(
+            matches!(tokens[0].0, Token::PlusIdent("+s")),
+            "got {:?}",
+            tokens[0].0
+        );
         assert!(matches!(tokens[1].0, Token::PlusIdent("+ing")));
         assert!(matches!(tokens[2].0, Token::PlusIdent("+'s")));
     }
@@ -266,10 +288,22 @@ mod tests {
         let tokens = lex_ok("MORPH +s : NP \\ S STRIPS e.");
         // Tokens: MORPH +s : NP \ S STRIPS e .
         assert!(matches!(tokens[0].0, Token::Morph));
-        assert!(matches!(tokens[1].0, Token::PlusIdent("+s")), "got {:?}", tokens[1].0);
+        assert!(
+            matches!(tokens[1].0, Token::PlusIdent("+s")),
+            "got {:?}",
+            tokens[1].0
+        );
         assert!(matches!(tokens[2].0, Token::Colon));
-        assert!(matches!(tokens[4].0, Token::Backslash), "tokens[4] = {:?}", tokens[4]);
-        assert!(matches!(tokens[6].0, Token::Strips), "tokens[6] = {:?}", tokens[6]);
+        assert!(
+            matches!(tokens[4].0, Token::Backslash),
+            "tokens[4] = {:?}",
+            tokens[4]
+        );
+        assert!(
+            matches!(tokens[6].0, Token::Strips),
+            "tokens[6] = {:?}",
+            tokens[6]
+        );
         assert!(matches!(tokens[8].0, Token::End));
     }
 
@@ -282,6 +316,9 @@ mod tests {
     #[test]
     fn lex_import_stmt() {
         let tokens = lex_ok("import foo.bar as baz.");
-        assert_eq!(token_names(&tokens), vec!["import", "foo", ".", "bar", "as", "baz", "."]);
+        assert_eq!(
+            token_names(&tokens),
+            vec!["import", "foo", ".", "bar", "as", "baz", "."]
+        );
     }
 }

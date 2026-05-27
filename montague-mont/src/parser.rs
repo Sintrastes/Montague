@@ -4,8 +4,8 @@
 //! are in `lex.rs` and `parse.rs`; this module provides the `parse()` entry
 //! point and bridge functions for error conversion.
 
-use chumsky::Parser;
 use chumsky::input::Input;
+use chumsky::Parser;
 
 use crate::ast::*;
 use crate::error::MontParseError;
@@ -39,14 +39,11 @@ pub fn parse(src: &str) -> (MontFile, Vec<MontParseError>) {
         .collect();
     let eoi_span = (src.len()..src.len()).into();
     let token_input = spanned_tokens[..].split_spanned(eoi_span);
-    let (ast, parse_errs) =
-        crate::parse::parser().parse(token_input).into_output_errors();
+    let (ast, parse_errs) = crate::parse::parser()
+        .parse(token_input)
+        .into_output_errors();
 
-    errors.extend(
-        parse_errs
-            .into_iter()
-            .map(|e| convert_parse_error(&e)),
-    );
+    errors.extend(parse_errs.into_iter().map(|e| convert_parse_error(&e)));
 
     (ast.unwrap_or_else(MontFile::empty), errors)
 }
@@ -54,12 +51,7 @@ pub fn parse(src: &str) -> (MontFile, Vec<MontParseError>) {
 fn convert_lex_error(e: &chumsky::error::Rich<'_, char>) -> MontParseError {
     let contexts: Vec<(String, Span)> = e
         .contexts()
-        .map(|(pat, s)| {
-            (
-                format!("{pat}"),
-                Span::new(s.start, s.end),
-            )
-        })
+        .map(|(pat, s)| (format!("{pat}"), Span::new(s.start, s.end)))
         .collect();
     MontParseError::UnexpectedToken {
         expected: format!("{}", e.reason()),
@@ -72,17 +64,10 @@ fn convert_lex_error(e: &chumsky::error::Rich<'_, char>) -> MontParseError {
     }
 }
 
-fn convert_parse_error(
-    e: &chumsky::error::Rich<'_, crate::token::Token<'_>>,
-) -> MontParseError {
+fn convert_parse_error(e: &chumsky::error::Rich<'_, crate::token::Token<'_>>) -> MontParseError {
     let contexts: Vec<(String, Span)> = e
         .contexts()
-        .map(|(pat, s)| {
-            (
-                format!("{pat}"),
-                Span::new(s.start, s.end),
-            )
-        })
+        .map(|(pat, s)| (format!("{pat}"), Span::new(s.start, s.end)))
         .collect();
     MontParseError::UnexpectedToken {
         expected: format!("{}", e.reason()),
@@ -225,7 +210,9 @@ mod tests {
     fn parse_morph_decl_basic() {
         let f = check("MORPH +s : (NP \\ S) \\ (NP \\ S).");
         match &f.declarations[0].item {
-            Declaration::MorphemeDecl { surface, strips, .. } => {
+            Declaration::MorphemeDecl {
+                surface, strips, ..
+            } => {
                 assert_eq!(surface, "+s");
                 assert!(strips.is_empty());
             }
@@ -237,7 +224,9 @@ mod tests {
     fn parse_morph_decl_with_strips() {
         let f = check("MORPH +ed : (NP \\ S) \\ (NP \\ S) STRIPS e, CC.");
         match &f.declarations[0].item {
-            Declaration::MorphemeDecl { surface, strips, .. } => {
+            Declaration::MorphemeDecl {
+                surface, strips, ..
+            } => {
                 assert_eq!(surface, "+ed");
                 assert_eq!(strips.len(), 2);
                 assert_eq!(strips[0], SpellingClass::EDeletion);
@@ -263,7 +252,9 @@ mod tests {
     fn parse_morph_decl_possessive() {
         let f = check("MORPH +'s : (NP / N) \\ NP STRIPS poss.");
         match &f.declarations[0].item {
-            Declaration::MorphemeDecl { surface, strips, .. } => {
+            Declaration::MorphemeDecl {
+                surface, strips, ..
+            } => {
                 assert_eq!(surface, "+'s");
                 assert_eq!(strips.len(), 1);
                 assert_eq!(strips[0], SpellingClass::Poss);
@@ -322,7 +313,14 @@ mod tests {
         match &f.declarations[0].item {
             Declaration::SortMemberDecl { sort, members } => {
                 assert_eq!(sort, "entity");
-                assert_eq!(members, &vec!["Person".to_string(), "Animate".to_string(), "Inanimate".to_string()]);
+                assert_eq!(
+                    members,
+                    &vec![
+                        "Person".to_string(),
+                        "Animate".to_string(),
+                        "Inanimate".to_string()
+                    ]
+                );
             }
             _ => panic!("expected SortMemberDecl with multiple members"),
         }
@@ -334,9 +332,18 @@ mod tests {
         let f = check(src);
         assert_eq!(f.declarations.len(), 4);
         assert!(matches!(f.declarations[0].item, Declaration::SortDecl(_)));
-        assert!(matches!(f.declarations[1].item, Declaration::SortMemberDecl { .. }));
-        assert!(matches!(f.declarations[2].item, Declaration::SortMemberDecl { .. }));
-        assert!(matches!(f.declarations[3].item, Declaration::SortMemberDecl { .. }));
+        assert!(matches!(
+            f.declarations[1].item,
+            Declaration::SortMemberDecl { .. }
+        ));
+        assert!(matches!(
+            f.declarations[2].item,
+            Declaration::SortMemberDecl { .. }
+        ));
+        assert!(matches!(
+            f.declarations[3].item,
+            Declaration::SortMemberDecl { .. }
+        ));
     }
 
     #[test]
@@ -362,27 +369,25 @@ mod tests {
     fn parse_param_app_type_with_var() {
         let f = check("the: NP[a] / N[a].");
         match &f.declarations[0].item {
-            Declaration::AtomDecl { ty, .. } => {
-                match &ty.item {
-                    TypeExpr::LeftArrow(a, b) => {
-                        match &a.item {
-                            TypeExpr::ParamApp { name, args } => {
-                                assert_eq!(name, "NP");
-                                assert!(matches!(args[0].item, TypeArg::Var(ref v) if v == "a"));
-                            }
-                            _ => panic!("expected ParamApp in left, got {:?}", a.item),
+            Declaration::AtomDecl { ty, .. } => match &ty.item {
+                TypeExpr::LeftArrow(a, b) => {
+                    match &a.item {
+                        TypeExpr::ParamApp { name, args } => {
+                            assert_eq!(name, "NP");
+                            assert!(matches!(args[0].item, TypeArg::Var(ref v) if v == "a"));
                         }
-                        match &b.item {
-                            TypeExpr::ParamApp { name, args } => {
-                                assert_eq!(name, "N");
-                                assert!(matches!(args[0].item, TypeArg::Var(ref v) if v == "a"));
-                            }
-                            _ => panic!("expected ParamApp in right, got {:?}", b.item),
-                        }
+                        _ => panic!("expected ParamApp in left, got {:?}", a.item),
                     }
-                    _ => panic!("expected LeftArrow, got {:?}", ty.item),
+                    match &b.item {
+                        TypeExpr::ParamApp { name, args } => {
+                            assert_eq!(name, "N");
+                            assert!(matches!(args[0].item, TypeArg::Var(ref v) if v == "a"));
+                        }
+                        _ => panic!("expected ParamApp in right, got {:?}", b.item),
+                    }
                 }
-            }
+                _ => panic!("expected LeftArrow, got {:?}", ty.item),
+            },
             _ => panic!("expected AtomDecl"),
         }
     }
@@ -433,6 +438,9 @@ mod tests {
         let f = check(src);
         assert_eq!(f.declarations.len(), 2);
         assert!(matches!(f.declarations[0].item, Declaration::TypeDecl(_)));
-        assert!(matches!(f.declarations[1].item, Declaration::SingleTypeDecl { .. }));
+        assert!(matches!(
+            f.declarations[1].item,
+            Declaration::SingleTypeDecl { .. }
+        ));
     }
 }

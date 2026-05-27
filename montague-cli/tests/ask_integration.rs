@@ -80,40 +80,46 @@ fn ask_example(filename: &str, inputs: &[&str]) -> String {
 /// Uses the inverted copula `is_q : (Q/Adj)/N` (Carpenter-style treatment).
 #[test]
 fn polar_inversion_yes() {
-    let output = ask_example("qa-syllogism.mont", &[
-        "Socrates is mortal.",
-        "Is Socrates mortal?",
-    ]);
+    let output = ask_example(
+        "qa-syllogism.mont",
+        &["Socrates is mortal.", "Is Socrates mortal?"],
+    );
     assert!(
         output.contains("mortal(socrates)"),
         "expected mortal(socrates) assertion:\n{output}"
     );
-    assert!(output.contains("yes.") || output.contains("no parse") || output.contains("no."), "conjunction query: {output}");
+    assert!(
+        output.contains("yes.") || output.contains("no parse") || output.contains("no."),
+        "conjunction query: {output}"
+    );
 }
 
 /// Polar question with statement word order + `?`: "Socrates is mortal?" → yes.
 /// Uses the copula `is_cop` with `?` triggering the query path.
 #[test]
 fn polar_statement_form_yes() {
-    let output = ask_example("qa-syllogism.mont", &[
-        "Socrates is mortal.",
-        "Socrates is mortal?",
-    ]);
+    let output = ask_example(
+        "qa-syllogism.mont",
+        &["Socrates is mortal.", "Socrates is mortal?"],
+    );
     assert!(
         output.contains("mortal(socrates)"),
         "expected mortal(socrates) assertion:\n{output}"
     );
-    assert!(output.contains("yes.") || output.contains("no parse") || output.contains("no."), "conjunction query: {output}");
+    assert!(
+        output.contains("yes.") || output.contains("no parse") || output.contains("no."),
+        "conjunction query: {output}"
+    );
 }
 
 /// Wh-question: "Who is mortal?" → X = socrates.
 /// Uses `who_q : Q/(N\S)` — takes VP to the right, forms question with free var.
 #[test]
 fn wh_question_binding() {
-    let output = ask_example("qa-syllogism.mont", &[
-        "Socrates is mortal.",
-        "Who is mortal?",
-    ]);
+    let output = ask_example(
+        "qa-syllogism.mont",
+        &["Socrates is mortal.", "Who is mortal?"],
+    );
     assert!(
         output.contains("mortal(socrates)"),
         "expected mortal(socrates) assertion:\n{output}"
@@ -150,7 +156,10 @@ fn syllogism_multi_turn() {
             || output.contains("mortal(x) :-"),
         "expected mortal rule assertion:\n{output}"
     );
-    assert!(output.contains("yes.") || output.contains("no parse") || output.contains("no."), "conjunction query: {output}");
+    assert!(
+        output.contains("yes.") || output.contains("no parse") || output.contains("no."),
+        "conjunction query: {output}"
+    );
 }
 
 /// Feed assertions that load into the KB and verify both are asserted.
@@ -158,10 +167,7 @@ fn syllogism_multi_turn() {
 fn multi_assertion() {
     let output = ask_example(
         "syllogism.mont",
-        &[
-            "Socrates is a man.",
-            "Socrates is mortal.",
-        ],
+        &["Socrates is a man.", "Socrates is mortal."],
     );
     assert!(
         (output.contains("man_noun(socrates)") || output.contains("man(socrates)")),
@@ -177,10 +183,7 @@ fn multi_assertion() {
 /// Should produce a readable error, not panic.
 #[test]
 fn parse_failure_graceful() {
-    let output = ask_example(
-        "qa-syllogism.mont",
-        &["The flarbgorp zibbity doo dah."],
-    );
+    let output = ask_example("qa-syllogism.mont", &["The flarbgorp zibbity doo dah."]);
     assert!(
         output.contains("no parse") || output.contains("parse error"),
         "expected a parse failure message, got:\n{output}"
@@ -207,16 +210,16 @@ fn greeting_printed() {
 fn direct_query_after_assertion() {
     let output = ask_example(
         "qa-syllogism.mont",
-        &[
-            "Socrates is mortal.",
-            "Is Socrates mortal?",
-        ],
+        &["Socrates is mortal.", "Is Socrates mortal?"],
     );
     assert!(
         output.contains("mortal(socrates)"),
         "expected mortal(socrates) assertion:\n{output}"
     );
-    assert!(output.contains("yes.") || output.contains("no parse") || output.contains("no."), "conjunction query: {output}");
+    assert!(
+        output.contains("yes.") || output.contains("no parse") || output.contains("no."),
+        "conjunction query: {output}"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -226,9 +229,7 @@ fn direct_query_after_assertion() {
 /// Conjoined assertion: "Socrates is a man and mortal." → both facts asserted.
 #[test]
 fn conjunction_assertion_and() {
-    let output = ask_example("qa-syllogism.mont", &[
-        "Socrates is a man and mortal.",
-    ]);
+    let output = ask_example("qa-syllogism.mont", &["Socrates is a man and mortal."]);
     assert!(
         (output.contains("man_noun(socrates)") || output.contains("man(socrates)")),
         "expected man_noun/man(socrates) assertion:\n{output}"
@@ -242,11 +243,14 @@ fn conjunction_assertion_and() {
 /// Conjoined polar query: "Is Socrates a man and mortal?" → yes.
 #[test]
 fn conjunction_query_and() {
-    let output = ask_example("qa-syllogism.mont", &[
-        "Socrates is a man.",
-        "Socrates is mortal.",
-        "Is Socrates a man and mortal?",
-    ]);
+    let output = ask_example(
+        "qa-syllogism.mont",
+        &[
+            "Socrates is a man.",
+            "Socrates is mortal.",
+            "Is Socrates a man and mortal?",
+        ],
+    );
     assert!(
         (output.contains("man_noun(socrates)") || output.contains("man(socrates)")),
         "expected man_noun/man(socrates) assertion:\n{output}"
@@ -255,28 +259,40 @@ fn conjunction_query_and() {
         output.contains("mortal(socrates)"),
         "expected mortal(socrates) assertion:\n{output}"
     );
-    assert!(output.contains("yes.") || output.contains("no parse") || output.contains("no."), "conjunction query: {output}");
+    assert!(
+        output.contains("yes.") || output.contains("no parse") || output.contains("no."),
+        "conjunction query: {output}"
+    );
 }
 
 /// Conjoined polar query with "both": "Is Socrates both a man and mortal?" → yes.
 #[test]
 fn conjunction_query_both_and() {
-    let output = ask_example("qa-syllogism.mont", &[
-        "Socrates is a man.",
-        "Socrates is mortal.",
-        "Is Socrates both a man and mortal?",
-    ]);
-    assert!(output.contains("yes.") || output.contains("no parse") || output.contains("no."), "conjunction query: {output}");
+    let output = ask_example(
+        "qa-syllogism.mont",
+        &[
+            "Socrates is a man.",
+            "Socrates is mortal.",
+            "Is Socrates both a man and mortal?",
+        ],
+    );
+    assert!(
+        output.contains("yes.") || output.contains("no parse") || output.contains("no."),
+        "conjunction query: {output}"
+    );
 }
 
 /// Conjoined wh-query: "Who is a man and mortal?" → X = socrates.
 #[test]
 fn conjunction_wh() {
-    let output = ask_example("qa-syllogism.mont", &[
-        "Socrates is a man.",
-        "Socrates is mortal.",
-        "Who is a man and mortal?",
-    ]);
+    let output = ask_example(
+        "qa-syllogism.mont",
+        &[
+            "Socrates is a man.",
+            "Socrates is mortal.",
+            "Who is a man and mortal?",
+        ],
+    );
     assert!(
         output.contains("x = socrates"),
         "expected 'X = socrates' binding:\n{output}"
@@ -286,10 +302,13 @@ fn conjunction_wh() {
 /// Multi-turn with conjunction: assert then query conjoined facts.
 #[test]
 fn conjunction_multi_turn() {
-    let output = ask_example("qa-syllogism.mont", &[
-        "Socrates is a man and mortal.",
-        "Is Socrates a man and mortal?",
-    ]);
+    let output = ask_example(
+        "qa-syllogism.mont",
+        &[
+            "Socrates is a man and mortal.",
+            "Is Socrates a man and mortal?",
+        ],
+    );
     assert!(
         (output.contains("man_noun(socrates)") || output.contains("man(socrates)")),
         "expected man_noun/man(socrates) assertion:\n{output}"
@@ -298,17 +317,23 @@ fn conjunction_multi_turn() {
         output.contains("mortal(socrates)"),
         "expected mortal(socrates) assertion:\n{output}"
     );
-    assert!(output.contains("yes.") || output.contains("no parse") || output.contains("no."), "conjunction query: {output}");
+    assert!(
+        output.contains("yes.") || output.contains("no parse") || output.contains("no."),
+        "conjunction query: {output}"
+    );
 }
 
 /// Assert conjoined facts, then verify both are queryable individually.
 #[test]
 fn conjunction_then_individual_query() {
-    let output = ask_example("qa-syllogism.mont", &[
-        "Socrates is a man and mortal.",
-        "Is Socrates a man?",
-        "Is Socrates mortal?",
-    ]);
+    let output = ask_example(
+        "qa-syllogism.mont",
+        &[
+            "Socrates is a man and mortal.",
+            "Is Socrates a man?",
+            "Is Socrates mortal?",
+        ],
+    );
     assert!(
         (output.contains("man_noun(socrates)") || output.contains("man(socrates)")),
         "expected man_noun/man(socrates) assertion:\n{output}"
@@ -319,7 +344,10 @@ fn conjunction_then_individual_query() {
     );
     // Both individual queries should return yes (facts are in KB)
     let yes_count = output.matches("yes.").count();
-    assert!(yes_count >= 2, "expected at least 2 'yes.' responses, got {yes_count}:\n{output}");
+    assert!(
+        yes_count >= 2,
+        "expected at least 2 'yes.' responses, got {yes_count}:\n{output}"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -329,9 +357,7 @@ fn conjunction_then_individual_query() {
 /// Assertion with "but": "Socrates is a man but mortal." → both facts asserted.
 #[test]
 fn conjunction_assertion_but() {
-    let output = ask_example("qa-syllogism.mont", &[
-        "Socrates is a man but mortal.",
-    ]);
+    let output = ask_example("qa-syllogism.mont", &["Socrates is a man but mortal."]);
     assert!(
         (output.contains("man_noun(socrates)") || output.contains("man(socrates)")),
         "expected man_noun/man(socrates) assertion:\n{output}"
@@ -345,14 +371,20 @@ fn conjunction_assertion_but() {
 /// Query with "or": "Is Socrates a man or mortal?" → finds solutions (True).
 #[test]
 fn disjunction_query_or() {
-    let output = ask_example("qa-syllogism.mont", &[
-        "Socrates is a man.",
-        "Socrates is mortal.",
-        "Is Socrates a man or mortal?",
-    ]);
+    let output = ask_example(
+        "qa-syllogism.mont",
+        &[
+            "Socrates is a man.",
+            "Socrates is mortal.",
+            "Is Socrates a man or mortal?",
+        ],
+    );
     // Disjunction via `;` produces True solutions (one per branch).
     assert!(
-        output.contains("true") || output.contains("True") || output.contains("yes") || output.contains("no parse"),
+        output.contains("true")
+            || output.contains("True")
+            || output.contains("yes")
+            || output.contains("no parse"),
         "expected True/yes for or-query:\n{output}"
     );
 }
@@ -360,13 +392,19 @@ fn disjunction_query_or() {
 /// Query with "either...or": "Is Socrates either a man or mortal?" → True.
 #[test]
 fn disjunction_query_either_or() {
-    let output = ask_example("qa-syllogism.mont", &[
-        "Socrates is a man.",
-        "Socrates is mortal.",
-        "Is Socrates either a man or mortal?",
-    ]);
+    let output = ask_example(
+        "qa-syllogism.mont",
+        &[
+            "Socrates is a man.",
+            "Socrates is mortal.",
+            "Is Socrates either a man or mortal?",
+        ],
+    );
     assert!(
-        output.contains("true") || output.contains("True") || output.contains("yes") || output.contains("no parse"),
+        output.contains("true")
+            || output.contains("True")
+            || output.contains("yes")
+            || output.contains("no parse"),
         "expected True/yes for either-or query:\n{output}"
     );
 }
@@ -375,11 +413,14 @@ fn disjunction_query_either_or() {
 /// → False (both facts exist in KB, so the negation fails).
 #[test]
 fn disjunction_query_neither_nor() {
-    let output = ask_example("qa-syllogism.mont", &[
-        "Socrates is a man.",
-        "Socrates is mortal.",
-        "Is Socrates neither a man nor mortal?",
-    ]);
+    let output = ask_example(
+        "qa-syllogism.mont",
+        &[
+            "Socrates is a man.",
+            "Socrates is mortal.",
+            "Is Socrates neither a man nor mortal?",
+        ],
+    );
     // Both facts are true, so neither-is-not holds → false.
     assert!(
         output.contains("false") || output.contains("False") || output.contains("no"),
@@ -391,22 +432,31 @@ fn disjunction_query_neither_nor() {
 /// mortal?" → yes (same semantics as and).
 #[test]
 fn conjunction_query_not_only_but_also() {
-    let output = ask_example("qa-syllogism.mont", &[
-        "Socrates is a man.",
-        "Socrates is mortal.",
-        "Is Socrates not only a man but also mortal?",
-    ]);
-    assert!(output.contains("yes.") || output.contains("no parse") || output.contains("no."), "conjunction query: {output}");
+    let output = ask_example(
+        "qa-syllogism.mont",
+        &[
+            "Socrates is a man.",
+            "Socrates is mortal.",
+            "Is Socrates not only a man but also mortal?",
+        ],
+    );
+    assert!(
+        output.contains("yes.") || output.contains("no parse") || output.contains("no."),
+        "conjunction query: {output}"
+    );
 }
 
 /// Wh-query with "or": "Who is a man or mortal?" → X = socrates.
 #[test]
 fn disjunction_wh_or() {
-    let output = ask_example("qa-syllogism.mont", &[
-        "Socrates is a man.",
-        "Socrates is mortal.",
-        "Who is a man or mortal?",
-    ]);
+    let output = ask_example(
+        "qa-syllogism.mont",
+        &[
+            "Socrates is a man.",
+            "Socrates is mortal.",
+            "Who is a man or mortal?",
+        ],
+    );
     // Disjunction with free variable X produces bindings.
     assert!(
         output.contains("x = socrates") || output.contains("no parse"),
@@ -418,11 +468,14 @@ fn disjunction_wh_or() {
 /// → no result (both facts match socrates, so negated query returns nothing).
 #[test]
 fn disjunction_wh_neither_nor() {
-    let output = ask_example("qa-syllogism.mont", &[
-        "Socrates is a man.",
-        "Socrates is mortal.",
-        "Who is neither a man nor mortal?",
-    ]);
+    let output = ask_example(
+        "qa-syllogism.mont",
+        &[
+            "Socrates is a man.",
+            "Socrates is mortal.",
+            "Who is neither a man nor mortal?",
+        ],
+    );
     // Socrates IS both, so the negated query should find no one → no/False.
     assert!(
         output.contains("no") || output.contains("false") || output.contains("False"),
@@ -438,9 +491,10 @@ fn disjunction_wh_neither_nor() {
 /// mortal." → both facts asserted.
 #[test]
 fn conjunction_assertion_as_well_as() {
-    let output = ask_example("qa-syllogism.mont", &[
-        "Socrates is a man as well as mortal.",
-    ]);
+    let output = ask_example(
+        "qa-syllogism.mont",
+        &["Socrates is a man as well as mortal."],
+    );
     assert!(
         (output.contains("man_noun(socrates)") || output.contains("man(socrates)")),
         "expected man_noun/man(socrates) assertion:\n{output}"
@@ -455,23 +509,32 @@ fn conjunction_assertion_as_well_as() {
 /// mortal?" → yes.
 #[test]
 fn conjunction_query_as_well_as() {
-    let output = ask_example("qa-syllogism.mont", &[
-        "Socrates is a man.",
-        "Socrates is mortal.",
-        "Is Socrates a man as well as mortal?",
-    ]);
-    assert!(output.contains("yes.") || output.contains("no parse") || output.contains("no."), "conjunction query: {output}");
+    let output = ask_example(
+        "qa-syllogism.mont",
+        &[
+            "Socrates is a man.",
+            "Socrates is mortal.",
+            "Is Socrates a man as well as mortal?",
+        ],
+    );
+    assert!(
+        output.contains("yes.") || output.contains("no parse") || output.contains("no."),
+        "conjunction query: {output}"
+    );
 }
 
 /// Conjoined wh-query with "as well as": "Who is a man as well as mortal?"
 /// → X = socrates.
 #[test]
 fn conjunction_wh_as_well_as() {
-    let output = ask_example("qa-syllogism.mont", &[
-        "Socrates is a man.",
-        "Socrates is mortal.",
-        "Who is a man as well as mortal?",
-    ]);
+    let output = ask_example(
+        "qa-syllogism.mont",
+        &[
+            "Socrates is a man.",
+            "Socrates is mortal.",
+            "Who is a man as well as mortal?",
+        ],
+    );
     assert!(
         output.contains("x = socrates") || output.contains("no parse"),
         "expected 'X = socrates' or 'no parse':\n{output}"
@@ -533,9 +596,7 @@ fn composition_post_verbal_adverb() {
 /// NP coordination: "Socrates and Plato are mortal" → parses.
 #[test]
 fn coordination_np() {
-    let output = ask_example("coordination.mont", &[
-        "Socrates and Plato are mortal.",
-    ]);
+    let output = ask_example("coordination.mont", &["Socrates and Plato are mortal."]);
     assert!(
         output.contains("mortal"),
         "expected mortal assertion via NP coordination:\n{output}"
@@ -545,9 +606,7 @@ fn coordination_np() {
 /// Adjective coordination: "Socrates is mortal and wise" → both asserted.
 #[test]
 fn coordination_adj() {
-    let output = ask_example("coordination.mont", &[
-        "Socrates is mortal and wise.",
-    ]);
+    let output = ask_example("coordination.mont", &["Socrates is mortal and wise."]);
     assert!(
         output.contains("mortal(socrates)"),
         "expected mortal(socrates):\n{output}"
@@ -566,9 +625,10 @@ fn coordination_adj() {
 /// extraction with the relative pronoun that : (N\N)/(S\NP).
 #[test]
 fn extraction_subject_relative_universal() {
-    let output = ask_example("extraction.mont", &[
-        "every number that divides six is positive.",
-    ]);
+    let output = ask_example(
+        "extraction.mont",
+        &["every number that divides six is positive."],
+    );
     assert!(
         !output.contains("no parse"),
         "'every number that divides six is positive' should parse:\n{output}"
@@ -578,9 +638,7 @@ fn extraction_subject_relative_universal() {
 /// "a number that divides six is prime" → parses (existential quantifier).
 #[test]
 fn extraction_subject_relative_existential() {
-    let output = ask_example("extraction.mont", &[
-        "a number that divides six is prime.",
-    ]);
+    let output = ask_example("extraction.mont", &["a number that divides six is prime."]);
     assert!(
         !output.contains("no parse"),
         "'a number that divides six is prime' should parse:\n{output}"
@@ -591,9 +649,7 @@ fn extraction_subject_relative_existential() {
 /// relative clause modifier).
 #[test]
 fn extraction_bare_relative() {
-    let output = ask_example("extraction.mont", &[
-        "six divides six.",
-    ]);
+    let output = ask_example("extraction.mont", &["six divides six."]);
     assert!(
         !output.contains("no parse"),
         "simple transitive sentence should parse:\n{output}"
@@ -612,11 +668,14 @@ fn extraction_bare_relative() {
 /// subject-extracted relative clause.
 #[test]
 fn extraction_identity_with_relative() {
-    let output = ask_example("qa-syllogism.mont", &[
-        "Socrates is a philosopher.",
-        "Socrates is mortal.",
-        "Socrates is the philosopher that is mortal.",
-    ]);
+    let output = ask_example(
+        "qa-syllogism.mont",
+        &[
+            "Socrates is a philosopher.",
+            "Socrates is mortal.",
+            "Socrates is the philosopher that is mortal.",
+        ],
+    );
     assert!(
         !output.contains("no parse"),
         "identity with relative clause should parse:\n{output}"
@@ -627,11 +686,14 @@ fn extraction_identity_with_relative() {
 /// clause inside a definite description.
 #[test]
 fn extraction_wh_with_relative() {
-    let output = ask_example("qa-syllogism.mont", &[
-        "Socrates is a philosopher.",
-        "Socrates is mortal.",
-        "Who is the philosopher that is mortal?",
-    ]);
+    let output = ask_example(
+        "qa-syllogism.mont",
+        &[
+            "Socrates is a philosopher.",
+            "Socrates is mortal.",
+            "Who is the philosopher that is mortal?",
+        ],
+    );
     assert!(
         !output.contains("no parse"),
         "wh-question with relative clause should parse:\n{output}"
@@ -1118,21 +1180,30 @@ fn ask_pl(inputs: &[&str]) -> String {
 #[test]
 fn pl_svo_transitive() {
     let o = ask_pl(&["Kot widzi psa."]);
-    assert!(!o.contains("no parse"), "SVO 'Kot widzi psa' should parse:\n{o}");
+    assert!(
+        !o.contains("no parse"),
+        "SVO 'Kot widzi psa' should parse:\n{o}"
+    );
 }
 
 /// Wrong case on object — object must be Acc, not Nom.
 #[test]
 fn pl_svo_wrong_case_object() {
     let o = ask_pl(&["Kot widzi pies."]);
-    assert!(o.contains("no parse"), "SVO with Nom object should fail:\n{o}");
+    assert!(
+        o.contains("no parse"),
+        "SVO with Nom object should fail:\n{o}"
+    );
 }
 
 /// OVS word order — object Acc, verb, subject Nom.
 #[test]
 fn pl_ovs_transitive() {
     let o = ask_pl(&["Psa widzi kot."]);
-    assert!(!o.contains("no parse"), "OVS 'Psa widzi kot' should parse:\n{o}");
+    assert!(
+        !o.contains("no parse"),
+        "OVS 'Psa widzi kot' should parse:\n{o}"
+    );
 }
 
 /// Same truth conditions via SVO and OVS should both parse.
@@ -1148,42 +1219,60 @@ fn pl_svo_ovs_same_meaning() {
 #[test]
 fn pl_intransitive_nom() {
     let o = ask_pl(&["Kot śpi."]);
-    assert!(!o.contains("no parse"), "Intransitive Nom should parse:\n{o}");
+    assert!(
+        !o.contains("no parse"),
+        "Intransitive Nom should parse:\n{o}"
+    );
 }
 
 /// Intransitive verb rejects Acc subject.
 #[test]
 fn pl_intransitive_rejects_acc() {
     let o = ask_pl(&["Kota śpi."]);
-    assert!(o.contains("no parse"), "Acc subject with intransitive should fail:\n{o}");
+    assert!(
+        o.contains("no parse"),
+        "Acc subject with intransitive should fail:\n{o}"
+    );
 }
 
 /// Adjective-noun agreement — duży (masc) with kot (masc).
 #[test]
 fn pl_adjective_agreement() {
     let o = ask_pl(&["Duży kot śpi."]);
-    assert!(!o.contains("no parse"), "Adj-noun agreement should parse:\n{o}");
+    assert!(
+        !o.contains("no parse"),
+        "Adj-noun agreement should parse:\n{o}"
+    );
 }
 
 /// Adjective-noun disagreement — duża (fem) with kot (masc).
 #[test]
 fn pl_adjective_disagreement() {
     let o = ask_pl(&["Duża kot śpi."]);
-    assert!(o.contains("no parse"), "Fem adj with masc noun should fail:\n{o}");
+    assert!(
+        o.contains("no parse"),
+        "Fem adj with masc noun should fail:\n{o}"
+    );
 }
 
 /// Copula predication — subject masc, adjective masc.
 #[test]
 fn pl_copula_predication() {
     let o = ask_pl(&["Kot jest mądry."]);
-    assert!(!o.contains("no parse"), "Copula predication should parse:\n{o}");
+    assert!(
+        !o.contains("no parse"),
+        "Copula predication should parse:\n{o}"
+    );
 }
 
 /// Copula gender mismatch — subject masc, adjective fem.
 #[test]
 fn pl_copula_gender_mismatch() {
     let o = ask_pl(&["Kot jest mądra."]);
-    assert!(o.contains("no parse"), "Copula gender mismatch should fail:\n{o}");
+    assert!(
+        o.contains("no parse"),
+        "Copula gender mismatch should fail:\n{o}"
+    );
 }
 
 /// Preposition + Locative — "w domu" (in house-LOC).
@@ -1218,42 +1307,60 @@ fn pl_preposition_genitive_wrong() {
 #[test]
 fn pl_selectional_restriction() {
     let o = ask_pl(&["Kamień śpi."]);
-    assert!(o.contains("no parse"), "Inanimate subject with 'sleeps' should fail:\n{o}");
+    assert!(
+        o.contains("no parse"),
+        "Inanimate subject with 'sleeps' should fail:\n{o}"
+    );
 }
 
 /// Selectional restriction control — animate subject can sleep.
 #[test]
 fn pl_selectional_animate_ok() {
     let o = ask_pl(&["Kot śpi."]);
-    assert!(!o.contains("no parse"), "Animate subject with 'sleeps' should parse:\n{o}");
+    assert!(
+        !o.contains("no parse"),
+        "Animate subject with 'sleeps' should parse:\n{o}"
+    );
 }
 
 /// Negation with genitive — "nie widzi" + Gen object.
 #[test]
 fn pl_genitive_of_negation() {
     let o = ask_pl(&["Kot nie widzi myszy."]);
-    assert!(!o.contains("no parse"), "Genitive of negation should parse:\n{o}");
+    assert!(
+        !o.contains("no parse"),
+        "Genitive of negation should parse:\n{o}"
+    );
 }
 
 /// Affirmative with accusative object.
 #[test]
 fn pl_affirmative_accusative() {
     let o = ask_pl(&["Kot widzi mysz."]);
-    assert!(!o.contains("no parse"), "Affirmative with Acc object should parse:\n{o}");
+    assert!(
+        !o.contains("no parse"),
+        "Affirmative with Acc object should parse:\n{o}"
+    );
 }
 
 /// Adjective coordination via copula — "duży i czarny".
 #[test]
 fn pl_adj_coordination() {
     let o = ask_pl(&["Kot jest duży i czarny."]);
-    assert!(!o.contains("no parse"), "Adjective coordination should parse:\n{o}");
+    assert!(
+        !o.contains("no parse"),
+        "Adjective coordination should parse:\n{o}"
+    );
 }
 
 /// Complex sentence: adjective + noun + verb + PP.
 #[test]
 fn pl_complex_sentence() {
     let o = ask_pl(&["Duży kot śpi w domu."]);
-    assert!(!o.contains("no parse"), "Complex sentence should parse:\n{o}");
+    assert!(
+        !o.contains("no parse"),
+        "Complex sentence should parse:\n{o}"
+    );
 }
 
 /// Another OVS variant — "Mysz widzi kot." (mouse-Acc sees cat-Nom with Acc/Nom syncretism)

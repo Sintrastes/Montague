@@ -363,7 +363,9 @@ pub fn lower_term_to_prolog(term: &Term<String>) -> Option<Vec<String>> {
         // Quantifier: all_q / every_q
         // The VP may be a simple predicate or an identity copula is_ident(nominal).
         // For is_ident, decompose the nominal into one rule per goal.
-        if (fname == "all_q" || fname == "every_q" || fname == "all" || fname == "every") && args.len() == 2 {
+        if (fname == "all_q" || fname == "every_q" || fname == "all" || fname == "every")
+            && args.len() == 2
+        {
             let noun_goals = lower_noun_phrase_to_goals(&args[0])?;
             let body = noun_goals.join(", ");
 
@@ -445,15 +447,14 @@ fn extract_conjunction(term: &Term<String>) -> Option<(Vec<Term<String>>, ConjKi
                 _ => return None,
             };
             let kind = match fname.as_str() {
-                "and" | "and_conj" | "and_adj" | "and_np" | "and_vp" | "and_s"
-                | "but" | "but_conj" | "but_adj" | "but_s"
-                | "as_well_as" | "but_also" => ConjKind::And,
+                "and" | "and_conj" | "and_adj" | "and_np" | "and_vp" | "and_s" | "but"
+                | "but_conj" | "but_adj" | "but_s" | "as_well_as" | "but_also" => ConjKind::And,
                 "or" | "or_conj" | "or_adj" | "or_np" | "or_vp" | "or_s" => ConjKind::Or,
                 "nor" | "nor_conj" | "nor_adj" | "nor_np" | "nor_vp" | "nor_s" => ConjKind::Nor,
                 _ => return None,
             };
             if args.len() >= 2 {
-                Some((args.iter().cloned().collect(), kind))
+                Some((args.to_vec(), kind))
             } else {
                 None
             }
@@ -541,7 +542,8 @@ fn lower_noun_phrase_to_goals(term: &Term<String>) -> Option<Vec<String>> {
             };
             // Relative pronouns: that_rel(N, VP) or who_rel(N, VP)
             // Skip the pronoun, decompose N + VP. The VP is typically a copula.
-            if (fname == "that_rel" || fname == "who_rel" || fname == "which_rel") && args.len() >= 2
+            if (fname == "that_rel" || fname == "who_rel" || fname == "which_rel")
+                && args.len() >= 2
             {
                 let mut goals = Vec::new();
                 // args: first right-applied is the VP, second left-applied is N
@@ -595,7 +597,9 @@ fn lower_noun_phrase_to_goals(term: &Term<String>) -> Option<Vec<String>> {
 /// - `a_np(mortal_adj(N))` → `[N(X), mortal(X)]`
 fn unfold_description(term: &Term<String>) -> Option<Vec<String>> {
     // Must be App(det, [inner]) where det is "the" or "a_np"
-    let Term::App(det_f, det_args) = term else { return None };
+    let Term::App(det_f, det_args) = term else {
+        return None;
+    };
     let det_name = match det_f.as_ref() {
         Term::Atom(n) => n.as_str(),
         _ => return None,
@@ -622,9 +626,7 @@ fn unfold_description(term: &Term<String>) -> Option<Vec<String>> {
                         Term::Atom(n) => n.as_str(),
                         _ => "",
                     };
-                    if (vp_fname == "is_cop" || vp_fname == "are_cop")
-                        && !vp_args.is_empty()
-                    {
+                    if (vp_fname == "is_cop" || vp_fname == "are_cop") && !vp_args.is_empty() {
                         strip_article(&vp_args[0])
                     } else {
                         strip_article(vp)
@@ -898,7 +900,10 @@ mod tests {
         let clause = &clauses[0];
         assert!(clause.contains("mortal(socrates)"), "got: {clause}");
         assert!(clause.contains("man_noun(socrates)"), "got: {clause}");
-        assert!(clause.contains(", "), "goals should be comma-separated: {clause}");
+        assert!(
+            clause.contains(", "),
+            "goals should be comma-separated: {clause}"
+        );
     }
 
     /// `App(who_q, [App(is_cop, [App(and, [mortal, App(a_art, [man_noun])])])])` →
@@ -913,21 +918,18 @@ mod tests {
             Box::new(CTerm::Atom("and".into())),
             vec![CTerm::Atom("mortal".into()), a_man],
         );
-        let copula = CTerm::App(
-            Box::new(CTerm::Atom("is_cop".into())),
-            vec![and_pred],
-        );
-        let term = CTerm::App(
-            Box::new(CTerm::Atom("who_q".into())),
-            vec![copula],
-        );
+        let copula = CTerm::App(Box::new(CTerm::Atom("is_cop".into())), vec![and_pred]);
+        let term = CTerm::App(Box::new(CTerm::Atom("who_q".into())), vec![copula]);
         let clauses = lower_term_to_prolog(&term).unwrap();
         assert_eq!(clauses.len(), 1);
         // The two goals are comma-joined: mortal(X), man_noun(X).
         let clause = &clauses[0];
         assert!(clause.contains("mortal(X)"), "got: {clause}");
         assert!(clause.contains("man_noun(X)"), "got: {clause}");
-        assert!(clause.contains(", "), "goals should be comma-separated: {clause}");
+        assert!(
+            clause.contains(", "),
+            "goals should be comma-separated: {clause}"
+        );
     }
 
     /// `App(is_cop, [App(as_well_as, [mortal, App(a_art, [man_noun])]), socrates])` →
@@ -958,10 +960,7 @@ mod tests {
     fn lower_both_without_conjunction() {
         let both_man = CTerm::App(
             Box::new(CTerm::Atom("both".into())),
-            vec![
-                CTerm::Atom("a_art".into()),
-                CTerm::Atom("man_noun".into()),
-            ],
+            vec![CTerm::Atom("a_art".into()), CTerm::Atom("man_noun".into())],
         );
         let term = CTerm::App(
             Box::new(CTerm::Atom("is_cop".into())),
@@ -988,7 +987,10 @@ mod tests {
             vec![or_pred, CTerm::Atom("socrates".into())],
         );
         let clauses = lower_term_to_prolog(&term).unwrap();
-        assert!(clauses.is_empty(), "or-assertion should produce empty vec, got: {clauses:?}");
+        assert!(
+            clauses.is_empty(),
+            "or-assertion should produce empty vec, got: {clauses:?}"
+        );
     }
 
     /// `App(is_q, [socrates, App(or, [mortal, App(a_art, [man_noun])])])` →
@@ -1009,9 +1011,21 @@ mod tests {
         );
         let clauses = lower_term_to_prolog(&term).unwrap();
         assert_eq!(clauses.len(), 1);
-        assert!(clauses[0].contains("mortal(socrates)"), "got: {}", clauses[0]);
-        assert!(clauses[0].contains("man_noun(socrates)"), "got: {}", clauses[0]);
-        assert!(clauses[0].contains("; "), "expected ;-separated disjunction, got: {}", clauses[0]);
+        assert!(
+            clauses[0].contains("mortal(socrates)"),
+            "got: {}",
+            clauses[0]
+        );
+        assert!(
+            clauses[0].contains("man_noun(socrates)"),
+            "got: {}",
+            clauses[0]
+        );
+        assert!(
+            clauses[0].contains("; "),
+            "expected ;-separated disjunction, got: {}",
+            clauses[0]
+        );
     }
 
     /// `App(is_cop, [App(but, [mortal, App(a_art, [man_noun])]), socrates])` →
@@ -1064,10 +1078,7 @@ mod tests {
     fn strip_article_either() {
         let either_man = CTerm::App(
             Box::new(CTerm::Atom("either".into())),
-            vec![
-                CTerm::Atom("a_art".into()),
-                CTerm::Atom("man_noun".into()),
-            ],
+            vec![CTerm::Atom("a_art".into()), CTerm::Atom("man_noun".into())],
         );
         let result = strip_article(&either_man);
         assert_eq!(result, CTerm::Atom("man_noun".into()));
@@ -1087,18 +1098,9 @@ mod tests {
             Box::new(CTerm::Atom("that_rel".into())),
             vec![vp, CTerm::Atom("philosopher".into())],
         );
-        let desc = CTerm::App(
-            Box::new(CTerm::Atom("the".into())),
-            vec![rel],
-        );
-        let ident = CTerm::App(
-            Box::new(CTerm::Atom("is_ident".into())),
-            vec![desc],
-        );
-        let wh = CTerm::App(
-            Box::new(CTerm::Atom("who_q".into())),
-            vec![ident],
-        );
+        let desc = CTerm::App(Box::new(CTerm::Atom("the".into())), vec![rel]);
+        let ident = CTerm::App(Box::new(CTerm::Atom("is_ident".into())), vec![desc]);
+        let wh = CTerm::App(Box::new(CTerm::Atom("who_q".into())), vec![ident]);
         let clauses = lower_term_to_prolog(&wh).unwrap();
         assert_eq!(clauses.len(), 1);
         assert!(clauses[0].contains("philosopher(X)"), "got: {}", clauses[0]);
@@ -1110,10 +1112,7 @@ mod tests {
     fn strip_article_neither() {
         let neither_man = CTerm::App(
             Box::new(CTerm::Atom("neither".into())),
-            vec![
-                CTerm::Atom("a_art".into()),
-                CTerm::Atom("man_noun".into()),
-            ],
+            vec![CTerm::Atom("a_art".into()), CTerm::Atom("man_noun".into())],
         );
         let result = strip_article(&neither_man);
         assert_eq!(result, CTerm::Atom("man_noun".into()));

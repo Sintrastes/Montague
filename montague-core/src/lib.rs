@@ -24,12 +24,12 @@ pub mod subtyping;
 pub mod types;
 
 pub use chart::{Chart, ChartPostpass, Derivation, ExtractionPostpass, ScopingPostpass};
+pub use morph::{MorphSegmenter, MorphemeInfo, SpellingClass as MorphSpellingClass};
 pub use reduction::{
-    FailureTrace, LeftAbsorption, ReductionCtx, ReductionEngine, ReductionRule,
-    RightAbsorption, RuleApplicability, TypeShape,
+    FailureTrace, LeftAbsorption, ReductionCtx, ReductionEngine, ReductionRule, RightAbsorption,
+    RuleApplicability, TypeShape,
 };
 pub use registry::{ConstId, PredId};
-pub use morph::{MorphemeInfo, MorphSegmenter, SpellingClass as MorphSpellingClass};
 pub use sem::{
     alpha_eq, alpha_rename, beta_normalize, free_vars, Backend, BackendCtx, BetaNormalize,
     DirectInterp, OpSet, Pass, PassCtx, SemTerm, VarEnv, VarId,
@@ -37,7 +37,10 @@ pub use sem::{
 pub use semantics::Semantics;
 pub use sort::SortRegistry;
 pub use subtyping::{SubtypeLattice, Variance};
-pub use types::{AnnotatedTerm, AtomType, LambekFold, LambekType, NonDet, SortArg, SortVarId, SortVarTable, Term, TypeCheck, TypePath, TypePathStep, UnifyError};
+pub use types::{
+    AnnotatedTerm, AtomType, LambekFold, LambekType, NonDet, SortArg, SortVarId, SortVarTable,
+    Term, TypeCheck, TypePath, TypePathStep, UnifyError,
+};
 
 use std::hash::Hash;
 use types::AnnotatedTerm as AT;

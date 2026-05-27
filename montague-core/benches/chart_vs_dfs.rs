@@ -11,13 +11,13 @@ use montague_core::{
     reduce,
     reduction::{ReductionCtx, ReductionEngine},
     subtyping::SubtypeLattice,
-    types::{AnnotatedTerm, LambekType, Term},
+    types::{AnnotatedTerm, AtomType, LambekType, Term},
     Semantics,
 };
 
 // Shorthand for the annotate-term type.
-type AT = AnnotatedTerm<&'static str, &'static str>;
-type Sem = Semantics<&'static str, &'static str, AT>;
+type AT = AnnotatedTerm<&'static str, AtomType>;
+type Sem = Semantics<&'static str, AtomType, AT>;
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -26,16 +26,16 @@ type Sem = Semantics<&'static str, &'static str, AT>;
 /// Build a tiny lexicon: N and N\S.
 fn fixtures() -> (
     Sem,
-    ReductionEngine<&'static str, &'static str>,
-    SubtypeLattice<&'static str>,
-    LambekType<&'static str>,
+    ReductionEngine<&'static str, AtomType>,
+    SubtypeLattice<AtomType>,
+    LambekType<AtomType>,
 ) {
     let sem = Semantics::new(
         |a: &&str| match *a {
-            "n" => vec![LambekType::Basic("N")],
+            "n" => vec![LambekType::Basic(AtomType::new("N"))],
             "fun" => vec![LambekType::RightArrow(
-                Box::new(LambekType::Basic("N")),
-                Box::new(LambekType::Basic("S")),
+                Box::new(LambekType::Basic(AtomType::new("N"))),
+                Box::new(LambekType::Basic(AtomType::new("S"))),
             )],
             _ => vec![],
         },
@@ -48,7 +48,7 @@ fn fixtures() -> (
     );
     let engine = ReductionEngine::standard();
     let lat = SubtypeLattice::new();
-    let goal = LambekType::Basic("S");
+    let goal = LambekType::Basic(AtomType::new("S"));
     (sem, engine, lat, goal)
 }
 

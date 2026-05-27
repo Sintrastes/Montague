@@ -9,7 +9,9 @@ use montague_core::registry::Registry;
 use montague_core::subtyping::SubtypeLattice;
 use montague_core::types::{AtomType, LambekType, SortArg, SortVarId};
 
-use crate::ast::{AtomEntry, Declaration, Directive, MontFile, MorphemeEntry, ProductionEntry, Span, TypeExpr};
+use crate::ast::{
+    AtomEntry, Declaration, Directive, MontFile, MorphemeEntry, ProductionEntry, Span, TypeExpr,
+};
 use crate::error::ResolveError;
 use crate::sort::SortRegistry;
 
@@ -42,14 +44,16 @@ impl ResolvedLexicon {
         let mut errors = Vec::new();
 
         // Check for entity name collisions
-        let existing_entities: HashSet<&str> = self.atoms.iter().map(|a| a.entity.as_str()).collect();
+        let existing_entities: HashSet<&str> =
+            self.atoms.iter().map(|a| a.entity.as_str()).collect();
         for a in &other.atoms {
             if existing_entities.contains(a.entity.as_str()) {
                 errors.push(ResolveError::DuplicateEntity {
                     entity: a.entity.clone(),
                     original_span: a.span,
-                    span: a.span,            file_path: None,
-                            });
+                    span: a.span,
+                    file_path: None,
+                });
             }
         }
 
@@ -67,8 +71,9 @@ impl ResolvedLexicon {
             for msg in sort_errs {
                 errors.push(ResolveError::UnknownNamespace {
                     name: msg,
-                    span: Span::new(0, 0),            file_path: None,
-                            });
+                    span: Span::new(0, 0),
+                    file_path: None,
+                });
             }
         }
 
@@ -82,7 +87,8 @@ impl ResolvedLexicon {
                     }`: {:?} vs {:?}",
                             existing, params
                         ),
-                        span: Span::new(0, 0),            file_path: None,
+                        span: Span::new(0, 0),
+                        file_path: None,
                     });
                 }
             } else {
@@ -141,26 +147,30 @@ impl FileResolver for FsFileResolver {
             .last()
             .ok_or_else(|| ResolveError::UnknownNamespace {
                 name: namespace.join("."),
-                span: Span::new(0, 0),            file_path: None,
-                            })?;
+                span: Span::new(0, 0),
+                file_path: None,
+            })?;
         let path = std::path::Path::new(base_dir).join(format!("{last}.mont"));
         std::fs::read_to_string(&path).map_err(|_| ResolveError::UnknownNamespace {
             name: namespace.join("."),
-            span: Span::new(0, 0),            file_path: None,
-                            })
+            span: Span::new(0, 0),
+            file_path: None,
+        })
     }
 
     fn resolve_uri(&self, uri: &str) -> Result<String, ResolveError> {
         if let Some(path) = uri.strip_prefix("file://") {
             std::fs::read_to_string(path).map_err(|_| ResolveError::UnknownNamespace {
                 name: uri.to_string(),
-                span: Span::new(0, 0),            file_path: None,
-                            })
+                span: Span::new(0, 0),
+                file_path: None,
+            })
         } else {
             Err(ResolveError::UnknownNamespace {
                 name: uri.to_string(),
-                span: Span::new(0, 0),            file_path: None,
-                            })
+                span: Span::new(0, 0),
+                file_path: None,
+            })
         }
     }
 }
@@ -193,8 +203,9 @@ pub fn resolve_with_resolver(
                 errors.push(ResolveError::DuplicateEntity {
                     entity: parts.join("."),
                     original_span: decl.span,
-                    span: decl.span,            file_path: None,
-                            });
+                    span: decl.span,
+                    file_path: None,
+                });
             } else {
                 namespace = Some(parts.clone());
             }
@@ -214,14 +225,20 @@ pub fn resolve_with_resolver(
                 extended_namespaces.insert(namespace.clone());
                 let src = match resolver.resolve_namespace(namespace, base_dir) {
                     Ok(s) => s,
-                    Err(e) => { errors.push(e); return Err(errors); }
+                    Err(e) => {
+                        errors.push(e);
+                        return Err(errors);
+                    }
                 };
                 (Some(namespace.clone()), src)
             }
             Directive::ExtendBy { ref uri } => {
                 let src = match resolver.resolve_uri(uri) {
                     Ok(s) => s,
-                    Err(e) => { errors.push(e); return Err(errors); }
+                    Err(e) => {
+                        errors.push(e);
+                        return Err(errors);
+                    }
                 };
                 (None, src)
             }
@@ -231,15 +248,22 @@ pub fn resolve_with_resolver(
         if !parse_errs.is_empty() {
             for _e in &parse_errs {
                 errors.push(ResolveError::UnknownNamespace {
-                    name: ext_ns.as_ref().map(|v| v.join(".")).unwrap_or_else(|| "(uri)".into()),
-                    span: dir.span,            file_path: None,
-                            });
+                    name: ext_ns
+                        .as_ref()
+                        .map(|v| v.join("."))
+                        .unwrap_or_else(|| "(uri)".into()),
+                    span: dir.span,
+                    file_path: None,
+                });
             }
             return Err(errors);
         }
         match resolve_with_resolver(&sub_ast, reg, resolver, base_dir) {
             Ok(l) => extended_lexicons.push(l),
-            Err(mut es) => { errors.append(&mut es); return Err(errors); }
+            Err(mut es) => {
+                errors.append(&mut es);
+                return Err(errors);
+            }
         }
     }
 
@@ -249,7 +273,9 @@ pub fn resolve_with_resolver(
     for decl in &file.declarations {
         match &decl.item {
             Declaration::TypeDecl(types) => {
-                for t in types { known_types.insert(t.clone()); }
+                for t in types {
+                    known_types.insert(t.clone());
+                }
             }
             Declaration::SingleTypeDecl { name, params } => {
                 known_types.insert(name.clone());
@@ -268,10 +294,14 @@ pub fn resolve_with_resolver(
         // Also collect type names from extended lattice (keys are AtomType)
         for (sub, sups) in el.lattice.direct_supertypes_iter() {
             let sub_name = sub.name.clone();
-            if !known_types.contains(&sub_name) { known_types.insert(sub_name); }
+            if !known_types.contains(&sub_name) {
+                known_types.insert(sub_name);
+            }
             for s in sups {
                 let s_name = s.name.clone();
-                if !known_types.contains(&s_name) { known_types.insert(s_name); }
+                if !known_types.contains(&s_name) {
+                    known_types.insert(s_name);
+                }
             }
         }
     }
@@ -284,8 +314,9 @@ pub fn resolve_with_resolver(
             for msg in sort_errs {
                 errors.push(ResolveError::UnknownNamespace {
                     name: msg,
-                    span: Span::new(0, 0),            file_path: None,
-                            });
+                    span: Span::new(0, 0),
+                    file_path: None,
+                });
             }
         }
         // Merge extended type arities
@@ -293,9 +324,12 @@ pub fn resolve_with_resolver(
             if let Some(existing) = type_arity.get(name) {
                 if existing != params {
                     errors.push(ResolveError::UnknownNamespace {
-                        name: format!("type `{name
-                    }` redeclared with different arity"),
-                        span: Span::new(0, 0),            file_path: None,
+                        name: format!(
+                            "type `{name
+                    }` redeclared with different arity"
+                        ),
+                        span: Span::new(0, 0),
+                        file_path: None,
                     });
                 }
             } else {
@@ -310,8 +344,9 @@ pub fn resolve_with_resolver(
                 if let Err(msg) = sorts.add_sort(name.clone()) {
                     errors.push(ResolveError::UnknownNamespace {
                         name: msg,
-                        span: decl.span,            file_path: None,
-                            });
+                        span: decl.span,
+                        file_path: None,
+                    });
                 }
             }
             Declaration::SortMemberDecl { sort, members } => {
@@ -319,8 +354,9 @@ pub fn resolve_with_resolver(
                     if let Err(msg) = sorts.add_member(sort, member.clone()) {
                         errors.push(ResolveError::UnknownNamespace {
                             name: msg,
-                            span: decl.span,            file_path: None,
-                            });
+                            span: decl.span,
+                            file_path: None,
+                        });
                     }
                 }
             }
@@ -343,16 +379,20 @@ pub fn resolve_with_resolver(
                     if let Err(msg) = sorts.add_subtype(sub, sup) {
                         errors.push(ResolveError::UnknownNamespace {
                             name: msg,
-                            span: decl.span,            file_path: None,
-                            });
+                            span: decl.span,
+                            file_path: None,
+                        });
                     }
                     continue;
                 }
                 (Some(_), Some(_)) => {
                     errors.push(ResolveError::UnknownNamespace {
-                        name: format!("`{sub
-                    }` and `{sup}` belong to different sorts — cross-sort subtyping is not allowed"),
-                        span: decl.span,            file_path: None,
+                        name: format!(
+                            "`{sub
+                    }` and `{sup}` belong to different sorts — cross-sort subtyping is not allowed"
+                        ),
+                        span: decl.span,
+                        file_path: None,
                     });
                     continue;
                 }
@@ -370,15 +410,17 @@ pub fn resolve_with_resolver(
             if !known_types.contains(sub) {
                 errors.push(ResolveError::SubtypeUnknownType {
                     name: sub.clone(),
-                    span: decl.span,            file_path: None,
-                            });
+                    span: decl.span,
+                    file_path: None,
+                });
                 continue;
             }
             if !known_types.contains(sup) {
                 errors.push(ResolveError::SubtypeUnknownType {
                     name: sup.clone(),
-                    span: decl.span,            file_path: None,
-                            });
+                    span: decl.span,
+                    file_path: None,
+                });
                 continue;
             }
             lattice.add_subtype(AtomType::new(sub), AtomType::new(sup));
@@ -391,18 +433,23 @@ pub fn resolve_with_resolver(
     for decl in &file.declarations {
         if let Declaration::AtomDecl { doc, entity, ty } = &decl.item {
             let mut var_map: HashMap<String, SortVarId> = HashMap::new();
-            match resolve_type_expr(&ty.item, &known_types, &type_arity, &sorts, reg, &mut errors, ty.span, &mut var_map, &mut entry_var_counter) {
-                Some(resolved) => {
-                    atoms.push(AtomEntry {
-                        entity: entity.clone(),
-                        doc: doc.clone(),
-                        type_expr: resolved,
-                        span: decl.span,
-                    });
-                }
-                None => {
-                    // Error already emitted in resolve_type_expr
-                }
+            if let Some(resolved) = resolve_type_expr(
+                &ty.item,
+                &known_types,
+                &type_arity,
+                &sorts,
+                reg,
+                &mut errors,
+                ty.span,
+                &mut var_map,
+                &mut entry_var_counter,
+            ) {
+                atoms.push(AtomEntry {
+                    entity: entity.clone(),
+                    doc: doc.clone(),
+                    type_expr: resolved,
+                    span: decl.span,
+                });
             }
         }
     }
@@ -410,25 +457,37 @@ pub fn resolve_with_resolver(
     // -- Pass 3b: morpheme declarations --
     let mut morphemes = Vec::new();
     for decl in &file.declarations {
-        if let Declaration::MorphemeDecl { surface, ty, strips } = &decl.item {
+        if let Declaration::MorphemeDecl {
+            surface,
+            ty,
+            strips,
+        } = &decl.item
+        {
             let mut var_map: HashMap<String, SortVarId> = HashMap::new();
-            match resolve_type_expr(&ty.item, &known_types, &type_arity, &sorts, reg, &mut errors, ty.span, &mut var_map, &mut entry_var_counter) {
-                Some(resolved) => {
-                    let entity = morpheme_entity_name(surface);
-                    let strips = if strips.is_empty() {
-                        default_strips(surface)
-                    } else {
-                        strips.clone()
-                    };
-                    morphemes.push(MorphemeEntry {
-                        surface: surface.clone(),
-                        entity,
-                        type_expr: resolved,
-                        strips,
-                        span: decl.span,
-                    });
-                }
-                None => {}
+            if let Some(resolved) = resolve_type_expr(
+                &ty.item,
+                &known_types,
+                &type_arity,
+                &sorts,
+                reg,
+                &mut errors,
+                ty.span,
+                &mut var_map,
+                &mut entry_var_counter,
+            ) {
+                let entity = morpheme_entity_name(surface);
+                let strips = if strips.is_empty() {
+                    default_strips(surface)
+                } else {
+                    strips.clone()
+                };
+                morphemes.push(MorphemeEntry {
+                    surface: surface.clone(),
+                    entity,
+                    type_expr: resolved,
+                    strips,
+                    span: decl.span,
+                });
             }
         }
     }
@@ -467,15 +526,27 @@ pub fn resolve_with_resolver(
     // -- Pass 5: merge pre-resolved extended lexicons --
     for el in extended_lexicons {
         // Filter out entities that already exist in the local file.
-        let existing_entities: HashSet<&str> = lex.atoms.iter().map(|a| a.entity.as_str()).collect();
-        let new_atoms: Vec<_> = el.atoms.into_iter()
+        let existing_entities: HashSet<&str> =
+            lex.atoms.iter().map(|a| a.entity.as_str()).collect();
+        let new_atoms: Vec<_> = el
+            .atoms
+            .into_iter()
             .filter(|a| !existing_entities.contains(a.entity.as_str()))
             .collect();
-        let new_productions: Vec<_> = el.productions.into_iter()
-            .filter(|p| !lex.productions.iter().any(|lp| lp.words == p.words && lp.entity == p.entity))
+        let new_productions: Vec<_> = el
+            .productions
+            .into_iter()
+            .filter(|p| {
+                !lex.productions
+                    .iter()
+                    .any(|lp| lp.words == p.words && lp.entity == p.entity)
+            })
             .collect();
-        let existing_morph_entities: HashSet<&str> = lex.morphemes.iter().map(|m| m.entity.as_str()).collect();
-        let new_morphemes: Vec<_> = el.morphemes.into_iter()
+        let existing_morph_entities: HashSet<&str> =
+            lex.morphemes.iter().map(|m| m.entity.as_str()).collect();
+        let new_morphemes: Vec<_> = el
+            .morphemes
+            .into_iter()
             .filter(|m| !existing_morph_entities.contains(m.entity.as_str()))
             .collect();
         lex.atoms.extend(new_atoms);
@@ -533,7 +604,7 @@ fn default_strips(surface: &str) -> Vec<crate::ast::SpellingClass> {
 /// Flat (non-parametric) types like `NP` become `LambekType::Basic(AtomType::new("NP"))`.
 /// Parametric types like `NP[Person, Nominative]` become
 /// `LambekType::Basic(AtomType { name: "NP", args: [...] })`.
-#[allow(clippy::only_used_in_recursion)]
+#[allow(clippy::only_used_in_recursion, clippy::too_many_arguments)]
 fn resolve_type_expr(
     expr: &TypeExpr,
     known_types: &HashSet<String>,
@@ -550,8 +621,9 @@ fn resolve_type_expr(
             if !known_types.contains(name) {
                 errors.push(ResolveError::UnknownType {
                     name: name.clone(),
-                    span,            file_path: None,
-                            });
+                    span,
+                    file_path: None,
+                });
                 return None;
             }
             let expected_sorts = type_arity.get(name).cloned().unwrap_or_default();
@@ -586,7 +658,8 @@ fn resolve_type_expr(
                                         "`{member
                     }` is in sort `{s}`, expected sort `{expected_sort}`"
                                     ),
-                                    span: arg.span,            file_path: None,
+                                    span: arg.span,
+                                    file_path: None,
                                 });
                                 return None;
                             }
@@ -596,7 +669,8 @@ fn resolve_type_expr(
                                         "`{member
                     }` is not a declared sort member of `{expected_sort}`"
                                     ),
-                                    span: arg.span,            file_path: None,
+                                    span: arg.span,
+                                    file_path: None,
                                 });
                                 return None;
                             }
@@ -622,34 +696,103 @@ fn resolve_type_expr(
             } else {
                 errors.push(ResolveError::UnknownType {
                     name: name.clone(),
-                    span,            file_path: None,
-                            });
+                    span,
+                    file_path: None,
+                });
                 None
             }
         }
         TypeExpr::Qualified(path) => {
             let name = path.join(".");
-            errors.push(ResolveError::UnresolvedConnective { name, span, file_path: None });
+            errors.push(ResolveError::UnresolvedConnective {
+                name,
+                span,
+                file_path: None,
+            });
             None
         }
         TypeExpr::CustomApp { path, args: _ } => {
             let name = path.join(".");
-            errors.push(ResolveError::UnresolvedConnective { name, span, file_path: None });
+            errors.push(ResolveError::UnresolvedConnective {
+                name,
+                span,
+                file_path: None,
+            });
             None
         }
         TypeExpr::LeftArrow(a, b) => {
-            let a = resolve_type_expr(&a.item, known_types, type_arity, sorts, reg, errors, a.span, var_map, next_var_id)?;
-            let b = resolve_type_expr(&b.item, known_types, type_arity, sorts, reg, errors, b.span, var_map, next_var_id)?;
+            let a = resolve_type_expr(
+                &a.item,
+                known_types,
+                type_arity,
+                sorts,
+                reg,
+                errors,
+                a.span,
+                var_map,
+                next_var_id,
+            )?;
+            let b = resolve_type_expr(
+                &b.item,
+                known_types,
+                type_arity,
+                sorts,
+                reg,
+                errors,
+                b.span,
+                var_map,
+                next_var_id,
+            )?;
             Some(LambekType::LeftArrow(Box::new(a), Box::new(b)))
         }
         TypeExpr::RightArrow(a, b) => {
-            let a = resolve_type_expr(&a.item, known_types, type_arity, sorts, reg, errors, a.span, var_map, next_var_id)?;
-            let b = resolve_type_expr(&b.item, known_types, type_arity, sorts, reg, errors, b.span, var_map, next_var_id)?;
+            let a = resolve_type_expr(
+                &a.item,
+                known_types,
+                type_arity,
+                sorts,
+                reg,
+                errors,
+                a.span,
+                var_map,
+                next_var_id,
+            )?;
+            let b = resolve_type_expr(
+                &b.item,
+                known_types,
+                type_arity,
+                sorts,
+                reg,
+                errors,
+                b.span,
+                var_map,
+                next_var_id,
+            )?;
             Some(LambekType::RightArrow(Box::new(a), Box::new(b)))
         }
         TypeExpr::Union(a, b) => {
-            let a = resolve_type_expr(&a.item, known_types, type_arity, sorts, reg, errors, a.span, var_map, next_var_id)?;
-            let b = resolve_type_expr(&b.item, known_types, type_arity, sorts, reg, errors, b.span, var_map, next_var_id)?;
+            let a = resolve_type_expr(
+                &a.item,
+                known_types,
+                type_arity,
+                sorts,
+                reg,
+                errors,
+                a.span,
+                var_map,
+                next_var_id,
+            )?;
+            let b = resolve_type_expr(
+                &b.item,
+                known_types,
+                type_arity,
+                sorts,
+                reg,
+                errors,
+                b.span,
+                var_map,
+                next_var_id,
+            )?;
             Some(LambekType::Disj(Box::new(a), Box::new(b)))
         }
     }
@@ -659,7 +802,7 @@ fn resolve_type_expr(
 // Semantics builder: ResolvedLexicon → Semantics (bridge to engine)
 // ---------------------------------------------------------------------------
 
-use montague_core::morph::{MorphemeInfo, MorphSegmenter, SpellingClass as CoreSpellingClass};
+use montague_core::morph::{MorphSegmenter, MorphemeInfo, SpellingClass as CoreSpellingClass};
 use montague_core::semantics::Semantics;
 use montague_core::types::{AnnotatedTerm, NonDet, Term};
 
@@ -731,7 +874,9 @@ pub fn build_segmenter(lexicon: &ResolvedLexicon) -> MorphSegmenter {
                 .iter()
                 .map(|c| match c {
                     crate::ast::SpellingClass::EDeletion => CoreSpellingClass::EDeletion,
-                    crate::ast::SpellingClass::ConsonantDoubling => CoreSpellingClass::ConsonantDoubling,
+                    crate::ast::SpellingClass::ConsonantDoubling => {
+                        CoreSpellingClass::ConsonantDoubling
+                    }
                     crate::ast::SpellingClass::YToI => CoreSpellingClass::YToI,
                     crate::ast::SpellingClass::Poss => CoreSpellingClass::Poss,
                 })
@@ -782,8 +927,12 @@ mod tests {
         assert_eq!(lex.productions[0].words, vec!["man", "men"]);
         assert_eq!(lex.productions[0].entity, "Man");
 
-        assert!(lex.lattice.leq(&AtomType::new("Person"), &AtomType::new("Noun")));
-        assert!(!lex.lattice.leq(&AtomType::new("Noun"), &AtomType::new("Person")));
+        assert!(lex
+            .lattice
+            .leq(&AtomType::new("Person"), &AtomType::new("Noun")));
+        assert!(!lex
+            .lattice
+            .leq(&AtomType::new("Noun"), &AtomType::new("Person")));
     }
 
     #[test]
@@ -809,8 +958,7 @@ mod tests {
         let errs = resolve_str(src).unwrap_err();
         assert!(!errs.is_empty());
         match &errs[0] {
-            ResolveError::UnknownType { name, ..
-                    } => assert_eq!(name, "Person"),
+            ResolveError::UnknownType { name, .. } => assert_eq!(name, "Person"),
             _ => panic!("expected UnknownType"),
         }
     }
@@ -881,8 +1029,14 @@ mod tests {
         let lex = resolve_str(src).unwrap();
         assert_eq!(lex.morphemes.len(), 1);
         assert_eq!(lex.morphemes[0].strips.len(), 2);
-        assert_eq!(lex.morphemes[0].strips[0], crate::ast::SpellingClass::EDeletion);
-        assert_eq!(lex.morphemes[0].strips[1], crate::ast::SpellingClass::ConsonantDoubling);
+        assert_eq!(
+            lex.morphemes[0].strips[0],
+            crate::ast::SpellingClass::EDeletion
+        );
+        assert_eq!(
+            lex.morphemes[0].strips[1],
+            crate::ast::SpellingClass::ConsonantDoubling
+        );
     }
 
     #[test]

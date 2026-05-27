@@ -53,7 +53,7 @@ impl SortRegistry {
         }
         let a_s: String = a.to_string();
         let b_s: String = b.to_string();
-        for (_sort_name, lat) in &self.sorts {
+        for lat in self.sorts.values() {
             if lat.leq(&a_s, &b_s) {
                 return true;
             }
@@ -64,10 +64,7 @@ impl SortRegistry {
     /// Merge another [`SortRegistry`] into this one.
     pub fn extend(&mut self, other: &SortRegistry) {
         for (name, lat) in &other.sorts {
-            self.sorts
-                .entry(name.clone())
-                .or_default()
-                .union(lat);
+            self.sorts.entry(name.clone()).or_default().union(lat);
         }
     }
 }

@@ -20,7 +20,7 @@ pub enum SpellingClass {
 
 impl SpellingClass {
     /// Parse from a STRIPS-class keyword string.
-    pub fn from_str(s: &str) -> Option<Self> {
+    pub fn parse(s: &str) -> Option<Self> {
         match s {
             "e" => Some(SpellingClass::EDeletion),
             "CC" => Some(SpellingClass::ConsonantDoubling),
@@ -238,7 +238,11 @@ impl fmt::Display for Declaration {
             Declaration::ProductionDecl { words, entity } => {
                 write!(f, "{} --> {entity}.", words.join(", "))
             }
-            Declaration::MorphemeDecl { surface, ty, strips } => {
+            Declaration::MorphemeDecl {
+                surface,
+                ty,
+                strips,
+            } => {
                 write!(f, "MORPH {surface}: {}", ty.item)?;
                 if !strips.is_empty() {
                     let classes: Vec<&str> = strips

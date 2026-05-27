@@ -44,10 +44,13 @@ impl SortRegistry {
         if self.sorts.contains_key(&name) {
             return Err(format!("duplicate sort declaration: `{name}`"));
         }
-        self.sorts.insert(name, SortInfo {
-            members: HashSet::new(),
-            lattice: SubtypeLattice::new(),
-        });
+        self.sorts.insert(
+            name,
+            SortInfo {
+                members: HashSet::new(),
+                lattice: SubtypeLattice::new(),
+            },
+        );
         Ok(())
     }
 
@@ -99,9 +102,7 @@ impl SortRegistry {
     /// If either is not a sort member, returns `false`.
     pub fn leq(&self, a: &String, b: &String) -> bool {
         match (self.member_of(a), self.member_of(b)) {
-            (Some(sa), Some(sb)) if sa == sb => {
-                self.sorts[sa].lattice.leq(a, b)
-            }
+            (Some(sa), Some(sb)) if sa == sb => self.sorts[sa].lattice.leq(a, b),
             _ => a == b,
         }
     }

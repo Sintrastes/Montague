@@ -2,17 +2,10 @@
 //!
 //! Consumes `Vec<Spanned<Token<'src>>>` from the lexer, produces `MontFile`.
 
-use chumsky::{
-    error::Rich,
-    input::MappedInput,
-    pratt::*,
-    prelude::*,
-};
+use chumsky::{error::Rich, input::MappedInput, pratt::*, prelude::*};
 
-use crate::ast::{
-    Declaration, Directive, MontFile, SpellingClass, Span, TypeArg, TypeExpr,
-};
 use crate::ast::Spanned as AstSpanned;
+use crate::ast::{Declaration, Directive, MontFile, Span, SpellingClass, TypeArg, TypeExpr};
 use crate::token::Token;
 
 type ChSpan = SimpleSpan;
@@ -20,17 +13,14 @@ type ChSpan = SimpleSpan;
 pub type ParserInput<'tokens, 'src> =
     MappedInput<'tokens, Token<'src>, ChSpan, &'tokens [chumsky::span::Spanned<Token<'src>>]>;
 
-pub fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
-    'tokens,
-    ParserInput<'tokens, 'src>,
-    MontFile,
-    extra::Err<Rich<'tokens, Token<'src>>>,
-> {
+pub fn parser<'tokens, 'src: 'tokens>(
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, MontFile, extra::Err<Rich<'tokens, Token<'src>>>>
+{
     // ── Helpers (cloneable) ──────────────────────────────────────────────
-    let ident      = select_ref! { Token::Ident(s)        => *s }.boxed();
+    let ident = select_ref! { Token::Ident(s)        => *s }.boxed();
     let plus_ident = select_ref! { Token::PlusIdent(s)    => *s }.boxed();
-    let doc_str_p  = select_ref! { Token::DocString(s)    => *s }.boxed();
-    let quoted     = select_ref! { Token::QuotedString(s) => *s }.boxed();
+    let doc_str_p = select_ref! { Token::DocString(s)    => *s }.boxed();
+    let quoted = select_ref! { Token::QuotedString(s) => *s }.boxed();
 
     fn span_of(s: ChSpan) -> Span {
         Span::new(s.start, s.end)
@@ -38,9 +28,10 @@ pub fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
 
     // ── Type expressions (Pratt) ─────────────────────────────────────────
     let type_expr = recursive(|tyx| {
-        let type_arg = ident.clone()
+        let type_arg = ident
+            .clone()
             .map(|s: &str| {
-                if s.chars().next().map_or(false, char::is_uppercase) {
+                if s.chars().next().is_some_and(char::is_uppercase) {
                     TypeArg::Concrete(s.to_string())
                 } else {
                     TypeArg::Var(s.to_string())
@@ -49,7 +40,8 @@ pub fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
             .map_with(|a, e| AstSpanned::new(a, span_of(e.span())))
             .boxed();
 
-        let param_app = ident.clone()
+        let param_app = ident
+            .clone()
             .then(
                 type_arg
                     .clone()
@@ -73,7 +65,8 @@ pub fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
             .as_context()
             .boxed();
 
-        let parens = tyx.clone()
+        let parens = tyx
+            .clone()
             .delimited_by(just(Token::LParen), just(Token::RParen))
             .boxed();
 
@@ -99,10 +92,7 @@ pub fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
                 )
             }),
             infix(left(5), just(Token::Pipe), |l, _, r, e| {
-                AstSpanned::new(
-                    TypeExpr::Union(Box::new(l), Box::new(r)),
-                    span_of(e.span()),
-                )
+                AstSpanned::new(TypeExpr::Union(Box::new(l), Box::new(r)), span_of(e.span()))
             }),
         ))
         .labelled("type expression")
@@ -120,40 +110,53 @@ pub fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
         .then_ignore(just(Token::End))
         .map_with(|((first, second), alias), e| {
             let mut path = vec![first.to_string()];
-            if let Some(s) = second { path.push(s.to_string()); }
-            AstSpanned::new(Directive::Import {
-                path,
-                alias: alias.map(str::to_string),
-            }, span_of(e.span()))
+            if let Some(s) = second {
+                path.push(s.to_string());
+            }
+            AstSpanned::new(
+                Directive::Import {
+                    path,
+                    alias: alias.map(str::to_string),
+                },
+                span_of(e.span()),
+            )
         })
         .labelled("import directive")
         .as_context()
         .boxed();
 
     // `extend by "uri".` — must be tried BEFORE namespace extend
-    let extend_by_uri = ident.clone()
+    let extend_by_uri = ident
+        .clone()
         .filter(|s: &&str| *s == "by")
         .ignore_then(quoted.clone())
         .then_ignore(just(Token::End))
         .map_with(|uri, e| {
-            AstSpanned::new(Directive::ExtendBy {
-                uri: uri.to_string(),
-            }, span_of(e.span()))
+            AstSpanned::new(
+                Directive::ExtendBy {
+                    uri: uri.to_string(),
+                },
+                span_of(e.span()),
+            )
         })
         .labelled("extend by")
         .as_context()
         .boxed();
 
     // `extend foo.bar.`
-    let extend_ns = ident.clone()
+    let extend_ns = ident
+        .clone()
         .separated_by(just(Token::Dot))
         .at_least(1)
         .collect::<Vec<&str>>()
         .then_ignore(just(Token::End))
         .map_with(|parts, e| {
-            AstSpanned::new(Directive::Extend {
-                namespace: parts.into_iter().map(str::to_string).collect(),
-            }, span_of(e.span()))
+            AstSpanned::new(
+                Directive::Extend {
+                    namespace: parts.into_iter().map(str::to_string).collect(),
+                },
+                span_of(e.span()),
+            )
         })
         .labelled("extend namespace")
         .as_context()
@@ -169,9 +172,11 @@ pub fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
 
     // `type A[p1, p2].` or `type A.` — and comma-separated sugar:
     // `type A[B], C, D[E].`  →  three SingleTypeDecl.
-    let single_type_entry = ident.clone()
+    let single_type_entry = ident
+        .clone()
         .then(
-            ident.clone()
+            ident
+                .clone()
                 .separated_by(just(Token::Comma))
                 .allow_trailing()
                 .collect::<Vec<&str>>()
@@ -180,7 +185,11 @@ pub fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
         )
         .map(|(name, params)| Declaration::SingleTypeDecl {
             name: name.to_string(),
-            params: params.unwrap_or_default().into_iter().map(str::to_string).collect(),
+            params: params
+                .unwrap_or_default()
+                .into_iter()
+                .map(str::to_string)
+                .collect(),
         });
 
     let single_type_decl = just(Token::TypeKw)
@@ -188,12 +197,15 @@ pub fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
             single_type_entry
                 .separated_by(just(Token::Comma))
                 .at_least(1)
-                .collect::<Vec<Declaration>>()
+                .collect::<Vec<Declaration>>(),
         )
         .then_ignore(just(Token::End))
         .map_with(|decls, e| {
             let span = span_of(e.span());
-            decls.into_iter().map(move |d| AstSpanned::new(d, span)).collect::<Vec<_>>()
+            decls
+                .into_iter()
+                .map(move |d| AstSpanned::new(d, span))
+                .collect::<Vec<_>>()
         })
         .labelled("single type declaration")
         .as_context()
@@ -203,7 +215,8 @@ pub fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
     let type_decl = just(Token::Type)
         .ignore_then(just(Token::ColonEq))
         .ignore_then(
-            ident.clone()
+            ident
+                .clone()
                 .separated_by(just(Token::Pipe))
                 .collect::<Vec<&str>>(),
         )
@@ -230,34 +243,43 @@ pub fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
         .boxed();
 
     // `A :< B.`
-    let subtype_decl = ident.clone()
+    let subtype_decl = ident
+        .clone()
         .then_ignore(just(Token::Subtype))
         .then(ident.clone())
         .then_ignore(just(Token::End))
         .map_with(|(sub, sup), e| {
-            AstSpanned::new(Declaration::SubtypeDecl {
-                sub: sub.to_string(),
-                sup: sup.to_string(),
-            }, span_of(e.span()))
+            AstSpanned::new(
+                Declaration::SubtypeDecl {
+                    sub: sub.to_string(),
+                    sup: sup.to_string(),
+                },
+                span_of(e.span()),
+            )
         })
         .labelled("subtype declaration")
         .as_context()
         .boxed();
 
     // `entity Person, Animate.`
-    let sort_member_decl = ident.clone()
+    let sort_member_decl = ident
+        .clone()
         .then(
-            ident.clone()
+            ident
+                .clone()
                 .separated_by(just(Token::Comma))
                 .allow_trailing()
                 .collect::<Vec<&str>>(),
         )
         .then_ignore(just(Token::End))
         .map_with(|(sort_name, members), e| {
-            AstSpanned::new(Declaration::SortMemberDecl {
-                sort: sort_name.to_string(),
-                members: members.into_iter().map(str::to_string).collect(),
-            }, span_of(e.span()))
+            AstSpanned::new(
+                Declaration::SortMemberDecl {
+                    sort: sort_name.to_string(),
+                    members: members.into_iter().map(str::to_string).collect(),
+                },
+                span_of(e.span()),
+            )
         })
         .labelled("sort member declaration")
         .as_context()
@@ -266,7 +288,8 @@ pub fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
     // `namespace foo.bar.`
     let namespace_decl = just(Token::Namespace)
         .ignore_then(
-            ident.clone()
+            ident
+                .clone()
                 .separated_by(just(Token::Dot))
                 .at_least(1)
                 .collect::<Vec<&str>>(),
@@ -288,21 +311,24 @@ pub fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
     let production_word_quoted = quoted.clone().map(|s: &str| vec![s.replace(' ', "_")]);
     let production_word_ident = ident.clone().map(|s: &str| vec![s.to_string()]);
     let production_decl = choice((production_word_quoted, production_word_ident))
-    .separated_by(just(Token::Comma))
-    .collect::<Vec<Vec<String>>>()
-    .map(|nested: Vec<Vec<String>>| nested.into_iter().flatten().collect::<Vec<String>>())
-    .then_ignore(just(Token::Arrow))
-    .then(ident.clone())
-    .then_ignore(just(Token::End))
-    .map_with(|(words, entity), e| {
-        AstSpanned::new(Declaration::ProductionDecl {
-            words,
-            entity: entity.to_string(),
-        }, span_of(e.span()))
-    })
-    .labelled("production declaration")
-    .as_context()
-    .boxed();
+        .separated_by(just(Token::Comma))
+        .collect::<Vec<Vec<String>>>()
+        .map(|nested: Vec<Vec<String>>| nested.into_iter().flatten().collect::<Vec<String>>())
+        .then_ignore(just(Token::Arrow))
+        .then(ident.clone())
+        .then_ignore(just(Token::End))
+        .map_with(|(words, entity), e| {
+            AstSpanned::new(
+                Declaration::ProductionDecl {
+                    words,
+                    entity: entity.to_string(),
+                },
+                span_of(e.span()),
+            )
+        })
+        .labelled("production declaration")
+        .as_context()
+        .boxed();
 
     // `entity: type_expr.` with optional `-- | doc`
     let atom_decl = doc_str_p
@@ -312,11 +338,14 @@ pub fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
         .then(type_expr.clone().labelled("atom type"))
         .then_ignore(just(Token::End))
         .map_with(|((doc_str, entity), ty), e| {
-            AstSpanned::new(Declaration::AtomDecl {
-                doc: doc_str.map(str::to_string),
-                entity: entity.to_string(),
-                ty,
-            }, span_of(e.span()))
+            AstSpanned::new(
+                Declaration::AtomDecl {
+                    doc: doc_str.map(str::to_string),
+                    entity: entity.to_string(),
+                    ty,
+                },
+                span_of(e.span()),
+            )
         })
         .labelled("atom declaration")
         .as_context()
@@ -330,7 +359,8 @@ pub fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
         .then(
             just(Token::Strips)
                 .ignore_then(
-                    ident.clone()
+                    ident
+                        .clone()
                         .separated_by(just(Token::Comma))
                         .allow_trailing()
                         .collect::<Vec<&str>>(),
@@ -339,12 +369,18 @@ pub fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
         )
         .then_ignore(just(Token::End))
         .map_with(|((surface, ty), strips_strs), e| {
-            AstSpanned::new(Declaration::MorphemeDecl {
-                surface: surface.to_string(),
-                ty,
-                strips: strips_strs.unwrap_or_default().into_iter()
-                    .filter_map(|s| SpellingClass::from_str(s)).collect(),
-            }, span_of(e.span()))
+            AstSpanned::new(
+                Declaration::MorphemeDecl {
+                    surface: surface.to_string(),
+                    ty,
+                    strips: strips_strs
+                        .unwrap_or_default()
+                        .into_iter()
+                        .filter_map(SpellingClass::parse)
+                        .collect(),
+                },
+                span_of(e.span()),
+            )
         })
         .labelled("morpheme declaration")
         .as_context()
@@ -397,6 +433,9 @@ pub fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
                     Item::MultiDecl(ds) => declarations.extend(ds),
                 }
             }
-            MontFile { directives, declarations }
+            MontFile {
+                directives,
+                declarations,
+            }
         })
 }
