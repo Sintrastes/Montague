@@ -1,0 +1,27 @@
+-- Semantic terms demonstration.
+-- All entries use explicit :: semantics.
+--
+-- Run: montague ask examples/sem_terms.mont
+-- Try:  "Socrates is mortal."
+
+namespace montague.sem_terms.
+
+sort entity.
+entity Person, Animate.
+Person :< Animate.
+
+type NP[entity], S, Adj[entity].
+
+-- Copula with explicit semantics
+is_cop: (NP[a] \ S) / Adj[a] :: λadj. λsubj. adj(subj).
+
+-- Adjective with explicit semantics
+mortal: Adj[Animate] :: λx. mortal(x).
+
+-- Proper name
+socrates: NP[Person].
+
+-- Productions
+is, are --> is_cop.
+socrates --> socrates.
+mortal --> mortal.

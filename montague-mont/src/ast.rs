@@ -5,6 +5,8 @@
 
 use std::fmt;
 
+use montague_core::types::{AtomType, Term};
+
 /// Spelling-change reversal class for morpheme segmentation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SpellingClass {
@@ -113,19 +115,21 @@ pub enum Declaration {
     TypeDecl(Vec<String>),
     /// `A :< B.`
     SubtypeDecl { sub: String, sup: String },
-    /// `-- | doc\nentity : type_expr.`
+    /// `-- | doc\nentity : type_expr [:: sem_term].`
     AtomDecl {
         doc: Option<String>,
         entity: String,
         ty: Spanned<TypeExpr>,
+        sem: Option<Spanned<SemTermExpr>>,
     },
     /// `word1, word2 --> entity.`
     ProductionDecl { words: Vec<String>, entity: String },
-    /// `MORPH +s : type [STRIPS class,...].`
+    /// `MORPH +s : type [STRIPS class,...] [:: sem_term].`
     MorphemeDecl {
         surface: String,
         ty: Spanned<TypeExpr>,
         strips: Vec<SpellingClass>,
+        sem: Option<Spanned<SemTermExpr>>,
     },
     /// `type A[sort1, sort2].` — single type declaration with optional params.
     /// `params` is empty for 0-arity types. `type A.` → `SingleTypeDecl { name: "A", params: [] }`.
@@ -180,6 +184,39 @@ pub enum TypeExpr {
 }
 
 // ---------------------------------------------------------------------------
+// Semantic term expressions
+// ---------------------------------------------------------------------------
+
+/// A raw semantic term expression parsed from `:: <term>.` syntax.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SemTermExpr {
+    /// Variable reference: `x`, `P`, `Q`
+    Var(String),
+    /// Integer literal: `42`
+    IntLit(i64),
+    /// String literal: `"hello"`
+    StringLit(String),
+    /// Function application: `f(a, b)` or `f a`
+    App(Box<Spanned<SemTermExpr>>, Vec<Spanned<SemTermExpr>>),
+    /// Lambda abstraction: `λx. body` or `\x. body`
+    Lambda(Vec<String>, Box<Spanned<SemTermExpr>>),
+    /// Conjunction: `P ∧ Q` or `P /\ Q`
+    And(Box<Spanned<SemTermExpr>>, Box<Spanned<SemTermExpr>>),
+    /// Disjunction: `P ∨ Q` or `P \/ Q`
+    Or(Box<Spanned<SemTermExpr>>, Box<Spanned<SemTermExpr>>),
+    /// Negation: `¬P` or `~P`
+    Not(Box<Spanned<SemTermExpr>>),
+    /// Implication: `P → Q` or `P => Q`
+    Implies(Box<Spanned<SemTermExpr>>, Box<Spanned<SemTermExpr>>),
+    /// Universal quantification: `∀x. P(x)` or `forall x. P(x)`
+    Forall(String, Box<Spanned<SemTermExpr>>),
+    /// Existential quantification: `∃x. P(x)` or `exists x. P(x)`
+    Exists(String, Box<Spanned<SemTermExpr>>),
+    /// Equality: `x = y`
+    Eq(Box<Spanned<SemTermExpr>>, Box<Spanned<SemTermExpr>>),
+}
+
+// ---------------------------------------------------------------------------
 // Display (for round-trip testing)
 // ---------------------------------------------------------------------------
 
@@ -229,11 +266,20 @@ impl fmt::Display for Declaration {
                 write!(f, ".")
             }
             Declaration::SubtypeDecl { sub, sup } => write!(f, "{sub} :< {sup}."),
-            Declaration::AtomDecl { doc, entity, ty } => {
+            Declaration::AtomDecl {
+                doc,
+                entity,
+                ty,
+                sem,
+            } => {
                 if let Some(d) = doc {
                     writeln!(f, "-- | {d}")?;
                 }
-                write!(f, "{entity}: {}.", ty.item)
+                write!(f, "{entity}: {}", ty.item)?;
+                if let Some(s) = sem {
+                    write!(f, " :: {}", s.item)?;
+                }
+                write!(f, ".")
             }
             Declaration::ProductionDecl { words, entity } => {
                 write!(f, "{} --> {entity}.", words.join(", "))
@@ -242,6 +288,7 @@ impl fmt::Display for Declaration {
                 surface,
                 ty,
                 strips,
+                sem,
             } => {
                 write!(f, "MORPH {surface}: {}", ty.item)?;
                 if !strips.is_empty() {
@@ -255,6 +302,9 @@ impl fmt::Display for Declaration {
                         })
                         .collect();
                     write!(f, " STRIPS {}", classes.join(", "))?;
+                }
+                if let Some(s) = sem {
+                    write!(f, " :: {}", s.item)?;
                 }
                 write!(f, ".")
             }
@@ -274,6 +324,40 @@ impl fmt::Display for Declaration {
                 write!(f, "{sort} {}", members.join(", "))?;
                 write!(f, ".")
             }
+        }
+    }
+}
+
+impl fmt::Display for SemTermExpr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            SemTermExpr::Var(s) => write!(f, "{s}"),
+            SemTermExpr::IntLit(n) => write!(f, "{n}"),
+            SemTermExpr::StringLit(s) => write!(f, "\"{s}\""),
+            SemTermExpr::App(fun, args) => {
+                write!(f, "{}(", fun.item)?;
+                for (i, a) in args.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", a.item)?;
+                }
+                write!(f, ")")
+            }
+            SemTermExpr::Lambda(binders, body) => {
+                write!(f, "λ")?;
+                for b in binders {
+                    write!(f, "{b}")?;
+                }
+                write!(f, ". {}", body.item)
+            }
+            SemTermExpr::And(l, r) => write!(f, "({} ∧ {})", l.item, r.item),
+            SemTermExpr::Or(l, r) => write!(f, "({} ∨ {})", l.item, r.item),
+            SemTermExpr::Not(x) => write!(f, "¬{}", x.item),
+            SemTermExpr::Implies(l, r) => write!(f, "({} → {})", l.item, r.item),
+            SemTermExpr::Forall(v, body) => write!(f, "∀{v}. {}", body.item),
+            SemTermExpr::Exists(v, body) => write!(f, "∃{v}. {}", body.item),
+            SemTermExpr::Eq(l, r) => write!(f, "({} = {})", l.item, r.item),
         }
     }
 }
@@ -329,6 +413,7 @@ pub struct AtomEntry<T> {
     pub doc: Option<String>,
     pub type_expr: T,
     pub span: Span,
+    pub sem_term: Term<AtomType>,
 }
 
 /// A single production entry.
@@ -347,4 +432,5 @@ pub struct MorphemeEntry<T> {
     pub type_expr: T,
     pub strips: Vec<SpellingClass>,
     pub span: Span,
+    pub sem_term: Term<AtomType>,
 }

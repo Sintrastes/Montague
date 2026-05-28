@@ -443,4 +443,305 @@ mod tests {
             Declaration::SingleTypeDecl { .. }
         ));
     }
+
+    // ── Semantic term tests ─────────────────────────────────────────────
+
+    #[test]
+    fn parse_atom_with_sem_var() {
+        let f = check("socrates: NP :: x.");
+        match &f.declarations[0].item {
+            Declaration::AtomDecl { entity, sem, .. } => {
+                assert_eq!(entity, "socrates");
+                assert!(sem.is_some());
+                assert!(matches!(sem.as_ref().unwrap().item, SemTermExpr::Var(ref v) if v == "x"));
+            }
+            _ => panic!(),
+        }
+    }
+
+    #[test]
+    fn parse_atom_with_sem_lambda() {
+        let f = check("id: NP/NP :: λx. x.");
+        match &f.declarations[0].item {
+            Declaration::AtomDecl { sem, .. } => {
+                assert!(sem.is_some());
+                let s = sem.as_ref().unwrap();
+                assert!(matches!(s.item, SemTermExpr::Lambda(ref binders, _) if binders == &["x"]));
+            }
+            _ => panic!(),
+        }
+    }
+
+    #[test]
+    fn parse_atom_with_sem_ascii_lambda() {
+        let f = check("id: NP/NP :: \\x. x.");
+        match &f.declarations[0].item {
+            Declaration::AtomDecl { sem, .. } => {
+                assert!(sem.is_some());
+                assert!(matches!(
+                    sem.as_ref().unwrap().item,
+                    SemTermExpr::Lambda(..)
+                ));
+            }
+            _ => panic!(),
+        }
+    }
+
+    #[test]
+    fn parse_atom_with_sem_app() {
+        let f = check("foo: S :: f(a, b).");
+        match &f.declarations[0].item {
+            Declaration::AtomDecl { sem, .. } => {
+                let s = sem.as_ref().unwrap();
+                match &s.item {
+                    SemTermExpr::App(fun, args) => {
+                        assert!(matches!(fun.item, SemTermExpr::Var(ref v) if v == "f"));
+                        assert_eq!(args.len(), 2);
+                    }
+                    _ => panic!("expected App, got {:?}", s.item),
+                }
+            }
+            _ => panic!(),
+        }
+    }
+
+    #[test]
+    fn parse_atom_with_sem_and() {
+        let f = check("and: T :: P ∧ Q.");
+        match &f.declarations[0].item {
+            Declaration::AtomDecl { sem, .. } => {
+                assert!(matches!(sem.as_ref().unwrap().item, SemTermExpr::And(..)));
+            }
+            _ => panic!(),
+        }
+    }
+
+    #[test]
+    fn parse_atom_with_sem_ascii_and() {
+        let f = check("and: T :: P /\\ Q.");
+        match &f.declarations[0].item {
+            Declaration::AtomDecl { sem, .. } => {
+                assert!(matches!(sem.as_ref().unwrap().item, SemTermExpr::And(..)));
+            }
+            _ => panic!(),
+        }
+    }
+
+    #[test]
+    fn parse_atom_with_sem_or() {
+        let f = check("or: T :: P ∨ Q.");
+        match &f.declarations[0].item {
+            Declaration::AtomDecl { sem, .. } => {
+                assert!(matches!(sem.as_ref().unwrap().item, SemTermExpr::Or(..)));
+            }
+            _ => panic!(),
+        }
+    }
+
+    #[test]
+    fn parse_atom_with_sem_not() {
+        let f = check("not: T :: ¬P.");
+        match &f.declarations[0].item {
+            Declaration::AtomDecl { sem, .. } => {
+                assert!(matches!(sem.as_ref().unwrap().item, SemTermExpr::Not(..)));
+            }
+            _ => panic!(),
+        }
+    }
+
+    #[test]
+    fn parse_atom_with_sem_implies() {
+        let f = check("impl: T :: P → Q.");
+        match &f.declarations[0].item {
+            Declaration::AtomDecl { sem, .. } => {
+                assert!(matches!(
+                    sem.as_ref().unwrap().item,
+                    SemTermExpr::Implies(..)
+                ));
+            }
+            _ => panic!(),
+        }
+    }
+
+    #[test]
+    fn parse_atom_with_sem_forall() {
+        let f = check("all: T :: ∀x. P(x).");
+        match &f.declarations[0].item {
+            Declaration::AtomDecl { sem, .. } => {
+                let s = sem.as_ref().unwrap();
+                match &s.item {
+                    SemTermExpr::Forall(v, _) => assert_eq!(v, "x"),
+                    _ => panic!("expected Forall, got {:?}", s.item),
+                }
+            }
+            _ => panic!(),
+        }
+    }
+
+    #[test]
+    fn parse_atom_with_sem_exists() {
+        let f = check("some: T :: ∃x. P(x).");
+        match &f.declarations[0].item {
+            Declaration::AtomDecl { sem, .. } => {
+                let s = sem.as_ref().unwrap();
+                match &s.item {
+                    SemTermExpr::Exists(v, _) => assert_eq!(v, "x"),
+                    _ => panic!("expected Exists, got {:?}", s.item),
+                }
+            }
+            _ => panic!(),
+        }
+    }
+
+    #[test]
+    fn parse_atom_with_sem_eq() {
+        let f = check("eq: T :: x = y.");
+        match &f.declarations[0].item {
+            Declaration::AtomDecl { sem, .. } => {
+                assert!(matches!(sem.as_ref().unwrap().item, SemTermExpr::Eq(..)));
+            }
+            _ => panic!(),
+        }
+    }
+
+    #[test]
+    fn parse_atom_with_sem_int() {
+        let f = check("num: T :: 42.");
+        match &f.declarations[0].item {
+            Declaration::AtomDecl { sem, .. } => {
+                let s = sem.as_ref().unwrap();
+                assert!(matches!(s.item, SemTermExpr::IntLit(42)));
+            }
+            _ => panic!(),
+        }
+    }
+
+    #[test]
+    fn parse_atom_with_sem_string() {
+        let f = check("msg: T :: \"hello\".");
+        match &f.declarations[0].item {
+            Declaration::AtomDecl { sem, .. } => {
+                let s = sem.as_ref().unwrap();
+                assert!(matches!(&s.item, SemTermExpr::StringLit(ref v) if v == "hello"));
+            }
+            _ => panic!(),
+        }
+    }
+
+    #[test]
+    fn parse_atom_without_sem() {
+        let f = check("socrates: NP.");
+        match &f.declarations[0].item {
+            Declaration::AtomDecl { sem, .. } => {
+                assert!(sem.is_none());
+            }
+            _ => panic!(),
+        }
+    }
+
+    #[test]
+    fn parse_atom_with_sem_complex() {
+        // Multi-binder lambda: λP Q. P ∧ Q
+        let f = check("and_conj: (S \\ S) / S :: λP Q. P ∧ Q.");
+        match &f.declarations[0].item {
+            Declaration::AtomDecl { sem, .. } => {
+                let s = sem.as_ref().unwrap();
+                match &s.item {
+                    SemTermExpr::Lambda(binders, body) => {
+                        assert_eq!(binders, &["P", "Q"]);
+                        assert!(matches!(body.item, SemTermExpr::And(..)));
+                    }
+                    _ => panic!("expected Lambda, got {:?}", s.item),
+                }
+            }
+            _ => panic!(),
+        }
+    }
+
+    #[test]
+    fn parse_atom_with_sem_nested_lambda() {
+        // Nested lambdas: λP. λQ. P ∧ Q
+        let f = check("and_conj: (S \\ S) / S :: λP. λQ. P ∧ Q.");
+        match &f.declarations[0].item {
+            Declaration::AtomDecl { sem, .. } => {
+                let s = sem.as_ref().unwrap();
+                match &s.item {
+                    SemTermExpr::Lambda(binders, body) => {
+                        assert_eq!(binders, &["P"]);
+                        match &body.item {
+                            SemTermExpr::Lambda(b2, inner) => {
+                                assert_eq!(b2, &["Q"]);
+                                assert!(matches!(inner.item, SemTermExpr::And(..)));
+                            }
+                            _ => panic!("expected nested Lambda, got {:?}", body.item),
+                        }
+                    }
+                    _ => panic!("expected Lambda, got {:?}", s.item),
+                }
+            }
+            _ => panic!(),
+        }
+    }
+
+    #[test]
+    fn parse_atom_with_sem_precedence() {
+        // Implies has lowest precedence: P ∧ Q → R means (P ∧ Q) → R
+        let f = check("t: T :: P ∧ Q → R.");
+        match &f.declarations[0].item {
+            Declaration::AtomDecl { sem, .. } => {
+                let s = sem.as_ref().unwrap();
+                assert!(matches!(s.item, SemTermExpr::Implies(..)));
+                match &s.item {
+                    SemTermExpr::Implies(l, _) => {
+                        assert!(matches!(l.item, SemTermExpr::And(..)));
+                    }
+                    _ => unreachable!(),
+                }
+            }
+            _ => panic!(),
+        }
+    }
+
+    #[test]
+    fn parse_morph_with_sem() {
+        let f = check("MORPH +s : S :: λp. p.");
+        match &f.declarations[0].item {
+            Declaration::MorphemeDecl { sem, .. } => {
+                assert!(sem.is_some());
+                assert!(matches!(
+                    sem.as_ref().unwrap().item,
+                    SemTermExpr::Lambda(..)
+                ));
+            }
+            _ => panic!("expected MorphemeDecl"),
+        }
+    }
+
+    #[test]
+    fn parse_morph_without_sem() {
+        let f = check("MORPH +s : S.");
+        match &f.declarations[0].item {
+            Declaration::MorphemeDecl { sem, .. } => {
+                assert!(sem.is_none());
+            }
+            _ => panic!("expected MorphemeDecl"),
+        }
+    }
+
+    #[test]
+    fn roundtrip_sem_terms() {
+        // Verify Display → Parse produces equivalent AST.
+        let src = "and_conj: (S \\ S) / S :: λP. λQ. P ∧ Q.";
+        let f1 = check(src);
+        let printed = f1.to_string();
+        let f2 = check(&printed);
+        // Check structure is equivalent.
+        match &f2.declarations[0].item {
+            Declaration::AtomDecl { entity, sem, .. } => {
+                assert_eq!(entity, "and_conj");
+                assert!(sem.is_some());
+            }
+            _ => panic!(),
+        }
+    }
 }

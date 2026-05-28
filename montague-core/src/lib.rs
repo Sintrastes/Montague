@@ -10,6 +10,7 @@
 //! rules in [`reduction`]; identity & namespacing in [`registry`].
 
 pub mod autocomplete;
+pub mod beta;
 pub mod chart;
 pub mod display;
 pub mod morph;
@@ -64,6 +65,14 @@ where
     let per_word: Vec<NonDet<AT<A, T>>> = words
         .iter()
         .map(|w| {
+            // Try parse_annotated first (handles lambda entries with explicit semantics).
+            if let Some(ref pa) = sem.parse_annotated {
+                let annotated = pa(w);
+                if !annotated.is_empty() {
+                    return annotated;
+                }
+            }
+
             let terms = (sem.parse_term)(w);
             terms
                 .into_iter()
@@ -104,6 +113,14 @@ where
     words
         .iter()
         .map(|w| {
+            // Try parse_annotated first (handles lambda entries with explicit semantics).
+            if let Some(ref pa) = sem.parse_annotated {
+                let annotated = pa(w);
+                if !annotated.is_empty() {
+                    return annotated;
+                }
+            }
+
             let terms = (sem.parse_term)(w);
             terms
                 .into_iter()
@@ -144,7 +161,7 @@ where
     let mut results: Vec<X> = Vec::new();
     for d in &parses {
         let at = AT {
-            term: d.term.clone(),
+            term: beta::beta_normalize(&d.term),
             ty: d.ty.clone(),
         };
         let x = (sem.interp)(at);

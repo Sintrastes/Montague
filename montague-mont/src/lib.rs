@@ -13,5 +13,6 @@ mod lex;
 mod parse;
 pub mod parser;
 pub mod resolver;
+pub mod sem_lower;
 pub mod sort;
 pub(crate) mod token;

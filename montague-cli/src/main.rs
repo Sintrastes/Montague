@@ -562,6 +562,9 @@ fn cmd_ask(args: &[String]) {
                                             montague::core::AtomType::new(ty),
                                         ),
                                         span: montague::mont::ast::Span::new(0, 0),
+                                        sem_term: montague::core::Term::Atom(
+                                            montague::core::AtomType::new(name),
+                                        ),
                                     });
                                 }
                                 for (word, entity) in &prods {

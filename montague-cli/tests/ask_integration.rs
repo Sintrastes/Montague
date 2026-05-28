@@ -1369,3 +1369,19 @@ fn pl_svo_mouse_cat() {
     let o = ask_pl(&["Kot widzi mysz."]);
     assert!(!o.contains("no parse"), "SVO mouse-cat should parse:\n{o}");
 }
+
+// ── Semantic terms (::) tests ─────────────────────────────────────────
+
+fn ask_sem(inputs: &[&str]) -> String {
+    let path = "../examples/sem_terms.mont";
+    run_ask_session(path, &[], inputs)
+}
+
+#[test]
+fn sem_simple_copula() {
+    let o = ask_sem(&["Socrates is mortal."]);
+    assert!(
+        o.contains("mortal(socrates)"),
+        "expected mortal(socrates) assertion:\n{o}"
+    );
+}

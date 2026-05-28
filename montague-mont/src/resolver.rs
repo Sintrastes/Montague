@@ -7,12 +7,13 @@ use std::collections::{HashMap, HashSet};
 
 use montague_core::registry::Registry;
 use montague_core::subtyping::SubtypeLattice;
-use montague_core::types::{AtomType, LambekType, SortArg, SortVarId};
+use montague_core::types::{AtomType, LambekType, SortArg, SortVarId, Term};
 
 use crate::ast::{
     AtomEntry, Declaration, Directive, MontFile, MorphemeEntry, ProductionEntry, Span, TypeExpr,
 };
 use crate::error::ResolveError;
+use crate::sem_lower::lower_sem_term;
 use crate::sort::SortRegistry;
 
 /// The output of name resolution — a typed lexicon ready for parsing.
@@ -431,7 +432,13 @@ pub fn resolve_with_resolver(
     let mut atoms = Vec::new();
     let mut entry_var_counter: u32 = 0;
     for decl in &file.declarations {
-        if let Declaration::AtomDecl { doc, entity, ty } = &decl.item {
+        if let Declaration::AtomDecl {
+            doc,
+            entity,
+            ty,
+            sem,
+        } = &decl.item
+        {
             let mut var_map: HashMap<String, SortVarId> = HashMap::new();
             if let Some(resolved) = resolve_type_expr(
                 &ty.item,
@@ -444,11 +451,16 @@ pub fn resolve_with_resolver(
                 &mut var_map,
                 &mut entry_var_counter,
             ) {
+                let sem_term = sem
+                    .as_ref()
+                    .map(lower_sem_term)
+                    .unwrap_or_else(|| Term::Atom(AtomType::new(entity)));
                 atoms.push(AtomEntry {
                     entity: entity.clone(),
                     doc: doc.clone(),
                     type_expr: resolved,
                     span: decl.span,
+                    sem_term,
                 });
             }
         }
@@ -461,6 +473,7 @@ pub fn resolve_with_resolver(
             surface,
             ty,
             strips,
+            sem,
         } = &decl.item
         {
             let mut var_map: HashMap<String, SortVarId> = HashMap::new();
@@ -481,12 +494,17 @@ pub fn resolve_with_resolver(
                 } else {
                     strips.clone()
                 };
+                let sem_term = sem
+                    .as_ref()
+                    .map(lower_sem_term)
+                    .unwrap_or_else(|| Term::Atom(AtomType::new(&entity)));
                 morphemes.push(MorphemeEntry {
                     surface: surface.clone(),
                     entity,
                     type_expr: resolved,
                     strips,
                     span: decl.span,
+                    sem_term,
                 });
             }
         }
@@ -804,7 +822,7 @@ fn resolve_type_expr(
 
 use montague_core::morph::{MorphSegmenter, MorphemeInfo, SpellingClass as CoreSpellingClass};
 use montague_core::semantics::Semantics;
-use montague_core::types::{AnnotatedTerm, NonDet, Term};
+use montague_core::types::{AnnotatedTerm, NonDet};
 
 /// Build a [`Semantics`] from a resolved lexicon using `String` atoms and `AtomType` types.
 ///
@@ -819,6 +837,42 @@ pub fn build_semantics(
     let productions = lexicon.productions.clone();
     let morphemes = lexicon.morphemes.clone();
     let morphemes2 = morphemes.clone();
+
+    // Build entity-name → (converted semantic term, Lambek type) lookup.
+    let atom_entries: HashMap<String, (Term<String>, LambekType<AtomType>)> = atoms
+        .iter()
+        .map(|a| {
+            (
+                a.entity.clone(),
+                (convert_sem_term(&a.sem_term), a.type_expr.clone()),
+            )
+        })
+        .collect();
+    let morph_entries: HashMap<String, (Term<String>, LambekType<AtomType>)> = morphemes2
+        .iter()
+        .map(|m| {
+            (
+                m.entity.clone(),
+                (convert_sem_term(&m.sem_term), m.type_expr.clone()),
+            )
+        })
+        .collect();
+
+    // For parse_annotated closure: only include entries with non-trivial
+    // semantics (lambdas, apps, etc.). Entries with simple atoms use the
+    // fallback parse_term + type_of_atom path.
+    let pa_productions = productions.clone();
+    let pa_atom_entries: HashMap<String, (Term<String>, LambekType<AtomType>)> = atom_entries
+        .iter()
+        .filter(|(_, (t, _))| !is_simple_atom(t))
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect();
+    let pa_morphemes = morphemes2.clone();
+    let pa_morph_entries: HashMap<String, (Term<String>, LambekType<AtomType>)> = morph_entries
+        .iter()
+        .filter(|(_, (t, _))| !is_simple_atom(t))
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect();
 
     Semantics::new(
         // type_of_atom: entity name → its LambekType<AtomType>
@@ -837,25 +891,73 @@ pub fn build_semantics(
                 .map(|m| m.type_expr.clone())
                 .collect()
         },
-        // parse_term: surface word → Term::Atom(entity) for matching productions/morphemes
+        // parse_term: surface word → full semantic term for matching entries
         move |word: &str| -> NonDet<Term<String>> {
             let mut results: Vec<Term<String>> = productions
                 .iter()
                 .filter(|p| p.words.iter().any(|w| w == word))
-                .map(|p| Term::Atom(p.entity.clone()))
+                .filter_map(|p| atom_entries.get(&p.entity).map(|(t, _)| t.clone()))
                 .collect();
-            // Also match morpheme surface forms (e.g., "+s", "+ing")
             results.extend(
                 morphemes2
                     .iter()
                     .filter(|m| m.surface == word)
-                    .map(|m| Term::Atom(m.entity.clone())),
+                    .filter_map(|m| morph_entries.get(&m.entity).map(|(t, _)| t.clone())),
             );
             results
         },
         // interp: identity
         |at| at,
     )
+    .with_parse_annotated(
+        move |word: &str| -> NonDet<AnnotatedTerm<String, AtomType>> {
+            let mut results: Vec<AnnotatedTerm<String, AtomType>> = pa_productions
+                .iter()
+                .filter(|p| p.words.iter().any(|w| w == word))
+                .filter_map(|p| {
+                    pa_atom_entries
+                        .get(&p.entity)
+                        .map(|(term, ty)| AnnotatedTerm {
+                            term: term.clone(),
+                            ty: ty.clone(),
+                        })
+                })
+                .collect();
+            results.extend(
+                pa_morphemes
+                    .iter()
+                    .filter(|m| m.surface == word)
+                    .filter_map(|m| {
+                        pa_morph_entries
+                            .get(&m.entity)
+                            .map(|(term, ty)| AnnotatedTerm {
+                                term: term.clone(),
+                                ty: ty.clone(),
+                            })
+                    }),
+            );
+            results
+        },
+    )
+}
+
+/// Returns true if the term is a simple atom (no structure beyond `Term::Atom`).
+fn is_simple_atom(term: &Term<String>) -> bool {
+    matches!(term, Term::Atom(_))
+}
+
+/// Convert a `Term<AtomType>` to a `Term<String>` by mapping each
+/// `Term::Atom(at)` to `Term::Atom(at.name)`.
+fn convert_sem_term(term: &Term<AtomType>) -> Term<String> {
+    match term {
+        Term::Atom(at) => Term::Atom(at.name.clone()),
+        Term::Var(v) => Term::Var(v.clone()),
+        Term::Lambda(v, body) => Term::Lambda(v.clone(), Box::new(convert_sem_term(body))),
+        Term::App(f, args) => Term::App(
+            Box::new(convert_sem_term(f)),
+            args.iter().map(convert_sem_term).collect(),
+        ),
+    }
 }
 
 /// Build a [`MorphSegmenter`] from the morpheme entries in a resolved lexicon.

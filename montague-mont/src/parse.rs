@@ -5,7 +5,9 @@
 use chumsky::{error::Rich, input::MappedInput, pratt::*, prelude::*};
 
 use crate::ast::Spanned as AstSpanned;
-use crate::ast::{Declaration, Directive, MontFile, Span, SpellingClass, TypeArg, TypeExpr};
+use crate::ast::{
+    Declaration, Directive, MontFile, SemTermExpr, Span, SpellingClass, TypeArg, TypeExpr,
+};
 use crate::token::Token;
 
 type ChSpan = SimpleSpan;
@@ -98,6 +100,151 @@ pub fn parser<'tokens, 'src: 'tokens>(
         .labelled("type expression")
         .as_context()
         .boxed()
+    });
+
+    // ── Semantic term expressions (Pratt) ──────────────────────────────────
+
+    let sem_term = recursive(|sem| {
+        let sem_base = ident.clone().map(|s: &str| s.to_string()).boxed();
+
+        let var_atom = ident
+            .clone()
+            .map(|s: &str| SemTermExpr::Var(s.to_string()))
+            .map_with(|e, s| AstSpanned::new(e, span_of(s.span())))
+            .boxed();
+
+        let int_atom = select_ref! { Token::IntLit(n) => SemTermExpr::IntLit(*n) }
+            .map_with(|e, s| AstSpanned::new(e, span_of(s.span())))
+            .boxed();
+
+        let str_atom =
+            select_ref! { Token::QuotedString(s) => SemTermExpr::StringLit(s.to_string()) }
+                .map_with(|e, s| AstSpanned::new(e, span_of(s.span())))
+                .boxed();
+
+        // `forall x. body` (ASCII keyword)
+        let forall_kw = ident
+            .clone()
+            .filter(|s: &&str| *s == "forall")
+            .then(sem_base.clone().labelled("bound variable"))
+            .then_ignore(just(Token::End).labelled("'.' in forall"))
+            .then(sem.clone())
+            .map_with(|((_, var), body), e| {
+                AstSpanned::new(SemTermExpr::Forall(var, Box::new(body)), span_of(e.span()))
+            })
+            .boxed();
+
+        // `∀x. body` (Unicode)
+        let forall_uni = just(Token::Forall)
+            .ignore_then(sem_base.clone().labelled("bound variable"))
+            .then_ignore(just(Token::End).labelled("'.' in forall"))
+            .then(sem.clone())
+            .map_with(|(var, body), e| {
+                AstSpanned::new(SemTermExpr::Forall(var, Box::new(body)), span_of(e.span()))
+            })
+            .boxed();
+
+        // `exists x. body` (ASCII keyword)
+        let exists_kw = ident
+            .clone()
+            .filter(|s: &&str| *s == "exists")
+            .then(sem_base.clone().labelled("bound variable"))
+            .then_ignore(just(Token::End).labelled("'.' in exists"))
+            .then(sem.clone())
+            .map_with(|((_, var), body), e| {
+                AstSpanned::new(SemTermExpr::Exists(var, Box::new(body)), span_of(e.span()))
+            })
+            .boxed();
+
+        // `∃x. body` (Unicode)
+        let exists_uni = just(Token::Exists)
+            .ignore_then(sem_base.clone().labelled("bound variable"))
+            .then_ignore(just(Token::End).labelled("'.' in exists"))
+            .then(sem.clone())
+            .map_with(|(var, body), e| {
+                AstSpanned::new(SemTermExpr::Exists(var, Box::new(body)), span_of(e.span()))
+            })
+            .boxed();
+
+        // `λx. body` or `\x. body` — binder list: `λx y z. body`
+        let lambda = choice((just(Token::Lambda), just(Token::Backslash)))
+            .ignore_then(
+                ident
+                    .clone()
+                    .map(|s: &str| s.to_string())
+                    .repeated()
+                    .at_least(1)
+                    .collect::<Vec<String>>(),
+            )
+            .then_ignore(just(Token::End).labelled("'.' in lambda"))
+            .then(sem.clone())
+            .map_with(|(binders, body), e| {
+                AstSpanned::new(
+                    SemTermExpr::Lambda(binders, Box::new(body)),
+                    span_of(e.span()),
+                )
+            })
+            .boxed();
+
+        // parenthesized expression
+        let parens = sem
+            .clone()
+            .delimited_by(just(Token::LParen), just(Token::RParen))
+            .boxed();
+
+        // Atom with optional function application: `f(a, b)` or `f`
+        let atom = choice((
+            int_atom, str_atom, forall_uni, forall_kw, exists_uni, exists_kw, lambda, parens,
+            var_atom,
+        ))
+        .boxed();
+
+        // `f(a, b, c)` — application sugar
+        let atom_with_app = atom
+            .clone()
+            .then(
+                sem.clone()
+                    .separated_by(just(Token::Comma))
+                    .allow_trailing()
+                    .collect::<Vec<AstSpanned<SemTermExpr>>>()
+                    .delimited_by(just(Token::LParen), just(Token::RParen))
+                    .or_not(),
+            )
+            .map_with(|(fun, args), e| match args {
+                Some(args) if !args.is_empty() => {
+                    AstSpanned::new(SemTermExpr::App(Box::new(fun), args), span_of(e.span()))
+                }
+                _ => fun,
+            })
+            .boxed();
+
+        atom_with_app
+            .pratt((
+                prefix(12, just(Token::Not), |_, rhs, e| {
+                    AstSpanned::new(SemTermExpr::Not(Box::new(rhs)), span_of(e.span()))
+                }),
+                infix(left(8), just(Token::Eq), |l, _, r, e| {
+                    AstSpanned::new(SemTermExpr::Eq(Box::new(l), Box::new(r)), span_of(e.span()))
+                }),
+                infix(left(6), just(Token::And), |l, _, r, e| {
+                    AstSpanned::new(
+                        SemTermExpr::And(Box::new(l), Box::new(r)),
+                        span_of(e.span()),
+                    )
+                }),
+                infix(left(4), just(Token::Or), |l, _, r, e| {
+                    AstSpanned::new(SemTermExpr::Or(Box::new(l), Box::new(r)), span_of(e.span()))
+                }),
+                infix(right(2), just(Token::Implies), |l, _, r, e| {
+                    AstSpanned::new(
+                        SemTermExpr::Implies(Box::new(l), Box::new(r)),
+                        span_of(e.span()),
+                    )
+                }),
+            ))
+            .labelled("semantic term")
+            .as_context()
+            .boxed()
     });
 
     // ── Directives ───────────────────────────────────────────────────────
@@ -330,19 +477,25 @@ pub fn parser<'tokens, 'src: 'tokens>(
         .as_context()
         .boxed();
 
-    // `entity: type_expr.` with optional `-- | doc`
+    // `entity: type_expr [:: sem_term].` with optional `-- | doc`
     let atom_decl = doc_str_p
         .or_not()
         .then(ident.clone().labelled("entity name"))
         .then_ignore(just(Token::Colon))
         .then(type_expr.clone().labelled("atom type"))
+        .then(
+            just(Token::ColonColon)
+                .ignore_then(sem_term.clone())
+                .or_not(),
+        )
         .then_ignore(just(Token::End))
-        .map_with(|((doc_str, entity), ty), e| {
+        .map_with(|(((doc_str, entity), ty), sem), e| {
             AstSpanned::new(
                 Declaration::AtomDecl {
                     doc: doc_str.map(str::to_string),
                     entity: entity.to_string(),
                     ty,
+                    sem,
                 },
                 span_of(e.span()),
             )
@@ -367,8 +520,13 @@ pub fn parser<'tokens, 'src: 'tokens>(
                 )
                 .or_not(),
         )
+        .then(
+            just(Token::ColonColon)
+                .ignore_then(sem_term.clone())
+                .or_not(),
+        )
         .then_ignore(just(Token::End))
-        .map_with(|((surface, ty), strips_strs), e| {
+        .map_with(|(((surface, ty), strips_strs), sem), e| {
             AstSpanned::new(
                 Declaration::MorphemeDecl {
                     surface: surface.to_string(),
@@ -378,6 +536,7 @@ pub fn parser<'tokens, 'src: 'tokens>(
                         .into_iter()
                         .filter_map(SpellingClass::parse)
                         .collect(),
+                    sem,
                 },
                 span_of(e.span()),
             )
