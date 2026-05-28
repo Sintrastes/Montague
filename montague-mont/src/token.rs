@@ -17,23 +17,33 @@ pub enum Token<'src> {
     Extend,    // `extend`
     Import,    // `import`
     As,        // `as`
+    Forall,    // `forall`
+    Exists,    // `exists`
 
     // Operators / punctuation
-    ColonEq,   // `=` (used in `Type = A | B.`)
-    Pipe,      // `|`
-    End,       // `.` (statement terminator)
-    Subtype,   // `:<`
-    Colon,     // `:`
-    Slash,     // `/`
-    Backslash, // `\`
-    RArrow,    // `->`
-    Arrow,     // `-->`
-    LParen,    // `(`
-    RParen,    // `)`
-    LBracket,  // `[`
-    RBracket,  // `]`
-    Comma,     // `,`
-    Dot,       // `.` (namespace separator, when followed by ident-start)
+    Eq,         // `=`
+    Pipe,       // `|`
+    End,        // `.` (statement terminator)
+    Subtype,    // `:<`
+    ColonColon, // `::` (semantic term separator)
+    Colon,      // `:`
+    Slash,      // `/`
+    Backslash,  // `\`
+    RArrow,     // `->`
+    Arrow,      // `-->`
+    LParen,     // `(`
+    RParen,     // `)`
+    LBracket,   // `[`
+    RBracket,   // `]`
+    Comma,      // `,`
+    Dot,        // `.` (namespace separator, when followed by ident-start)
+
+    // Logic / semantic-term operators
+    Lambda,  // `λ`
+    And,     // `∧` or `/\`
+    Or,      // `∨` or `\/`
+    Not,     // `¬` or `~`
+    Implies, // `→` or `=>`
 
     // Data tokens
     Ident(&'src str),
@@ -42,6 +52,8 @@ pub enum Token<'src> {
     QuotedString(&'src str),
     /// `+s`, `+ing`, `+'s` — morpheme surface forms.
     PlusIdent(&'src str),
+    /// Integer literal (semantic terms).
+    IntLit(i64),
 }
 
 impl fmt::Display for Token<'_> {
@@ -56,10 +68,13 @@ impl fmt::Display for Token<'_> {
             Token::Extend => write!(f, "extend"),
             Token::Import => write!(f, "import"),
             Token::As => write!(f, "as"),
-            Token::ColonEq => write!(f, "="),
+            Token::Forall => write!(f, "forall"),
+            Token::Exists => write!(f, "exists"),
+            Token::Eq => write!(f, "="),
             Token::Pipe => write!(f, "|"),
             Token::End | Token::Dot => write!(f, "."),
             Token::Subtype => write!(f, ":<"),
+            Token::ColonColon => write!(f, "::"),
             Token::Colon => write!(f, ":"),
             Token::Slash => write!(f, "/"),
             Token::Backslash => write!(f, "\\"),
@@ -70,10 +85,16 @@ impl fmt::Display for Token<'_> {
             Token::LBracket => write!(f, "["),
             Token::RBracket => write!(f, "]"),
             Token::Comma => write!(f, ","),
+            Token::Lambda => write!(f, "λ"),
+            Token::And => write!(f, "∧"),
+            Token::Or => write!(f, "∨"),
+            Token::Not => write!(f, "¬"),
+            Token::Implies => write!(f, "→"),
             Token::Ident(s) => write!(f, "{s}"),
             Token::DocString(s) => write!(f, "-- | {s}"),
             Token::QuotedString(s) => write!(f, "\"{s}\""),
             Token::PlusIdent(s) => write!(f, "{s}"),
+            Token::IntLit(n) => write!(f, "{n}"),
         }
     }
 }

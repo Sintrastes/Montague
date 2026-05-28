@@ -213,7 +213,7 @@ pub fn parser<'tokens, 'src: 'tokens>(
 
     // Legacy `Type = A | B | C.`
     let type_decl = just(Token::Type)
-        .ignore_then(just(Token::ColonEq))
+        .ignore_then(just(Token::Eq))
         .ignore_then(
             ident
                 .clone()

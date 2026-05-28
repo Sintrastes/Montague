@@ -29,13 +29,31 @@ pub fn lexer<'src>(
     // ── Multi-char operators (longest-prefix FIRST) ───────────────────────
     let op_multi = choice((
         just("-->").to(Token::Arrow),
+        just("=>").to(Token::Implies),
         just("->").to(Token::RArrow),
         just(":<").to(Token::Subtype),
+        just("::").to(Token::ColonColon),
+        just("/\\").to(Token::And),
+        just("\\/").to(Token::Or),
     ));
+
+    // ── Unicode semantic-term operators ───────────────────────────────────
+    let unicode_op = one_of("λ∧∨¬→∀∃")
+        .map(|c: char| match c {
+            'λ' => Token::Lambda,
+            '∧' => Token::And,
+            '∨' => Token::Or,
+            '¬' => Token::Not,
+            '→' => Token::Implies,
+            '∀' => Token::Forall,
+            '∃' => Token::Exists,
+            _ => unreachable!(),
+        })
+        .boxed();
 
     // ── Single-char punctuation ──────────────────────────────────────────
     let op_single = choice((
-        just('=').to(Token::ColonEq),
+        just('=').to(Token::Eq),
         just('|').to(Token::Pipe),
         just(':').to(Token::Colon),
         just('/').to(Token::Slash),
@@ -45,6 +63,7 @@ pub fn lexer<'src>(
         just('[').to(Token::LBracket),
         just(']').to(Token::RBracket),
         just(',').to(Token::Comma),
+        just('~').to(Token::Not),
     ));
 
     // ── `.` disambiguation: Dot vs End ───────────────────────────────────
@@ -76,6 +95,13 @@ pub fn lexer<'src>(
         .to_slice()
         .delimited_by(just('"'), just('"'))
         .map(Token::QuotedString)
+        .boxed();
+
+    // ── Integer literal ────────────────────────────────────────────────
+    let int_lit = text::int(10)
+        .from_str()
+        .unwrapped()
+        .map(Token::IntLit)
         .boxed();
 
     // ── Identifier / keyword dispatch ────────────────────────────────────
@@ -124,7 +150,9 @@ pub fn lexer<'src>(
         quoted.map_with(|t, e| LexItem::Tok((t, e.span()))),
         dot_sep.map_with(|t, e| LexItem::Tok((t, e.span()))),
         end_terminator.map_with(|t, e| LexItem::Tok((t, e.span()))),
+        unicode_op.map_with(|t, e| LexItem::Tok((t, e.span()))),
         op_single.map_with(|t, e| LexItem::Tok((t, e.span()))),
+        int_lit.map_with(|t, e| LexItem::Tok((t, e.span()))),
         ident.map_with(|t, e| LexItem::Tok((t, e.span()))),
         line_comment.map(|()| LexItem::Skip),
     ))
@@ -267,7 +295,7 @@ mod tests {
     fn type_decl_legacy() {
         let tokens = lex_ok("Type = S | NP | N.");
         assert!(matches!(tokens[0].0, Token::Type));
-        assert!(matches!(tokens[1].0, Token::ColonEq));
+        assert!(matches!(tokens[1].0, Token::Eq));
         assert!(matches!(tokens[3].0, Token::Pipe));
         assert!(matches!(tokens[5].0, Token::Pipe));
         assert!(matches!(tokens[7].0, Token::End));
